@@ -1,0 +1,439 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Greens */
+  --green-dark:   #1B4332;
+  --green-mid:    #2D6A4F;
+  --green-light:  #52B788;
+  --green-pale:   #D8F3DC;
+  --green-tint:   #F0FAF4;
+
+  /* Accents */
+  --orange:       #F4A261;
+  --orange-dark:  #E76F51;
+  --yellow-warm:  #FEFAE0;
+
+  /* Neutrals */
+  --text-dark:    #111827;
+  --text-mid:     #374151;
+  --text-muted:   #6B7280;
+  --text-light:   #9CA3AF;
+  --bg-base:      #FFFDF7;
+  --bg-card:      #FFFFFF;
+  --bg-muted:     #F9FAFB;
+  --border:       #E5E7EB;
+  --border-light: #F3F4F6;
+
+  /* Shadows */
+  --shadow-xs:    0 1px 2px rgba(0,0,0,.06);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,.08);
+  --shadow-md:    0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,.12);
+  --shadow-card:  0 2px 12px rgba(45,106,79,.08);
+
+  /* Border radii */
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    16px;
+  --radius-xl:    24px;
+  --radius-full:  9999px;
+
+  /* Nav */
+  --nav-h:        64px;
+  --topbar-h:     60px;
+}
+
+/* ─── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-dark);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, .serif {
+  font-family: 'Playfair Display', serif;
+}
+
+/* ─── Scrollbar Hide ─────────────────────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Desktop App Shell ──────────────────────────────────────── */
+:root {
+  --sidebar-w:   240px;
+  --content-max: 1280px;
+}
+.app-sidebar {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--bg-card);
+    border-right: 1px solid var(--border-light);
+    z-index: 30;
+    overflow-y: auto;
+    box-shadow: var(--shadow-sm);
+  }
+  .app-main { margin-left: var(--sidebar-w); }
+}
+.app-content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ─── Safe-area Padding ──────────────────────────────────────── */
+.pb-nav {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+@media (min-width: 1024px) {
+  .pb-nav { padding-bottom: 40px; }
+}
+.pt-topbar {
+  padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+}
+
+/* ─── Page Enter Animation ───────────────────────────────────── */
+.page-enter {
+  animation: pageEnter 0.28s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes pageEnter {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ─── Skeleton Shimmer ───────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400% 0; }
+  100% { background-position:  400% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0ede8 25%,
+    #e8e4de 50%,
+    #f0ede8 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Pulse (live / WhatsApp) ────────────────────────────────── */
+@keyframes pulseRing {
+  0%   { transform: scale(1);   opacity: .7; }
+  70%  { transform: scale(1.5); opacity: 0;  }
+  100% { transform: scale(1);   opacity: 0;  }
+}
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: pulseRing 2s ease-out infinite;
+}
+.pulse-dot {
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: .5; transform: scale(.85);  }
+}
+
+/* ─── Cart Badge ─────────────────────────────────────────────── */
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--orange-dark);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 17px;
+  height: 17px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid #fff;
+  line-height: 1;
+}
+
+/* ─── Offer Ribbon ───────────────────────────────────────────── */
+.offer-ribbon {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  background: var(--orange-dark);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px 3px 6px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  z-index: 10;
+  letter-spacing: .3px;
+  box-shadow: var(--shadow-xs);
+}
+.offer-ribbon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  border-left: 4px solid #b83f28;
+  border-bottom: 4px solid transparent;
+}
+
+/* ─── Button Ripple ──────────────────────────────────────────── */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,.25);
+  border-radius: inherit;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform .4s, opacity .4s;
+}
+.btn-ripple:active::after {
+  transform: scale(2.5);
+  opacity: 1;
+  transition: 0s;
+}
+
+/* ─── Card & Surface ─────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.card-hover {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.card-hover:active {
+  transform: scale(.975);
+  box-shadow: var(--shadow-xs);
+}
+
+/* ─── Gradient Text ──────────────────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(135deg, var(--green-dark), var(--green-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Stock Badges ───────────────────────────────────────────── */
+.badge-in-stock      { background: #DCFCE7; color: #166534; }
+.badge-limited-stock { background: #FEF9C3; color: #854D0E; }
+.badge-out-of-stock  { background: #FEE2E2; color: #991B1B; }
+
+/* ─── Number Input ───────────────────────────────────────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ─── Qty Controls ───────────────────────────────────────────── */
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: background .15s, transform .1s;
+  cursor: pointer;
+  user-select: none;
+}
+.qty-btn:active { transform: scale(.88); }
+
+/* ─── Bottom Sheet ───────────────────────────────────────────── */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 40;
+  animation: fadeIn .2s ease;
+}
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  z-index: 50;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  animation: slideSheet .28s cubic-bezier(.22,1,.36,1);
+  max-height: 80dvh;
+  overflow-y: auto;
+}
+@keyframes slideSheet {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Hero Carousel Dots ─────────────────────────────────────── */
+.hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255,255,255,.5);
+  transition: width .3s, background .3s;
+}
+.hero-dot.active {
+  width: 18px;
+  background: #fff;
+}
+
+/* ─── Section Header ─────────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* ─── Trust Strip ────────────────────────────────────────────── */
+.trust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+/* ─── Sticky Header ──────────────────────────────────────────── */
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* ─── Search Bar ─────────────────────────────────────────────── */
+.search-bar {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 44px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-bar:focus-within {
+  border-color: var(--green-light);
+  box-shadow: 0 0 0 3px rgba(82,183,136,.15);
+}
+
+/* ─── Filter Chip ────────────────────────────────────────────── */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: .8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-mid);
+  user-select: none;
+}
+.filter-chip.active {
+  background: var(--green-mid);
+  color: #fff;
+  border-color: var(--green-mid);
+}
+.filter-chip:active { transform: scale(.93); }
+
+/* ─── Add to Cart Button ─────────────────────────────────────── */
+.add-btn {
+  background: var(--green-mid);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 0 10px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.add-btn:active { transform: scale(.9); }
+
+/* ─── Category Emoji Card ────────────────────────────────────── */
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.cat-card .emoji-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  background: var(--green-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  transition: transform .18s, background .18s;
+  border: 2px solid transparent;
+}
+.cat-card.active .emoji-wrap,
+.cat-card:active .emoji-wrap {
+  background: var(--green-pale);
+  border-color: var(--green-light);
+  transform: scale(1.08);
+}

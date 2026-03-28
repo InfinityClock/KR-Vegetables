@@ -1,0 +1,29 @@
+{
+  "name": "kr-vegetables",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "lucide-react": "^1.7.0",
+    "razorpay": "^2.9.6",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.13.2",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.2.2",
+    "zustand": "^5.0.12"
+  }
+}
