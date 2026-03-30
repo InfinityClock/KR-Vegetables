@@ -44,12 +44,6 @@ export default function AdminLogin() {
     }
   }
 
-  const handleDevBypass = () => {
-    console.log('DEBUG: Bypassing admin login for development')
-    navigate('/admin')
-    toast.success('System: Dev Bypass Successful')
-  }
-
   return (
     <div className="min-h-screen bg-[#2D6A4F] flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm">
@@ -100,14 +94,6 @@ export default function AdminLogin() {
             {loading ? 'Signing in...' : 'Sign In to Admin'}
           </button>
         </form>
-
-        <button
-          onClick={handleDevBypass}
-          className="w-full mt-4 h-12 border-2 border-white/20 text-white rounded-xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-        >
-          <Leaf size={16} />
-          Bypass Login (Dev Only)
-        </button>
 
         <p className="text-center text-white/50 text-xs mt-6">
           KR Vegetables & Fruits Admin v1.0
