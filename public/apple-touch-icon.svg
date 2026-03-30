@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- Solid green background (iOS adds its own rounded corners) -->
+  <rect width="180" height="180" fill="#2D6A4F"/>
+
+  <!-- Main stem -->
+  <line x1="90" y1="148" x2="90" y2="62" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Left leaf -->
+  <path d="M90 100 C68 86 46 90 50 62 C60 66 84 76 90 100Z" fill="#52B788"/>
+  <line x1="90" y1="100" x2="62" y2="76" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Right leaf -->
+  <path d="M90 82 C112 68 134 72 130 44 C120 48 96 60 90 82Z" fill="#74C69D"/>
+  <line x1="90" y1="82" x2="118" y2="57" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Top sprout bud -->
+  <ellipse cx="90" cy="56" rx="13" ry="17" fill="#52B788"/>
+  <ellipse cx="90" cy="50" rx="8" ry="10" fill="#95D5B2"/>
+
+  <!-- Small roots -->
+  <path d="M90 148 C82 154 74 157 70 162" stroke="#74C69D" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M90 148 C98 154 106 157 110 162" stroke="#74C69D" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.7"/>
+</svg>
