@@ -47,15 +47,21 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
 
           {/* Items */}
           <div>
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Order Items</h4>
-            <div className="space-y-2">
-              {order.order_items?.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.product_name} × {item.quantity} {item.unit}</span>
-                  <span className="font-medium">{formatPrice(item.total_price)}</span>
-                </div>
-              ))}
-            </div>
+            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+              Order Items {order.order_items?.length > 0 && <span className="text-gray-400 font-normal normal-case">({order.order_items.length})</span>}
+            </h4>
+            {order.order_items?.length > 0 ? (
+              <div className="space-y-2">
+                {order.order_items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
+                    <span className="text-gray-700">{item.product_name} <span className="text-gray-400">× {item.quantity} {item.unit}</span></span>
+                    <span className="font-medium text-[#2D6A4F]">{formatPrice(item.total_price)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">No item details available for this order.</p>
+            )}
           </div>
 
           {/* Totals */}
@@ -183,11 +189,9 @@ export default function AdminOrders() {
                       <p className="text-xs text-gray-400">{order.customers?.phone}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {order.order_items?.length > 0 ? (
-                        `${order.order_items.length} items`
-                      ) : (
-                        <span className="text-red-400 text-xs italic">Hidden by RLS</span>
-                      )}
+                      {order.order_items?.length > 0
+                        ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
+                        : <span className="text-gray-400 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3 font-semibold text-[#2D6A4F]">{formatPrice(order.total_amount)}</td>
                     <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
@@ -236,7 +240,9 @@ export default function AdminOrders() {
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold text-[#2D6A4F]">{formatPrice(order.total_amount)}</span>
                   <span className="text-xs text-gray-500">
-                    {order.order_items?.length > 0 ? `${order.order_items.length} items` : 'Item info restricted'} · <span className="uppercase">{order.payment_method}</span>
+                    {order.order_items?.length > 0
+                      ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
+                      : '—'} · <span className="uppercase">{order.payment_method}</span>
                   </span>
                 </div>
               </div>

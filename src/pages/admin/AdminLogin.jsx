@@ -19,21 +19,20 @@ export default function AdminLogin() {
 
       const userMetadata = data.user?.user_metadata || {}
       const appMetadata = data.user?.app_metadata || {}
-      // Explicitly recognize krajesh@gmail.com as admin to unblock user
-      const role = userMetadata.role || appMetadata.role || (data.user?.email === 'krajesh@gmail.com' ? 'admin' : null)
-
-      console.log('DEBUG: Admin Login Attempt', { 
-        email: data.user?.email, 
-        userMetadata, 
-        appMetadata, 
-        detectedRole: role 
-      })
+      // Detect admin role from metadata or by known admin email
+      const ADMIN_EMAIL = 'krajesh@gmail.com'
+      const role = userMetadata.role || appMetadata.role || (data.user?.email === ADMIN_EMAIL ? 'admin' : null)
 
       if (role !== 'admin') {
         await supabase.auth.signOut()
         toast.error(`Access denied. Role "${role || 'none'}" is not "admin".`)
         setLoading(false)
         return
+      }
+
+      // Persist role in user_metadata so RLS policies can read it from the JWT
+      if (!userMetadata.role) {
+        await supabase.auth.updateUser({ data: { role: 'admin' } })
       }
 
       navigate('/admin')

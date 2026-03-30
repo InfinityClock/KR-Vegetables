@@ -180,9 +180,12 @@ export default function Checkout() {
     if (error) throw error
 
     // Insert order items
+    // product_id is set to null because products are served from local mockData
+    // (not from the Supabase products table), so there is no valid UUID to reference.
+    // All item details (name, unit, price) are stored directly on the order_item row.
     const orderItems = items.map((item) => ({
       order_id: order.id,
-      product_id: item.id,
+      product_id: null,
       product_name: item.name,
       unit: item.unit,
       quantity: item.quantity,
@@ -190,7 +193,11 @@ export default function Checkout() {
       total_price: item.price * item.quantity,
     }))
 
-    await supabase.from('order_items').insert(orderItems)
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+    if (itemsError) {
+      console.error('Failed to insert order items:', itemsError.message)
+      throw new Error(`Order placed but items could not be saved: ${itemsError.message}`)
+    }
 
     // Insert initial tracking
     await supabase.from('order_tracking').insert({

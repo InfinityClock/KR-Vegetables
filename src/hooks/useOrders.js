@@ -14,7 +14,7 @@ export const useOrders = (filter = 'all') => {
       setLoading(true)
       let query = supabase
         .from('orders')
-        .select(`*, order_items(*, products(name, image_url))`)
+        .select(`*, order_items(*)`)
         .eq('customer_id', user.id)
         .order('placed_at', { ascending: false })
 
@@ -44,7 +44,7 @@ export const useOrder = (orderId) => {
       const [orderRes, trackingRes] = await Promise.all([
         supabase
           .from('orders')
-          .select(`*, order_items(*, products(name, image_url, unit)), addresses(*)`)
+          .select(`*, order_items(*), addresses(*)`)
           .eq('id', orderId)
           .single(),
         supabase
@@ -83,17 +83,40 @@ export const useAdminOrders = (statusFilter = 'all') => {
 
   const fetchOrders = async () => {
     setLoading(true)
+
+    // Step 1: Fetch orders + customer + address (no order_items join — avoids broken admin RLS)
     let query = supabase
       .from('orders')
-      .select(`*, customers(full_name, phone), order_items(id, product_name, quantity, unit_price), addresses(address_line1, city)`)
+      .select(`*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode)`)
       .order('placed_at', { ascending: false })
       .limit(200)
 
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
 
-    const { data, error: err } = await query
-    if (err) setError(err.message)
-    else setOrders(data || [])
+    const { data: ordersData, error: err } = await query
+    if (err) { setError(err.message); setLoading(false); return }
+
+    const orders = ordersData || []
+
+    // Step 2: Fetch order_items in a separate query so RLS is evaluated
+    // per-item row (uses order_items_own policy) instead of through the join.
+    if (orders.length > 0) {
+      const orderIds = orders.map((o) => o.id)
+      const { data: itemsData } = await supabase
+        .from('order_items')
+        .select('id, order_id, product_name, unit, quantity, unit_price, total_price')
+        .in('order_id', orderIds)
+
+      // Group items by order_id and attach to each order
+      const byOrder = {}
+      ;(itemsData || []).forEach((item) => {
+        if (!byOrder[item.order_id]) byOrder[item.order_id] = []
+        byOrder[item.order_id].push(item)
+      })
+      orders.forEach((o) => { o.order_items = byOrder[o.id] || [] })
+    }
+
+    setOrders(orders)
     setLoading(false)
   }
 
