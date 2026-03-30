@@ -182,10 +182,16 @@ export default function AdminOrders() {
                       <p className="font-medium">{order.customers?.full_name || 'N/A'}</p>
                       <p className="text-xs text-gray-400">{order.customers?.phone}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{order.order_items?.length || 0} items</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {order.order_items?.length > 0 ? (
+                        `${order.order_items.length} items`
+                      ) : (
+                        <span className="text-red-400 text-xs italic">Hidden by RLS</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-[#2D6A4F]">{formatPrice(order.total_amount)}</td>
                     <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
-                    <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
+                    <td className="px-4 py-3"><span className="text-xs font-bold uppercase">{order.payment_method}</span></td>
                     <td className="px-4 py-3 text-xs text-gray-400">{formatDateTime(order.placed_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -229,7 +235,9 @@ export default function AdminOrders() {
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold text-[#2D6A4F]">{formatPrice(order.total_amount)}</span>
-                  <span className="text-xs text-gray-500">{order.order_items?.length || 0} items · <span className="capitalize">{order.payment_method}</span></span>
+                  <span className="text-xs text-gray-500">
+                    {order.order_items?.length > 0 ? `${order.order_items.length} items` : 'Item info restricted'} · <span className="uppercase">{order.payment_method}</span>
+                  </span>
                 </div>
               </div>
             ))}

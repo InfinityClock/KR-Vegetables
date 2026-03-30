@@ -23,6 +23,7 @@ export const useAuthInit = () => {
   }, [])
 
   const fetchCustomer = async (userId) => {
+    if (!userId) return
     const { data } = await supabase
       .from('customers')
       .select('*')
