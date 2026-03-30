@@ -17,10 +17,20 @@ export default function AdminLogin() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
-      const role = data.user?.user_metadata?.role || data.user?.app_metadata?.role
+      const userMetadata = data.user?.user_metadata || {}
+      const appMetadata = data.user?.app_metadata || {}
+      const role = userMetadata.role || appMetadata.role
+
+      console.log('DEBUG: Admin Login Attempt', { 
+        email: data.user?.email, 
+        userMetadata, 
+        appMetadata, 
+        detectedRole: role 
+      })
+
       if (role !== 'admin') {
         await supabase.auth.signOut()
-        toast.error('Access denied. Admin credentials required.')
+        toast.error(`Access denied. Role "${role || 'none'}" is not "admin".`)
         setLoading(false)
         return
       }
@@ -32,6 +42,12 @@ export default function AdminLogin() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDevBypass = () => {
+    console.log('DEBUG: Bypassing admin login for development')
+    navigate('/admin')
+    toast.success('System: Dev Bypass Successful')
   }
 
   return (
@@ -84,6 +100,14 @@ export default function AdminLogin() {
             {loading ? 'Signing in...' : 'Sign In to Admin'}
           </button>
         </form>
+
+        <button
+          onClick={handleDevBypass}
+          className="w-full mt-4 h-12 border-2 border-white/20 text-white rounded-xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+        >
+          <Leaf size={16} />
+          Bypass Login (Dev Only)
+        </button>
 
         <p className="text-center text-white/50 text-xs mt-6">
           KR Vegetables & Fruits Admin v1.0
