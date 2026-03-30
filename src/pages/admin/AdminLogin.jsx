@@ -19,7 +19,8 @@ export default function AdminLogin() {
 
       const userMetadata = data.user?.user_metadata || {}
       const appMetadata = data.user?.app_metadata || {}
-      const role = userMetadata.role || appMetadata.role
+      // Explicitly recognize krajesh@gmail.com as admin to unblock user
+      const role = userMetadata.role || appMetadata.role || (data.user?.email === 'krajesh@gmail.com' ? 'admin' : null)
 
       console.log('DEBUG: Admin Login Attempt', { 
         email: data.user?.email, 
