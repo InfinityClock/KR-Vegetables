@@ -121,39 +121,30 @@ export default function AdminOrders() {
   const { orders, loading, refetch } = useAdminOrders(statusFilter)
 
   const updateOrderStatus = async (orderId, newStatus) => {
-    const { data: updated, error } = await supabase
-      .from('orders')
-      .update({ status: newStatus })
-      .eq('id', orderId)
-      .select('id, status')   // ask for the updated row back
+    try {
+      const res = await fetch('/api/admin-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_status',
+          orderId,
+          newStatus,
+          trackingMessage: ORDER_STATUS_MESSAGES[newStatus],
+        }),
+      })
 
-    if (error) {
-      toast.error('Failed to update status: ' + error.message)
-      return
+      const result = await res.json()
+
+      if (!res.ok || result.error) {
+        toast.error('Failed to update: ' + (result.error || 'Unknown error'))
+        return
+      }
+
+      toast.success(`Order marked as ${ORDER_STATUS[newStatus]?.label}`)
+      refetch()
+    } catch (err) {
+      toast.error('Network error — ' + err.message)
     }
-
-    // Supabase silently returns [] when RLS blocks the UPDATE (no error thrown).
-    // This happens when the admin SQL migration hasn't been run yet.
-    if (!updated || updated.length === 0) {
-      toast.error(
-        '⚠️ Status not updated — database permission blocked it. ' +
-        'Please run supabase/migrations/002_fix_admin_rls.sql in your Supabase SQL Editor.',
-        { duration: 8000 }
-      )
-      return
-    }
-
-    // Insert tracking entry
-    const { error: trackErr } = await supabase.from('order_tracking').insert({
-      order_id: orderId,
-      status: newStatus,
-      message: ORDER_STATUS_MESSAGES[newStatus],
-      updated_by: 'admin',
-    })
-    if (trackErr) console.warn('Tracking insert failed:', trackErr.message)
-
-    toast.success(`Order marked as ${ORDER_STATUS[newStatus]?.label}`)
-    refetch()
   }
 
   const tabs = ['all', ...Object.keys(ORDER_STATUS)]
