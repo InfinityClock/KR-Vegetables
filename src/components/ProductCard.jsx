@@ -81,6 +81,12 @@ export default function ProductCard({ product }) {
           {product.name}
         </h3>
 
+        {product.tamil_name && (
+          <p className="text-xs font-medium" style={{ color: 'var(--green-mid)', lineHeight: 1.3 }}>
+            {product.tamil_name}
+          </p>
+        )}
+
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{product.unit}</p>
 
         {/* Price row */}

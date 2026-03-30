@@ -195,12 +195,19 @@ export default function ProductDetail() {
               </div>
             )}
             <div className="flex items-start gap-2 justify-between">
-              <h1
-                className="text-2xl lg:text-3xl font-bold leading-tight flex-1"
-                style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
-              >
-                {product.name}
-              </h1>
+              <div className="flex-1">
+                <h1
+                  className="text-2xl lg:text-3xl font-bold leading-tight"
+                  style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+                >
+                  {product.name}
+                </h1>
+                {product.tamil_name && (
+                  <p className="text-base font-medium mt-0.5" style={{ color: 'var(--green-mid)' }}>
+                    {product.tamil_name}
+                  </p>
+                )}
+              </div>
               <span className={`flex-shrink-0 mt-1 text-xs font-semibold px-2.5 py-1 rounded-full ${stockInfo.cls}`}>
                 {stockInfo.label}
               </span>
