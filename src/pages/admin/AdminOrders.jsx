@@ -175,7 +175,7 @@ export default function AdminOrders() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {['Order #', 'Customer', 'Items', 'Total', 'Payment', 'Status', 'Time', 'Action'].map((h) => (
+                  {['Order #', 'Customer', 'Items', 'Total', 'Payment', 'Method', 'Status', 'Time', 'Action'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -195,7 +195,8 @@ export default function AdminOrders() {
                     </td>
                     <td className="px-4 py-3 font-semibold text-[#2D6A4F]">{formatPrice(order.total_amount)}</td>
                     <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
-                    <td className="px-4 py-3"><span className="text-xs font-bold uppercase">{order.payment_method}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-bold uppercase text-gray-500">{order.payment_method === 'cod' ? 'COD' : 'Online'}</span></td>
+                    <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-4 py-3 text-xs text-gray-400">{formatDateTime(order.placed_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
