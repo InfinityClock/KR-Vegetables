@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
   const [chartData, setChartData] = useState([])
+  const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,57 +65,98 @@ export default function AdminDashboard() {
   }, [])
 
   const loadDashboard = async () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    try {
+      setLoading(true)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
-    const [todayOrdersRes, pendingOrdersRes, lowStockRes, recentRes] = await Promise.all([
-      supabase.from('orders').select('total_amount').gte('placed_at', today.toISOString()),
-      supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['placed', 'confirmed']),
-      supabase.from('products').select('id', { count: 'exact', head: true }).eq('stock_status', 'limited'),
-      supabase.from('orders')
-        .select('*, customers(full_name, phone), order_items(id)')
-        .order('placed_at', { ascending: false })
-        .limit(10),
-    ])
+      const [todayOrdersRes, pendingOrdersRes, lowStockRes, recentRes] = await Promise.all([
+        supabase.from('orders').select('total_amount').gte('placed_at', today.toISOString()),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['placed', 'confirmed']),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('stock_status', 'limited'),
+        supabase.from('orders')
+          .select('*, customers(full_name, phone), order_items(id)')
+          .order('placed_at', { ascending: false })
+          .limit(10),
+      ])
 
-    const todayOrders = todayOrdersRes.data || []
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
+      // Check for errors
+      const firstError = todayOrdersRes.error || pendingOrdersRes.error || lowStockRes.error || recentRes.error
+      if (firstError) {
+        console.error('DEBUG: Dashboard Fetch Error', firstError)
+        setError(firstError.message)
+        setLoading(false)
+        return
+      }
 
-    setStats({
-      todayOrders: todayOrders.length,
-      todayRevenue,
-      pendingOrders: pendingOrdersRes.count || 0,
-      lowStock: lowStockRes.count || 0,
-    })
-    setRecentOrders(recentRes.data || [])
+      setError(null)
+      const todayOrders = todayOrdersRes.data || []
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
 
-    // Build chart: last 7 days revenue
-    const days = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      d.setHours(0, 0, 0, 0)
-      const next = new Date(d)
-      next.setDate(next.getDate() + 1)
-      days.push({ date: d, next, label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) })
+      setStats({
+        todayOrders: todayOrders.length,
+        todayRevenue,
+        pendingOrders: pendingOrdersRes.count || 0,
+        lowStock: lowStockRes.count || 0,
+      })
+      setRecentOrders(recentRes.data || [])
+
+      // Build chart: last 7 days revenue
+      const days = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        d.setHours(0, 0, 0, 0)
+        const next = new Date(d)
+        next.setDate(next.getDate() + 1)
+        days.push({ date: d, next, label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) })
+      }
+
+      const chartRes = await supabase
+        .from('orders')
+        .select('total_amount, placed_at')
+        .gte('placed_at', days[0].date.toISOString())
+        .eq('payment_status', 'paid')
+
+      const chartMap = {}
+      days.forEach((d) => { chartMap[d.label] = 0 })
+      ;(chartRes.data || []).forEach((o) => {
+        const d = new Date(o.placed_at)
+        const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        if (chartMap[label] !== undefined) chartMap[label] += Number(o.total_amount)
+      })
+
+      setChartData(days.map((d) => ({ label: d.label, revenue: chartMap[d.label] })))
+    } catch (err) {
+      console.error('DEBUG: Dashboard Exception', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const chartRes = await supabase
-      .from('orders')
-      .select('total_amount, placed_at')
-      .gte('placed_at', days[0].date.toISOString())
-      .eq('payment_status', 'paid')
-
-    const chartMap = {}
-    days.forEach((d) => { chartMap[d.label] = 0 })
-    ;(chartRes.data || []).forEach((o) => {
-      const d = new Date(o.placed_at)
-      const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-      if (chartMap[label] !== undefined) chartMap[label] += Number(o.total_amount)
-    })
-
-    setChartData(days.map((d) => ({ label: d.label, revenue: chartMap[d.label] })))
-    setLoading(false)
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <AlertTriangle className="text-red-500 mx-auto mb-3" size={32} />
+          <h2 className="text-lg font-bold text-red-900 mb-1">Database Access Denied</h2>
+          <p className="text-sm text-red-700 mb-4">
+            Your account logged in, but the database is blocking your queries. 
+            Error: {error}
+          </p>
+          <div className="bg-white/60 p-3 rounded-lg text-xs text-left font-mono mb-4 text-red-900 overflow-auto">
+            {'SQL FIX: UPDATE auth.users SET raw_app_meta_data = \'{"role": "admin"}\' WHERE email = \'krajesh@gmail.com\';'}
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg"
+          >
+            Retry after running SQL
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
