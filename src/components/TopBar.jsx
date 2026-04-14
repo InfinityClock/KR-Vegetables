@@ -1,4 +1,4 @@
-import { Search, ShoppingCart, ArrowLeft } from 'lucide-react'
+import { Search, ShoppingCart, ArrowLeft, MapPin, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCartCount } from '../store/cartStore'
 
@@ -8,52 +8,73 @@ export function HomeTopBar({ onSearchClick }) {
 
   return (
     <header
-      className="sticky top-0 z-40 flex items-center justify-between px-4 lg:hidden"
+      className="sticky top-0 z-40 lg:hidden"
       style={{
         height: 'var(--topbar-h)',
-        background: 'rgba(255,253,247,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(255,255,255,0.96)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-light)',
-        boxShadow: '0 1px 8px rgba(0,0,0,.04)',
+        boxShadow: '0 1px 12px rgba(15,23,42,.06)',
       }}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-2.5">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-base font-black"
-          style={{ background: 'linear-gradient(135deg, var(--green-dark), var(--green-light))' }}
-        >
-          KR
-        </div>
-        <div>
-          <p className="text-xs font-medium leading-none" style={{ color: 'var(--text-muted)' }}>Fresh from the farm</p>
-          <h1
-            className="text-base font-bold leading-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--green-dark)' }}
-          >
-            KR Vegetables
-          </h1>
-        </div>
-      </div>
+      <div className="flex items-center justify-between h-full px-4 gap-3">
 
-      {/* Actions */}
-      <div className="flex items-center gap-2">
+        {/* Logo + Delivery info */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* Logo mark */}
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, var(--brand-800), var(--brand-500))',
+              boxShadow: '0 2px 8px rgba(22,163,74,.35)',
+            }}
+          >
+            KR
+          </div>
+
+          {/* Brand + delivery line */}
+          <div className="min-w-0">
+            <h1
+              className="text-base font-bold leading-none tracking-tight truncate"
+              style={{ fontFamily: 'Playfair Display, serif', color: 'var(--brand-800)' }}
+            >
+              KR Vegetables
+            </h1>
+            <div className="flex items-center gap-1 mt-0.5">
+              <Clock size={10} style={{ color: 'var(--brand-600)', flexShrink: 0 }} />
+              <p className="text-xs font-medium truncate" style={{ color: 'var(--brand-600)' }}>
+                Same-day delivery
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search bar (compact) */}
         <button
           onClick={onSearchClick}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-90"
-          style={{ background: 'var(--bg-muted)', border: '1px solid var(--border)' }}
-          aria-label="Search"
+          className="flex items-center gap-2 flex-1 max-w-[160px] h-9 rounded-full px-3 text-sm text-left transition-all active:scale-95"
+          style={{
+            background: 'var(--gray-100)',
+            border: '1.5px solid var(--border)',
+            color: 'var(--text-muted)',
+          }}
         >
-          <Search size={17} style={{ color: 'var(--text-mid)' }} />
+          <Search size={14} style={{ flexShrink: 0 }} />
+          <span className="truncate" style={{ fontSize: '0.8125rem' }}>Search...</span>
         </button>
+
+        {/* Cart */}
         <button
           onClick={() => navigate('/cart')}
-          className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-90"
-          style={{ background: 'var(--green-tint)', border: '1px solid var(--green-pale)' }}
+          className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90"
+          style={{
+            background: 'var(--brand-50)',
+            border: '1.5px solid var(--brand-200)',
+          }}
           aria-label="Cart"
         >
-          <ShoppingCart size={17} style={{ color: 'var(--green-mid)' }} />
+          <ShoppingCart size={18} style={{ color: 'var(--brand-600)' }} />
           {cartCount > 0 && (
             <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
           )}
@@ -71,25 +92,28 @@ export function PageTopBar({ title, showBack = true, rightAction }) {
       className="sticky top-0 z-40 flex items-center gap-3 px-4 lg:hidden"
       style={{
         height: 'var(--topbar-h)',
-        background: 'rgba(255,253,247,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(255,255,255,0.96)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-light)',
-        boxShadow: '0 1px 8px rgba(0,0,0,.04)',
+        boxShadow: '0 1px 12px rgba(15,23,42,.06)',
       }}
     >
       {showBack && (
         <button
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90"
-          style={{ background: 'var(--bg-muted)', border: '1px solid var(--border)' }}
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90"
+          style={{
+            background: 'var(--gray-100)',
+            border: '1px solid var(--border)',
+          }}
           aria-label="Go back"
         >
           <ArrowLeft size={18} style={{ color: 'var(--text-dark)' }} />
         </button>
       )}
       <h1
-        className="flex-1 text-lg font-bold truncate"
+        className="flex-1 text-lg font-bold truncate tracking-tight"
         style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
       >
         {title}

@@ -59,25 +59,29 @@ function DesktopSidebar() {
     <aside className="app-sidebar">
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-5 py-6 cursor-pointer"
+        className="flex items-center gap-3 px-5 cursor-pointer"
+        style={{ paddingTop: 24, paddingBottom: 20 }}
         onClick={() => navigate('/')}
       >
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
-          style={{ background: 'linear-gradient(135deg, var(--green-dark), var(--green-light))' }}
+          style={{
+            background: 'linear-gradient(135deg, var(--brand-800), var(--brand-500))',
+            boxShadow: '0 2px 8px rgba(22,163,74,.3)',
+          }}
         >
           KR
         </div>
         <div>
-          <p className="text-xs font-medium leading-none" style={{ color: 'var(--text-muted)' }}>
-            Fresh from the farm
-          </p>
           <h1
-            className="text-base font-bold leading-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--green-dark)' }}
+            className="text-base font-bold leading-tight tracking-tight"
+            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--brand-800)' }}
           >
             KR Vegetables
           </h1>
+          <p className="text-xs font-medium leading-none mt-0.5" style={{ color: 'var(--brand-500)' }}>
+            Farm to doorstep
+          </p>
         </div>
       </div>
 
@@ -85,7 +89,7 @@ function DesktopSidebar() {
       <div style={{ height: 1, background: 'var(--border-light)', margin: '0 16px' }} />
 
       {/* Nav links */}
-      <nav className="flex flex-col gap-1 px-3 pt-4 flex-1">
+      <nav className="flex flex-col gap-0.5 px-3 pt-4 flex-1">
         {NAV_ITEMS.map(({ to, icon: Icon, label, exact, isCart }) => (
           <NavLink
             key={to}
@@ -98,17 +102,30 @@ function DesktopSidebar() {
               padding: '10px 14px',
               borderRadius: 'var(--radius-md)',
               textDecoration: 'none',
-              fontWeight: 500,
+              fontWeight: isActive ? 600 : 500,
               fontSize: 14,
-              color: isActive ? 'var(--green-dark)' : 'var(--text-mid)',
-              background: isActive ? 'var(--green-tint)' : 'transparent',
+              color: isActive ? 'var(--brand-700)' : 'var(--text-mid)',
+              background: isActive ? 'var(--brand-50)' : 'transparent',
               transition: 'background .15s, color .15s',
+              letterSpacing: isActive ? '-.01em' : 0,
             })}
           >
             {({ isActive }) => (
               <>
-                <span className="relative">
-                  <Icon size={18} strokeWidth={isActive ? 2.4 : 1.8} />
+                <span
+                  className="relative flex items-center justify-center rounded-lg"
+                  style={isActive ? {
+                    width: 32, height: 32,
+                    background: 'var(--brand-100)',
+                  } : {
+                    width: 32, height: 32,
+                  }}
+                >
+                  <Icon
+                    size={17}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                    style={{ color: isActive ? 'var(--brand-600)' : 'var(--text-muted)' }}
+                  />
                   {isCart && cartCount > 0 && (
                     <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
                   )}
@@ -120,11 +137,19 @@ function DesktopSidebar() {
         ))}
       </nav>
 
+      {/* Promo box */}
+      <div className="mx-3 mb-3 p-4 rounded-xl" style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)' }}>
+        <p className="text-xs font-bold mb-1" style={{ color: 'var(--brand-700)' }}>🚚 Free Delivery</p>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--brand-600)' }}>
+          Order above ₹299 and get free same-day delivery.
+        </p>
+      </div>
+
       {/* Footer */}
       <div className="px-5 py-4" style={{ borderTop: '1px solid var(--border-light)' }}>
         <div className="flex items-center gap-2">
-          <Leaf size={14} style={{ color: 'var(--green-mid)' }} />
-          <p className="text-xs" style={{ color: 'var(--text-light)' }}>
+          <Leaf size={13} style={{ color: 'var(--brand-500)' }} />
+          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
             100% Fresh · Farm to Door
           </p>
         </div>

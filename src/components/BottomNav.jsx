@@ -7,7 +7,7 @@ const tabs = [
   { to: '/shop',    icon: ShoppingBag,  label: 'Shop'  },
   { to: '/cart',    icon: ShoppingCart, label: 'Cart'  },
   { to: '/orders',  icon: Package,      label: 'Orders'},
-  { to: '/profile', icon: User,         label: 'Me'    },
+  { to: '/profile', icon: User,         label: 'Profile'},
 ]
 
 export default function BottomNav() {
@@ -17,11 +17,11 @@ export default function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       style={{
-        background: 'rgba(255,255,255,0.96)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderTop: '1px solid var(--border-light)',
-        boxShadow: '0 -2px 20px rgba(0,0,0,.07)',
+        boxShadow: '0 -4px 24px rgba(15,23,42,.08)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
@@ -31,71 +31,50 @@ export default function BottomNav() {
             key={to}
             to={to}
             end={exact}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
-            style={({ isActive }) => ({
-              color: isActive ? 'var(--green-mid)' : 'var(--text-light)',
-            })}
+            className="flex-1 flex flex-col items-center justify-center gap-1 relative"
           >
             {({ isActive }) => (
               <>
-                {/* Active indicator pill */}
-                {isActive && (
-                  <span
-                    className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
-                    style={{
-                      width: 28,
-                      height: 3,
-                      background: 'var(--green-mid)',
-                      borderRadius: '0 0 4px 4px',
-                    }}
-                  />
-                )}
-
-                {/* Cart icon with badge */}
-                {label === 'Cart' ? (
-                  <span className="relative">
-                    <span
-                      className="flex items-center justify-center rounded-full transition-all"
-                      style={isActive ? {
-                        width: 40, height: 40,
-                        background: 'var(--green-tint)',
-                        marginTop: -4,
-                      } : {
-                        width: 32, height: 32,
-                      }}
-                    >
+                {/* Icon container */}
+                <div
+                  className="relative flex items-center justify-center rounded-2xl transition-all duration-200"
+                  style={isActive ? {
+                    width: 44,
+                    height: 32,
+                    background: 'var(--brand-50)',
+                  } : {
+                    width: 44,
+                    height: 32,
+                  }}
+                >
+                  {label === 'Cart' ? (
+                    <span className="relative">
                       <Icon
-                        size={isActive ? 22 : 21}
-                        strokeWidth={isActive ? 2.4 : 1.8}
+                        size={20}
+                        strokeWidth={isActive ? 2.5 : 1.8}
+                        style={{ color: isActive ? 'var(--brand-600)' : 'var(--gray-400)' }}
                       />
+                      {cartCount > 0 && (
+                        <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
+                      )}
                     </span>
-                    {cartCount > 0 && (
-                      <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
-                    )}
-                  </span>
-                ) : (
-                  <span
-                    className="flex items-center justify-center rounded-full transition-all"
-                    style={isActive ? {
-                      width: 40, height: 40,
-                      background: 'var(--green-tint)',
-                      marginTop: -4,
-                    } : {
-                      width: 32, height: 32,
-                    }}
-                  >
+                  ) : (
                     <Icon
-                      size={isActive ? 22 : 21}
-                      strokeWidth={isActive ? 2.4 : 1.8}
+                      size={20}
+                      strokeWidth={isActive ? 2.5 : 1.8}
+                      style={{ color: isActive ? 'var(--brand-600)' : 'var(--gray-400)' }}
                     />
-                  </span>
-                )}
+                  )}
+                </div>
 
+                {/* Label */}
                 <span
                   style={{
-                    fontSize: 10,
-                    fontWeight: isActive ? 600 : 400,
+                    fontSize: '10px',
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive ? 'var(--brand-600)' : 'var(--gray-400)',
                     lineHeight: 1,
+                    letterSpacing: isActive ? '.01em' : 0,
                   }}
                 >
                   {label}
