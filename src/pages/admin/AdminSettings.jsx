@@ -1,8 +1,38 @@
 import { useState, useEffect } from 'react'
-import { Save, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Save, ToggleLeft, ToggleRight, Settings } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { DELIVERY_SLOTS } from '../../constants'
 import toast from 'react-hot-toast'
+
+function SettingInput({ label, value, onChange, placeholder, type = 'text', hint }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full h-11 px-4 rounded-xl text-sm outline-none transition-all"
+        style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-dark)' }}
+        onFocus={(e) => { e.target.style.borderColor = 'var(--brand-500)'; e.target.style.background = '#fff' }}
+        onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--gray-50)' }}
+      />
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
+    </div>
+  )
+}
+
+function SectionCard({ title, children }) {
+  return (
+    <div
+      className="rounded-2xl p-5 space-y-4"
+      style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
+    >
+      <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>{title}</h2>
+      {children}
+    </div>
+  )
+}
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({})
@@ -21,17 +51,12 @@ export default function AdminSettings() {
       })
   }, [])
 
-  const updateSetting = (key, value) => {
-    setSettings((prev) => ({ ...prev, [key]: value }))
-  }
+  const updateSetting = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }))
 
   const saveSettings = async () => {
     setSaving(true)
-    const entries = Object.entries(settings)
-    for (const [key, value] of entries) {
-      await supabase
-        .from('store_settings')
-        .upsert({ key, value: String(value) }, { onConflict: 'key' })
+    for (const [key, value] of Object.entries(settings)) {
+      await supabase.from('store_settings').upsert({ key, value: String(value) }, { onConflict: 'key' })
     }
     setSaving(false)
     toast.success('Settings saved!')
@@ -44,105 +69,144 @@ export default function AdminSettings() {
     toast.success(newVal === 'true' ? 'Store is now OPEN 🟢' : 'Store is now CLOSED 🔴')
   }
 
-  if (loading) return <div className="p-6"><div className="skeleton h-64 rounded-2xl" /></div>
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 space-y-4">
+        {[1, 2, 3].map((i) => <div key={i} className="skeleton h-40 rounded-2xl" />)}
+      </div>
+    )
+  }
 
   const storeOpen = settings.store_open === 'true'
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-5 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>Settings</h1>
+        <div>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+          >
+            Settings
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Configure your store</p>
+        </div>
         <button
           onClick={saveSettings}
           disabled={saving}
-          className="flex items-center gap-2 px-4 h-10 bg-[#2D6A4F] text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+          className="flex items-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all"
+          style={{ background: saving ? 'var(--brand-400)' : 'var(--brand-700)', boxShadow: '0 2px 8px rgba(22,101,52,.25)' }}
         >
-          <Save size={16} />
-          {saving ? 'Saving...' : 'Save All'}
+          <Save size={15} />
+          {saving ? 'Saving…' : 'Save All'}
         </button>
       </div>
 
       {/* Store Status */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <h2 className="text-sm font-bold text-gray-800 mb-4">Store Status</h2>
-        <div className="flex items-center justify-between">
+      <SectionCard title="Store Status">
+        <div
+          className="flex items-center justify-between p-4 rounded-xl"
+          style={{ background: storeOpen ? 'var(--brand-50)' : '#FEF2F2', border: `1.5px solid ${storeOpen ? 'var(--brand-200)' : '#FCA5A5'}` }}
+        >
           <div>
-            <p className="text-sm font-medium text-gray-900">Store Open/Closed</p>
-            <p className="text-xs text-gray-500 mt-0.5">Toggle to control if customers can place orders</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>
+              Store is currently{' '}
+              <span style={{ color: storeOpen ? 'var(--brand-700)' : '#DC2626' }}>
+                {storeOpen ? 'OPEN' : 'CLOSED'}
+              </span>
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {storeOpen ? 'Customers can browse and place orders' : 'Customers cannot place new orders'}
+            </p>
           </div>
-          <button onClick={toggleStoreOpen} className="flex items-center gap-2">
+          <button onClick={toggleStoreOpen} className="flex items-center gap-2 shrink-0 transition-opacity hover:opacity-80">
             {storeOpen
-              ? <><ToggleRight size={32} className="text-[#2D6A4F]" /><span className="text-sm font-semibold text-green-600">OPEN</span></>
-              : <><ToggleLeft size={32} className="text-gray-300" /><span className="text-sm font-semibold text-red-500">CLOSED</span></>
+              ? <ToggleRight size={36} style={{ color: 'var(--brand-600)' }} />
+              : <ToggleLeft size={36} style={{ color: '#DC2626' }} />
             }
           </button>
         </div>
-      </div>
+      </SectionCard>
 
       {/* Delivery Settings */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
-        <h2 className="text-sm font-bold text-gray-800">Delivery Settings</h2>
-
+      <SectionCard title="Delivery Settings">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Delivery Fee (₹)</label>
-            <input
-              type="number"
-              value={settings.delivery_fee || ''}
-              onChange={(e) => updateSetting('delivery_fee', e.target.value)}
-              className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#2D6A4F]"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Min Order Amount (₹)</label>
-            <input
-              type="number"
-              value={settings.min_order_amount || ''}
-              onChange={(e) => updateSetting('min_order_amount', e.target.value)}
-              className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#2D6A4F]"
-            />
-          </div>
+          <SettingInput
+            label="Delivery Fee (₹)"
+            type="number"
+            value={settings.delivery_fee || ''}
+            onChange={(v) => updateSetting('delivery_fee', v)}
+            placeholder="40"
+          />
+          <SettingInput
+            label="Free Delivery Above (₹)"
+            type="number"
+            value={settings.free_delivery_above || ''}
+            onChange={(v) => updateSetting('free_delivery_above', v)}
+            placeholder="299"
+          />
         </div>
-      </div>
+        <SettingInput
+          label="Minimum Order Amount (₹)"
+          type="number"
+          value={settings.min_order_amount || ''}
+          onChange={(v) => updateSetting('min_order_amount', v)}
+          placeholder="100"
+          hint="Orders below this amount cannot be placed"
+        />
+      </SectionCard>
 
-      {/* Store Info */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
-        <h2 className="text-sm font-bold text-gray-800">Store Information</h2>
+      {/* Store Information */}
+      <SectionCard title="Store Information">
+        <SettingInput
+          label="Store Name"
+          value={settings.store_name || ''}
+          onChange={(v) => updateSetting('store_name', v)}
+          placeholder="KR Vegetables & Fruits"
+        />
+        <SettingInput
+          label="WhatsApp Number"
+          value={settings.whatsapp_number || ''}
+          onChange={(v) => updateSetting('whatsapp_number', v)}
+          placeholder="+91 98765 43210"
+        />
+        <SettingInput
+          label="Store Address"
+          value={settings.store_address || ''}
+          onChange={(v) => updateSetting('store_address', v)}
+          placeholder="Full address"
+        />
+        <SettingInput
+          label="UPI ID"
+          value={settings.upi_id || ''}
+          onChange={(v) => updateSetting('upi_id', v)}
+          placeholder="yourstore@upi"
+        />
+      </SectionCard>
 
-        {[
-          { key: 'store_name', label: 'Store Name', placeholder: 'KR Vegetables & Fruits' },
-          { key: 'whatsapp_number', label: 'WhatsApp Number', placeholder: '+91 98765 43210' },
-          { key: 'store_address', label: 'Store Address', placeholder: 'Full address' },
-          { key: 'upi_id', label: 'UPI ID', placeholder: 'yourstore@upi' },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key}>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">{label}</label>
-            <input
-              value={settings[key] || ''}
-              onChange={(e) => updateSetting(key, e.target.value)}
-              placeholder={placeholder}
-              className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#2D6A4F]"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Razorpay Info */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-        <h2 className="text-sm font-bold text-gray-800">Payment (Razorpay)</h2>
-        <div className="bg-yellow-50 rounded-xl p-3 text-xs text-yellow-700">
-          ⚠️ Razorpay keys are set via environment variables (VITE_RAZORPAY_KEY_ID). Never store secret keys here.
+      {/* Payment */}
+      <SectionCard title="Payment (Razorpay)">
+        <div
+          className="rounded-xl p-3 text-xs"
+          style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
+        >
+          ⚠️ Razorpay keys are configured via environment variables (<code>VITE_RAZORPAY_KEY_ID</code>). Never store secret keys in the database.
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600 mb-1 block">Current Key ID</label>
-          <div className="h-11 px-4 border border-gray-200 rounded-xl flex items-center text-sm text-gray-500 bg-gray-50">
+          <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>
+            Current Key ID
+          </label>
+          <div
+            className="h-11 px-4 rounded-xl flex items-center text-sm"
+            style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-muted)' }}
+          >
             {import.meta.env.VITE_RAZORPAY_KEY_ID
               ? `${import.meta.env.VITE_RAZORPAY_KEY_ID.slice(0, 8)}••••••••`
               : 'Not configured'
             }
           </div>
         </div>
-      </div>
+      </SectionCard>
     </div>
   )
 }
