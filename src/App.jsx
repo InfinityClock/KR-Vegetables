@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocati
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
 import { Home, ShoppingBag, ShoppingCart, Package, User, Leaf } from 'lucide-react'
+import logoImg from './assets/logo.png'
 
 // Auth
 import { useAuthInit } from './hooks/useAuth'
@@ -59,30 +60,18 @@ function DesktopSidebar() {
     <aside className="app-sidebar">
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-5 cursor-pointer"
-        style={{ paddingTop: 24, paddingBottom: 20 }}
+        className="flex flex-col items-center px-5 cursor-pointer"
+        style={{ paddingTop: 20, paddingBottom: 16 }}
         onClick={() => navigate('/')}
       >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, var(--brand-800), var(--brand-500))',
-            boxShadow: '0 2px 8px rgba(22,163,74,.3)',
-          }}
-        >
-          KR
-        </div>
-        <div>
-          <h1
-            className="text-base font-bold leading-tight tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--brand-800)' }}
-          >
-            KR Vegetables
-          </h1>
-          <p className="text-xs font-medium leading-none mt-0.5" style={{ color: 'var(--brand-500)' }}>
-            Farm to doorstep
-          </p>
-        </div>
+        <img
+          src={logoImg}
+          alt="KR Vegetables & Fruits"
+          style={{ height: 72, width: 'auto', objectFit: 'contain' }}
+        />
+        <p className="text-xs font-semibold mt-1" style={{ color: 'var(--teal-600)' }}>
+          Precision in Freshness
+        </p>
       </div>
 
       {/* Divider */}
@@ -104,8 +93,8 @@ function DesktopSidebar() {
               textDecoration: 'none',
               fontWeight: isActive ? 600 : 500,
               fontSize: 14,
-              color: isActive ? 'var(--brand-700)' : 'var(--text-mid)',
-              background: isActive ? 'var(--brand-50)' : 'transparent',
+              color: isActive ? 'var(--teal-700)' : 'var(--text-mid)',
+              background: isActive ? 'var(--teal-50)' : 'transparent',
               transition: 'background .15s, color .15s',
               letterSpacing: isActive ? '-.01em' : 0,
             })}
@@ -116,7 +105,7 @@ function DesktopSidebar() {
                   className="relative flex items-center justify-center rounded-lg"
                   style={isActive ? {
                     width: 32, height: 32,
-                    background: 'var(--brand-100)',
+                    background: 'var(--teal-100)',
                   } : {
                     width: 32, height: 32,
                   }}
@@ -124,7 +113,7 @@ function DesktopSidebar() {
                   <Icon
                     size={17}
                     strokeWidth={isActive ? 2.5 : 1.8}
-                    style={{ color: isActive ? 'var(--brand-600)' : 'var(--text-muted)' }}
+                    style={{ color: isActive ? 'var(--teal-600)' : 'var(--text-muted)' }}
                   />
                   {isCart && cartCount > 0 && (
                     <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
@@ -138,9 +127,9 @@ function DesktopSidebar() {
       </nav>
 
       {/* Promo box */}
-      <div className="mx-3 mb-3 p-4 rounded-xl" style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)' }}>
-        <p className="text-xs font-bold mb-1" style={{ color: 'var(--brand-700)' }}>🚚 Free Delivery</p>
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--brand-600)' }}>
+      <div className="mx-3 mb-3 p-4 rounded-xl" style={{ background: 'var(--teal-50)', border: '1px solid var(--teal-100)' }}>
+        <p className="text-xs font-bold mb-1" style={{ color: 'var(--teal-700)' }}>🚚 Free Delivery</p>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--teal-600)' }}>
           Order above ₹299 and get free same-day delivery.
         </p>
       </div>
@@ -148,7 +137,7 @@ function DesktopSidebar() {
       {/* Footer */}
       <div className="px-5 py-4" style={{ borderTop: '1px solid var(--border-light)' }}>
         <div className="flex items-center gap-2">
-          <Leaf size={13} style={{ color: 'var(--brand-500)' }} />
+          <Leaf size={13} style={{ color: 'var(--teal-500)' }} />
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
             100% Fresh · Farm to Door
           </p>

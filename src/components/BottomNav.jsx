@@ -41,7 +41,7 @@ export default function BottomNav() {
                   style={isActive ? {
                     width: 44,
                     height: 32,
-                    background: 'var(--brand-50)',
+                    background: 'var(--teal-50)',
                   } : {
                     width: 44,
                     height: 32,
@@ -52,7 +52,7 @@ export default function BottomNav() {
                       <Icon
                         size={20}
                         strokeWidth={isActive ? 2.5 : 1.8}
-                        style={{ color: isActive ? 'var(--brand-600)' : 'var(--gray-400)' }}
+                        style={{ color: isActive ? 'var(--teal-600)' : 'var(--gray-400)' }}
                       />
                       {cartCount > 0 && (
                         <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
@@ -62,7 +62,7 @@ export default function BottomNav() {
                     <Icon
                       size={20}
                       strokeWidth={isActive ? 2.5 : 1.8}
-                      style={{ color: isActive ? 'var(--brand-600)' : 'var(--gray-400)' }}
+                      style={{ color: isActive ? 'var(--teal-600)' : 'var(--gray-400)' }}
                     />
                   )}
                 </div>
@@ -72,7 +72,7 @@ export default function BottomNav() {
                   style={{
                     fontSize: '10px',
                     fontWeight: isActive ? 700 : 400,
-                    color: isActive ? 'var(--brand-600)' : 'var(--gray-400)',
+                    color: isActive ? 'var(--teal-600)' : 'var(--gray-400)',
                     lineHeight: 1,
                     letterSpacing: isActive ? '.01em' : 0,
                   }}

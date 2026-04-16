@@ -3,7 +3,7 @@
 
 /* ─── Design Tokens ─────────────────────────────────────────── */
 :root {
-  /* Brand Greens — rich, deep, premium */
+  /* ── Brand: Forest Green (logo leaves & pepper) ── */
   --brand-950: #031a0e;
   --brand-900: #052e16;
   --brand-800: #0a4529;
@@ -16,6 +16,25 @@
   --brand-100: #bbf7d0;
   --brand-50:  #f0fdf4;
   --brand-25:  #f7fef9;
+
+  /* ── Teal / Cyan (logo ribbon — "Precision") ── */
+  --teal-950: #042f2e;
+  --teal-900: #134e4a;
+  --teal-800: #115e59;
+  --teal-700: #0f766e;
+  --teal-600: #0d9488;
+  --teal-500: #14b8a6;
+  --teal-400: #2dd4bf;
+  --teal-300: #5eead4;
+  --teal-200: #99f6e4;
+  --teal-100: #ccfbf1;
+  --teal-50:  #f0fdfa;
+
+  /* ── Dual-brand gradient (green → teal = "Precision in Freshness") ── */
+  --gradient-brand: linear-gradient(135deg, var(--brand-800) 0%, var(--teal-700) 100%);
+  --gradient-brand-subtle: linear-gradient(135deg, var(--brand-50) 0%, var(--teal-50) 100%);
+  --shadow-teal: 0 4px 20px rgba(13,148,136,.25);
+  --shadow-brand-teal: 0 4px 20px rgba(10,69,41,.3), 0 2px 8px rgba(13,148,136,.15);
 
   /* Legacy alias (for existing components) */
   --green-dark:   #0a4529;
@@ -327,10 +346,41 @@ h1, h2, h3, .serif {
 
 /* ─── Gradient Text ──────────────────────────────────────────── */
 .text-gradient {
-  background: linear-gradient(135deg, var(--brand-700), var(--brand-400));
+  background: linear-gradient(135deg, var(--brand-700) 0%, var(--teal-600) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ─── Teal Accent Utilities ──────────────────────────────────── */
+.teal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--teal-600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: .3px;
+}
+.teal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--teal-50);
+  color: var(--teal-700);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--teal-100);
+}
+/* Dual-color gradient hero strip */
+.hero-strip {
+  background: var(--gradient-brand);
+  color: #fff;
 }
 
 /* ─── Stock Badges ───────────────────────────────────────────── */

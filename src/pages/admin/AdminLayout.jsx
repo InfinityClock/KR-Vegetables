@@ -2,19 +2,20 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingBag, Tags, Tag,
-  Truck, Settings, Menu, X, LogOut, Leaf, ChevronRight,
+  Truck, Settings, Menu, X, LogOut, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import logoImg from '../../assets/logo.png'
 import toast from 'react-hot-toast'
 
 const navItems = [
   { to: '/admin',            icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { to: '/admin/orders',     icon: Package,         label: 'Orders'   },
-  { to: '/admin/products',   icon: ShoppingBag,     label: 'Products' },
+  { to: '/admin/orders',     icon: Package,         label: 'Orders'    },
+  { to: '/admin/products',   icon: ShoppingBag,     label: 'Products'  },
   { to: '/admin/categories', icon: Tags,            label: 'Categories'},
-  { to: '/admin/offers',     icon: Tag,             label: 'Offers'   },
-  { to: '/admin/delivery',   icon: Truck,           label: 'Delivery' },
-  { to: '/admin/settings',   icon: Settings,        label: 'Settings' },
+  { to: '/admin/offers',     icon: Tag,             label: 'Offers'    },
+  { to: '/admin/delivery',   icon: Truck,           label: 'Delivery'  },
+  { to: '/admin/settings',   icon: Settings,        label: 'Settings'  },
 ]
 
 function Sidebar({ open, onClose }) {
@@ -42,32 +43,40 @@ function Sidebar({ open, onClose }) {
           ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen`}
         style={{
           width: 260,
-          background: 'linear-gradient(180deg, var(--brand-900) 0%, var(--brand-800) 100%)',
+          /* Green → Teal gradient — "Precision in Freshness" */
+          background: 'linear-gradient(175deg, #052e16 0%, #0a4529 45%, #115e59 100%)',
           borderRight: '1px solid rgba(255,255,255,.06)',
         }}
       >
-        {/* Logo */}
+        {/* Logo — white-card treatment so it shows on dark bg */}
         <div
-          className="flex items-center gap-3 px-5 cursor-pointer"
-          style={{ paddingTop: 24, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,.08)' }}
+          className="flex flex-col items-center cursor-pointer"
+          style={{
+            padding: '20px 20px 16px',
+            borderBottom: '1px solid rgba(255,255,255,.08)',
+          }}
           onClick={() => { navigate('/admin'); onClose?.() }}
         >
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-white text-sm"
-            style={{ background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.2)' }}
+            className="rounded-2xl p-2 mb-2"
+            style={{
+              background: 'rgba(255,255,255,.95)',
+              boxShadow: '0 4px 16px rgba(0,0,0,.25)',
+            }}
           >
-            KR
+            <img
+              src={logoImg}
+              alt="KR Vegetables & Fruits"
+              style={{ height: 52, width: 'auto', objectFit: 'contain', display: 'block' }}
+            />
           </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-white font-bold text-sm leading-tight tracking-tight"
-              style={{ fontFamily: 'Playfair Display, serif' }}
-            >
-              KR Vegetables
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,.45)' }}>Admin Panel</p>
-          </div>
-          <button onClick={onClose} className="lg:hidden ml-auto" style={{ color: 'rgba(255,255,255,.5)' }}>
+          <p
+            className="text-xs font-semibold tracking-wide uppercase"
+            style={{ color: 'rgba(255,255,255,.45)', letterSpacing: '.08em' }}
+          >
+            Admin Panel
+          </p>
+          <button onClick={onClose} className="lg:hidden absolute top-4 right-4" style={{ color: 'rgba(255,255,255,.5)' }}>
             <X size={18} />
           </button>
         </div>
@@ -82,26 +91,32 @@ function Sidebar({ open, onClose }) {
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                 ${isActive
-                   ? 'text-white'
-                   : 'hover:text-white'
-                 }`
+                 ${isActive ? 'text-white' : 'hover:text-white'}`
               }
               style={({ isActive }) => ({
-                background: isActive ? 'rgba(255,255,255,.15)' : 'transparent',
-                color: isActive ? '#fff' : 'rgba(255,255,255,.55)',
+                background: isActive
+                  ? 'rgba(45,212,191,.18)'  /* teal-400 tint for active */
+                  : 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,.52)',
+                borderLeft: isActive ? '2px solid rgba(45,212,191,.7)' : '2px solid transparent',
               })}
             >
               {({ isActive }) => (
                 <>
                   <span
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: isActive ? 'rgba(255,255,255,.15)' : 'transparent' }}
+                    style={{
+                      background: isActive ? 'rgba(45,212,191,.2)' : 'transparent',
+                    }}
                   >
-                    <Icon size={16} strokeWidth={isActive ? 2.5 : 1.8} />
+                    <Icon
+                      size={16}
+                      strokeWidth={isActive ? 2.5 : 1.8}
+                      style={{ color: isActive ? '#5eead4' : undefined }}
+                    />
                   </span>
                   {label}
-                  {isActive && <ChevronRight size={14} className="ml-auto opacity-60" />}
+                  {isActive && <ChevronRight size={13} className="ml-auto" style={{ opacity: 0.6 }} />}
                 </>
               )}
             </NavLink>
@@ -111,11 +126,11 @@ function Sidebar({ open, onClose }) {
         {/* User + Logout */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', padding: '12px 12px 16px' }}>
           {user?.email && (
-            <div className="px-3 py-2 mb-1 rounded-xl" style={{ background: 'rgba(255,255,255,.05)' }}>
+            <div className="px-3 py-2 mb-1 rounded-xl" style={{ background: 'rgba(255,255,255,.06)' }}>
               <p className="text-xs font-medium truncate" style={{ color: 'rgba(255,255,255,.7)' }}>
                 {user.email}
               </p>
-              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,.35)', fontSize: 10 }}>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(45,212,191,.6)', fontSize: 10 }}>
                 Administrator
               </p>
             </div>
@@ -123,11 +138,11 @@ function Sidebar({ open, onClose }) {
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full transition-all"
-            style={{ color: 'rgba(255,255,255,.5)' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.5)'}
+            style={{ color: 'rgba(255,255,255,.45)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,.06)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,.45)'; e.currentTarget.style.background = 'transparent' }}
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
             Sign Out
           </button>
         </div>
@@ -162,15 +177,13 @@ export default function AdminLayout() {
           >
             <Menu size={18} style={{ color: 'var(--text-dark)' }} />
           </button>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs"
-              style={{ background: 'var(--brand-800)' }}
-            >
-              KR
-            </div>
-            <span className="font-bold text-sm" style={{ color: 'var(--text-dark)' }}>Admin</span>
-          </div>
+          <img
+            src={logoImg}
+            alt="KR Vegetables"
+            style={{ height: 36, width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
+            onClick={() => navigate('/admin')}
+          />
+          <span className="text-sm font-semibold" style={{ color: 'var(--teal-700)' }}>Admin</span>
         </header>
 
         {/* Page content */}

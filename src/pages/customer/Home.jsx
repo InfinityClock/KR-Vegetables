@@ -18,7 +18,7 @@ function DeliveryStrip() {
     <div
       className="flex items-center justify-center gap-0 overflow-x-auto scrollbar-hide px-2"
       style={{
-        background: 'linear-gradient(90deg, var(--brand-800) 0%, var(--brand-600) 100%)',
+        background: 'linear-gradient(90deg, var(--brand-800) 0%, var(--teal-700) 100%)',
         minHeight: 36,
         paddingTop: 6,
         paddingBottom: 6,
@@ -249,7 +249,7 @@ function PromoBanners({ navigate }) {
     {
       title: 'Fresh Greens',
       subtitle: 'Harvested today',
-      bg: 'linear-gradient(135deg, #0a4529 0%, #16a34a 100%)',
+      bg: 'linear-gradient(135deg, #0a4529 0%, #0f766e 100%)',
       emoji: '🥬',
       cta: 'Shop Now',
       link: '/shop?category=cat-1',
@@ -399,7 +399,7 @@ function WhyKR() {
       {/* Header */}
       <div
         className="px-5 py-4"
-        style={{ background: 'linear-gradient(135deg, var(--brand-800), var(--brand-600))' }}
+        style={{ background: 'linear-gradient(135deg, var(--brand-800) 0%, var(--teal-700) 100%)' }}
       >
         <p className="text-xs font-bold tracking-widest" style={{ color: 'rgba(255,255,255,.6)', textTransform: 'uppercase' }}>
           Why choose us?
@@ -448,7 +448,7 @@ function DesktopHero({ navigate }) {
       className="hidden lg:flex rounded-3xl overflow-hidden mx-6 mb-6"
       style={{
         height: 360,
-        background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 50%, var(--brand-500) 100%)',
+        background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 40%, var(--teal-700) 100%)',
         position: 'relative',
       }}
     >
