@@ -1,82 +1,131 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-  CATEGORIES,
-  ENRICHED_PRODUCTS,
-  getFeaturedProducts,
-  getOfferProducts,
-  searchProducts,
-} from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-const LOADING_DELAY = 800;
+const PRODUCT_SELECT = `
+  id, name, description, unit, price, offer_price,
+  offer_label, image_url, stock_status, is_featured, is_active,
+  category_id, categories(id, name, emoji)
+`.trim();
 
 export const useProducts = (filters = {}) => {
-  const { category_id, search, is_featured, limit } = filters;
-  const [loading, setLoading] = useState(true);
+  const { category_id, search, is_featured, sort, limit } = filters;
+  const [state, setState] = useState({ products: [], loading: true, error: null });
 
   useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), LOADING_DELAY);
-    return () => clearTimeout(t);
-  }, [category_id, search, is_featured, limit]);
+    let cancelled = false;
+    setState((s) => ({ ...s, loading: true, error: null }));
 
-  const products = useMemo(() => {
-    let result = ENRICHED_PRODUCTS;
-    if (is_featured) {
-      result = getFeaturedProducts();
-    } else if (search) {
-      result = searchProducts(search);
-    } else if (category_id) {
-      result = result.filter((p) => p.category_id === category_id);
-    }
-    if (limit) result = result.slice(0, limit);
-    return result;
-  }, [category_id, search, is_featured, limit]);
+    (async () => {
+      try {
+        let q = supabase
+          .from('products')
+          .select(PRODUCT_SELECT)
+          .eq('is_active', true);
 
-  return { products, loading, error: null, refetch: () => {} };
+        if (category_id) q = q.eq('category_id', category_id);
+        if (is_featured)  q = q.eq('is_featured', true);
+        if (search)       q = q.ilike('name', `%${search}%`);
+        if (sort === 'offers') q = q.not('offer_price', 'is', null);
+
+        q = q.order('created_at', { ascending: false });
+        if (limit) q = q.limit(limit);
+
+        const { data, error: err } = await q;
+        if (cancelled) return;
+        if (err) throw err;
+        if (!cancelled) setState({ products: data || [], loading: false, error: null });
+      } catch (err) {
+        if (!cancelled) setState({ products: [], loading: false, error: err });
+      }
+    })();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category_id, search, is_featured, sort, limit]);
+
+  return { ...state, refetch: () => {} };
 };
 
 export const useProduct = (id) => {
+  const [product, setProduct] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), LOADING_DELAY);
-    return () => clearTimeout(t);
+    if (!id) return;
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const { data, error: err } = await supabase
+          .from('products')
+          .select(PRODUCT_SELECT)
+          .eq('id', id)
+          .eq('is_active', true)
+          .single();
+
+        if (err) throw err;
+        if (cancelled) return;
+        setProduct(data);
+
+        if (data?.category_id) {
+          const { data: rel } = await supabase
+            .from('products')
+            .select(PRODUCT_SELECT)
+            .eq('category_id', data.category_id)
+            .eq('is_active', true)
+            .neq('id', id)
+            .limit(8);
+          if (!cancelled) setRelated(rel || []);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [id]);
 
-  const product = useMemo(
-    () => ENRICHED_PRODUCTS.find((p) => p.id === id) ?? null,
-    [id]
-  );
-
-  const related = useMemo(() => {
-    if (!product) return [];
-    return ENRICHED_PRODUCTS.filter(
-      (p) => p.category_id === product.category_id && p.id !== id
-    ).slice(0, 8);
-  }, [product, id]);
-
-  return { product, related, loading, error: null };
+  return { product, related, loading, error };
 };
 
 export const useCategories = () => {
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState({ categories: [], loading: true, error: null });
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), LOADING_DELAY);
-    return () => clearTimeout(t);
+    supabase
+      .from('categories')
+      .select('id, name, emoji')
+      .eq('is_active', true)
+      .order('display_order')
+      .then(({ data, error: err }) => {
+        setState({ categories: data || [], loading: false, error: err || null });
+      });
   }, []);
 
-  return { categories: CATEGORIES, loading, error: null };
+  return state;
 };
 
 export const useOfferProducts = () => {
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), LOADING_DELAY);
-    return () => clearTimeout(t);
+    supabase
+      .from('products')
+      .select(PRODUCT_SELECT)
+      .eq('is_active', true)
+      .not('offer_price', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setProducts((data || []).filter((p) => p.offer_price < p.price));
+        setLoading(false);
+      });
   }, []);
 
-  return { products: getOfferProducts(), loading, error: null };
+  return { products, loading };
 };
