@@ -17,11 +17,10 @@ export default function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       style={{
-        background: 'rgba(255,255,255,0.97)',
+        background: 'rgba(245,242,236,0.97)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid var(--border-light)',
-        boxShadow: '0 -4px 24px rgba(15,23,42,.08)',
+        borderTop: '1px solid var(--border)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
@@ -32,27 +31,20 @@ export default function BottomNav() {
             to={to}
             end={exact}
             className="flex-1 flex flex-col items-center justify-center gap-1 relative"
+            style={{ textDecoration: 'none' }}
           >
             {({ isActive }) => (
               <>
-                {/* Icon container */}
                 <div
-                  className="relative flex items-center justify-center rounded-2xl transition-all duration-200"
-                  style={isActive ? {
-                    width: 44,
-                    height: 32,
-                    background: 'var(--teal-50)',
-                  } : {
-                    width: 44,
-                    height: 32,
-                  }}
+                  className="flex items-center justify-center transition-all duration-200"
+                  style={{ width: 36, height: 28, position: 'relative' }}
                 >
                   {label === 'Cart' ? (
                     <span className="relative">
                       <Icon
-                        size={20}
-                        strokeWidth={isActive ? 2.5 : 1.8}
-                        style={{ color: isActive ? 'var(--teal-600)' : 'var(--gray-400)' }}
+                        size={19}
+                        strokeWidth={isActive ? 2.2 : 1.6}
+                        style={{ color: isActive ? 'var(--brand-800)' : 'var(--text-muted)' }}
                       />
                       {cartCount > 0 && (
                         <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
@@ -60,25 +52,37 @@ export default function BottomNav() {
                     </span>
                   ) : (
                     <Icon
-                      size={20}
-                      strokeWidth={isActive ? 2.5 : 1.8}
-                      style={{ color: isActive ? 'var(--teal-600)' : 'var(--gray-400)' }}
+                      size={19}
+                      strokeWidth={isActive ? 2.2 : 1.6}
+                      style={{ color: isActive ? 'var(--brand-800)' : 'var(--text-muted)' }}
                     />
                   )}
                 </div>
-
-                {/* Label */}
                 <span
                   style={{
-                    fontSize: '10px',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '9.5px',
                     fontWeight: isActive ? 700 : 400,
-                    color: isActive ? 'var(--teal-600)' : 'var(--gray-400)',
+                    color: isActive ? 'var(--brand-800)' : 'var(--text-light)',
                     lineHeight: 1,
-                    letterSpacing: isActive ? '.01em' : 0,
+                    letterSpacing: isActive ? '.03em' : '.01em',
                   }}
                 >
                   {label}
                 </span>
+                {/* Active indicator dot */}
+                {isActive && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: 4,
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      background: 'var(--brand-800)',
+                    }}
+                  />
+                )}
               </>
             )}
           </NavLink>

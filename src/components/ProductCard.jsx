@@ -1,8 +1,8 @@
-import { Plus, Minus, Star } from 'lucide-react'
+import { Plus, Minus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../store/cartStore'
 import { formatPrice, getDiscountPercent } from '../utils/format'
-import { STOCK_STATUS, PLACEHOLDER_IMAGE } from '../constants'
+import { PLACEHOLDER_IMAGE } from '../constants'
 import toast from 'react-hot-toast'
 
 export default function ProductCard({ product }) {
@@ -19,65 +19,110 @@ export default function ProductCard({ product }) {
     e.stopPropagation()
     if (isOutOfStock) return
     addItem(product)
-    toast.success(`${product.name} added!`, { duration: 1200 })
+    toast.success(`${product.name} added`, { duration: 1000 })
   }
   const handleIncrease = (e) => { e.stopPropagation(); updateQuantity(product.id, qty + 1) }
   const handleDecrease = (e) => { e.stopPropagation(); updateQuantity(product.id, qty - 1) }
 
   return (
-    <div
+    <article
       onClick={() => navigate(`/product/${product.id}`)}
-      className="card card-hover overflow-hidden cursor-pointer flex flex-col"
-      style={{ borderRadius: 'var(--radius-lg)' }}
+      className="card-hover cursor-pointer flex flex-col"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+        fontFamily: 'var(--font-body)',
+      }}
     >
-      {/* Image area */}
-      <div className="relative overflow-hidden" style={{ height: 148, background: 'var(--brand-25)' }}>
-
-        {/* Discount badge — top-left pill */}
+      {/* ── Image ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{ height: 152, background: 'var(--warm-50)', flexShrink: 0 }}
+      >
+        {/* Discount badge */}
         {hasOffer && (
           <div
-            className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white font-black rounded-full px-2 py-0.5"
-            style={{ background: 'var(--red-600)', fontSize: 10, letterSpacing: '.3px' }}
+            className="absolute top-2 left-2 z-10"
+            style={{
+              background: 'var(--brand-800)',
+              color: '#fff',
+              fontFamily: 'var(--font-body)',
+              fontSize: '9px',
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 'var(--radius-xs)',
+              letterSpacing: '.4px',
+              textTransform: 'uppercase',
+            }}
           >
-            {discount}% OFF
+            −{discount}%
           </div>
         )}
         {!hasOffer && product.offer_label && (
           <div
-            className="absolute top-2 left-2 z-10 text-white font-black rounded-full px-2 py-0.5"
-            style={{ background: 'var(--amber-600)', fontSize: 10 }}
+            className="absolute top-2 left-2 z-10"
+            style={{
+              background: 'var(--amber-600)',
+              color: '#fff',
+              fontFamily: 'var(--font-body)',
+              fontSize: '9px',
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 'var(--radius-xs)',
+              letterSpacing: '.4px',
+            }}
           >
             {product.offer_label}
           </div>
         )}
 
-        {/* Limited stock badge */}
         {product.stock_status === 'limited' && (
           <div
-            className="absolute top-2 right-2 z-10 font-semibold rounded-full px-2 py-0.5"
-            style={{ background: 'var(--amber-100)', color: 'var(--amber-700)', fontSize: 9 }}
+            className="absolute top-2 right-2 z-10"
+            style={{
+              background: 'var(--amber-50)',
+              color: 'var(--amber-800)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '9px',
+              fontWeight: 600,
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-xs)',
+              border: '1px solid var(--amber-100)',
+            }}
           >
-            Few Left
+            Few left
           </div>
         )}
 
         <img
           src={product.image_url || PLACEHOLDER_IMAGE}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300"
+          className="w-full h-full object-cover transition-transform duration-500"
           onError={(e) => { e.target.src = PLACEHOLDER_IMAGE }}
           loading="lazy"
+          style={{ transformOrigin: 'center' }}
         />
 
-        {/* Out of stock overlay */}
         {isOutOfStock && (
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ background: 'rgba(15,23,42,.55)', backdropFilter: 'blur(1px)' }}
+            style={{ background: 'rgba(245,242,236,.75)', backdropFilter: 'blur(2px)' }}
           >
             <span
-              className="text-white text-xs font-bold px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(220,38,38,.9)', fontSize: '0.7rem' }}
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '10px',
+                fontWeight: 700,
+                color: 'var(--text-mid)',
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                background: 'var(--bg-card)',
+                padding: '5px 12px',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--border)',
+              }}
             >
               Out of Stock
             </span>
@@ -85,82 +130,121 @@ export default function ProductCard({ product }) {
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-3 flex flex-col gap-1.5 flex-1">
+      {/* ── Content ── */}
+      <div className="flex flex-col flex-1 p-3 gap-1">
         {/* Name */}
         <h3
-          className="text-sm font-semibold leading-tight line-clamp-2"
-          style={{ color: 'var(--text-dark)', letterSpacing: '-.01em' }}
+          className="leading-tight line-clamp-2"
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: 'var(--text-dark)',
+            letterSpacing: '-.01em',
+          }}
         >
           {product.name}
         </h3>
 
         {/* Tamil name */}
         {product.tamil_name && (
-          <p className="text-xs font-medium" style={{ color: 'var(--brand-600)', lineHeight: 1.3 }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
             {product.tamil_name}
           </p>
         )}
 
         {/* Unit */}
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{product.unit}</p>
+        <p style={{ fontSize: '11px', color: 'var(--text-light)', fontFamily: 'var(--font-body)' }}>
+          {product.unit}
+        </p>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Price row */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-base font-bold" style={{ color: 'var(--brand-700)', letterSpacing: '-.01em' }}>
+        {/* Price */}
+        <div className="flex items-baseline gap-1.5 mt-1">
+          <span style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '15px',
+            fontWeight: 700,
+            color: 'var(--text-dark)',
+            letterSpacing: '-.02em',
+          }}>
             {formatPrice(displayPrice)}
           </span>
           {hasOffer && (
-            <span className="text-xs line-through" style={{ color: 'var(--text-light)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-light)', textDecoration: 'line-through', fontFamily: 'var(--font-body)' }}>
               {formatPrice(product.price)}
             </span>
           )}
         </div>
 
-        {/* Cart controls */}
+        {/* Cart control */}
         {qty === 0 ? (
           <button
             onClick={handleAdd}
             disabled={isOutOfStock}
-            className="w-full h-8 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 btn-ripple transition-all"
+            className="btn-ripple transition-all"
             style={isOutOfStock ? {
-              background: 'var(--gray-100)',
+              width: '100%',
+              height: 32,
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--warm-100)',
               color: 'var(--text-light)',
               cursor: 'not-allowed',
+              fontFamily: 'var(--font-body)',
+              fontSize: '12px',
+              fontWeight: 600,
+              border: 'none',
             } : {
-              background: 'var(--brand-600)',
+              width: '100%',
+              height: 32,
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--brand-800)',
               color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              fontFamily: 'var(--font-body)',
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '.02em',
             }}
           >
-            <Plus size={14} strokeWidth={2.5} />
+            <Plus size={13} strokeWidth={2.5} />
             Add
           </button>
         ) : (
           <div
-            className="flex items-center justify-between rounded-xl h-8 px-1.5"
-            style={{ background: 'var(--brand-600)' }}
+            className="flex items-center justify-between px-1.5"
+            style={{
+              height: 32,
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--brand-800)',
+            }}
           >
             <button
               onClick={handleDecrease}
               className="qty-btn"
-              style={{ color: '#fff', background: 'rgba(255,255,255,.15)' }}
+              style={{ color: '#fff', background: 'rgba(255,255,255,.12)' }}
             >
-              <Minus size={13} strokeWidth={2.5} />
+              <Minus size={12} strokeWidth={2.5} />
             </button>
-            <span className="text-white font-bold text-sm tracking-wide">{qty}</span>
+            <span style={{ color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '13px' }}>
+              {qty}
+            </span>
             <button
               onClick={handleIncrease}
               className="qty-btn"
-              style={{ color: '#fff', background: 'rgba(255,255,255,.15)' }}
+              style={{ color: '#fff', background: 'rgba(255,255,255,.12)' }}
             >
-              <Plus size={13} strokeWidth={2.5} />
+              <Plus size={12} strokeWidth={2.5} />
             </button>
           </div>
         )}
       </div>
-    </div>
+    </article>
   )
 }

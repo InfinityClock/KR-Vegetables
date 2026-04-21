@@ -91,10 +91,11 @@ function DesktopSidebar() {
               padding: '10px 14px',
               borderRadius: 'var(--radius-md)',
               textDecoration: 'none',
-              fontWeight: isActive ? 600 : 500,
-              fontSize: 14,
-              color: isActive ? 'var(--teal-700)' : 'var(--text-mid)',
-              background: isActive ? 'var(--teal-50)' : 'transparent',
+              fontWeight: isActive ? 600 : 400,
+              fontSize: 13,
+              fontFamily: 'var(--font-body)',
+              color: isActive ? 'var(--brand-800)' : 'var(--text-muted)',
+              background: isActive ? 'var(--brand-50)' : 'transparent',
               transition: 'background .15s, color .15s',
               letterSpacing: isActive ? '-.01em' : 0,
             })}
@@ -103,17 +104,12 @@ function DesktopSidebar() {
               <>
                 <span
                   className="relative flex items-center justify-center rounded-lg"
-                  style={isActive ? {
-                    width: 32, height: 32,
-                    background: 'var(--teal-100)',
-                  } : {
-                    width: 32, height: 32,
-                  }}
+                  style={{ width: 32, height: 32 }}
                 >
                   <Icon
                     size={17}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                    style={{ color: isActive ? 'var(--teal-600)' : 'var(--text-muted)' }}
+                    strokeWidth={isActive ? 2.2 : 1.6}
+                    style={{ color: isActive ? 'var(--brand-800)' : 'var(--text-light)' }}
                   />
                   {isCart && cartCount > 0 && (
                     <span className="cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
@@ -127,18 +123,20 @@ function DesktopSidebar() {
       </nav>
 
       {/* Promo box */}
-      <div className="mx-3 mb-3 p-4 rounded-xl" style={{ background: 'var(--teal-50)', border: '1px solid var(--teal-100)' }}>
-        <p className="text-xs font-bold mb-1" style={{ color: 'var(--teal-700)' }}>🚚 Free Delivery</p>
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--teal-600)' }}>
-          Order above ₹299 and get free same-day delivery.
+      <div className="mx-3 mb-3 p-4" style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--brand-600)', marginBottom: 4 }}>
+          Free Delivery
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+          Order above ₹299 — same-day, free.
         </p>
       </div>
 
       {/* Footer */}
       <div className="px-5 py-4" style={{ borderTop: '1px solid var(--border-light)' }}>
         <div className="flex items-center gap-2">
-          <Leaf size={13} style={{ color: 'var(--teal-500)' }} />
-          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+          <Leaf size={12} style={{ color: 'var(--brand-400)' }} />
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)' }}>
             100% Fresh · Farm to Door
           </p>
         </div>
