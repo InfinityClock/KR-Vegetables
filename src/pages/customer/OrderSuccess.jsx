@@ -1,28 +1,40 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle, Package, ShoppingBag, Share2 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { WHATSAPP_NUMBER } from '../../constants'
 
 export default function OrderSuccess() {
-  const { orderId } = useParams()
-  const navigate = useNavigate()
-  const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { orderId }  = useParams()
+  const navigate     = useNavigate()
+  const { state, search } = useLocation()
 
+  // Order may come from navigation state (immediately after checkout)
+  // or we show generic success if user landed via Zoho redirect
+  const [order, setOrder] = useState(state?.order || null)
+  const [loading, setLoading] = useState(!state?.order)
+
+  const params = new URLSearchParams(search)
+  const paymentStatus = params.get('payment') // 'success' from Zoho redirect
+
+  // When Zoho redirects back with ?payment=success, fetch the order
+  // via service key since RLS may block anonymous reads
   useEffect(() => {
-    if (!orderId) return
-    supabase
-      .from('orders')
-      .select('*, order_items(product_name, quantity, unit), addresses(*)')
-      .eq('id', orderId)
-      .single()
-      .then(({ data }) => { setOrder(data); setLoading(false) })
+    if (order || !orderId) { setLoading(false); return }
+
+    // Fetch via the admin-orders endpoint which uses service key
+    fetch(`/api/admin-orders?orderId=${orderId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const match = Array.isArray(data) ? data.find((o) => o.id === orderId) : null
+        setOrder(match || null)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [orderId])
 
   const handleShare = () => {
-    const msg = `🌿 My order ${order?.order_number} is placed at KR Vegetables & Fruits! Fresh veggies arriving at ${order?.delivery_slot}. 🚚`
+    const msg = `🌿 My order ${order?.order_number} is placed at KR Vegetables & Fruits! Delivery slot: ${order?.delivery_slot}. 🚚`
     if (navigator.share) {
       navigator.share({ title: 'Order Placed!', text: msg, url: window.location.origin })
     } else {
@@ -32,69 +44,169 @@ export default function OrderSuccess() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center p-6 page-enter">
-      {/* Animated checkmark */}
-      <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
-        <CheckCircle size={52} className="text-[#2D6A4F]" strokeWidth={1.5} />
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6 page-enter"
+      style={{ background: 'var(--bg-base)' }}
+    >
+      {/* Checkmark */}
+      <div
+        style={{
+          width: 88, height: 88,
+          borderRadius: '50%',
+          background: 'var(--brand-50)',
+          border: '2px solid var(--brand-100)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <CheckCircle size={48} strokeWidth={1.5} style={{ color: 'var(--brand-700)' }} />
       </div>
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center" style={{ fontFamily: 'Playfair Display, serif' }}>
-        Order Placed! 🎉
+      <h1
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '2.2rem',
+          fontWeight: 600,
+          color: 'var(--text-dark)',
+          letterSpacing: '-.03em',
+          lineHeight: 1.15,
+          textAlign: 'center',
+          marginBottom: 6,
+        }}
+      >
+        Order Placed!
       </h1>
 
-      {order && (
-        <>
-          <div className="bg-[#2D6A4F]/10 px-6 py-2 rounded-2xl mb-2">
-            <span className="text-[#2D6A4F] font-bold text-lg tracking-wide">{order.order_number}</span>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Placed on {formatDateTime(order.placed_at)}</p>
-          <p className="text-[#2D6A4F] font-semibold text-sm mb-6">🕐 Delivery slot: {order.delivery_slot}</p>
+      {paymentStatus === 'success' && (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--brand-700)', fontWeight: 600, marginBottom: 4 }}>
+          ✅ Payment confirmed
+        </p>
+      )}
 
-          {/* Order details card */}
-          <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-100 p-4 mb-6 space-y-2">
-            <h3 className="text-sm font-bold text-gray-800 mb-3">
-              {order.order_items?.length} items ordered
-            </h3>
-            {order.order_items?.map((item, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span className="text-gray-600">{item.product_name} × {item.quantity}</span>
-              </div>
-            ))}
-            <div className="border-t border-gray-100 pt-2 flex justify-between font-bold text-sm">
-              <span>Total paid</span>
-              <span className="text-[#2D6A4F]">{formatPrice(order.total_amount)}</span>
+      {state?.name && (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 20 }}>
+          Thank you, {state.name}!
+        </p>
+      )}
+
+      {order && !loading && (
+        <>
+          <div style={{
+            background: 'var(--brand-50)',
+            border: '1px solid var(--brand-100)',
+            borderRadius: 'var(--radius-full)',
+            padding: '6px 20px',
+            marginBottom: 6,
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-800)', letterSpacing: '.06em' }}>
+              {order.order_number}
+            </span>
+          </div>
+
+          {order.placed_at && (
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: 4 }}>
+              Placed on {formatDateTime(order.placed_at)}
+            </p>
+          )}
+          {order.delivery_slot && (
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--brand-700)', fontWeight: 600, marginBottom: 24 }}>
+              🕐 Delivery slot: {order.delivery_slot}
+            </p>
+          )}
+
+          {/* Order details */}
+          <div style={{
+            width: '100%', maxWidth: 380,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px',
+            marginBottom: 24,
+          }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
+              {order.order_items?.length ?? 0} items ordered
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {order.order_items?.map((item, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-mid)' }}>
+                    {item.product_name} × {item.quantity}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="text-xs text-gray-500">
+            <div style={{ height: 1, background: 'var(--border-light)', margin: '10px 0' }} />
+            <div className="flex justify-between">
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)' }}>Total</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: 'var(--brand-800)' }}>
+                {formatPrice(order.total_amount)}
+              </span>
+            </div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: 6 }}>
               {order.payment_method === 'cod' ? '💵 Cash on Delivery' : '✅ Paid Online'}
-            </div>
+            </p>
           </div>
         </>
       )}
 
+      {loading && (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 24 }}>
+          Loading order details…
+        </p>
+      )}
+
+      {!order && !loading && (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 24, textAlign: 'center', maxWidth: 300 }}>
+          Your order is confirmed! We'll send updates via WhatsApp.
+        </p>
+      )}
+
       {/* CTAs */}
-      <div className="w-full max-w-sm space-y-3">
-        <button
-          onClick={() => navigate(`/track/${orderId}`)}
-          className="w-full h-14 bg-[#2D6A4F] rounded-2xl text-white font-bold flex items-center justify-center gap-2"
-        >
-          <Package size={20} />
-          Track My Order
-        </button>
+      <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {orderId && (
+          <button
+            onClick={() => navigate(`/track/${orderId}`)}
+            className="btn-ripple flex items-center justify-center gap-2"
+            style={{
+              width: '100%', height: 52,
+              background: 'var(--brand-800)', color: '#fff',
+              borderRadius: 'var(--radius-sm)', border: 'none',
+              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <Package size={18} /> Track My Order
+          </button>
+        )}
 
         <button
           onClick={handleShare}
-          className="w-full h-12 border-2 border-[#2D6A4F] rounded-2xl text-[#2D6A4F] font-bold flex items-center justify-center gap-2"
+          className="flex items-center justify-center gap-2"
+          style={{
+            width: '100%', height: 44,
+            border: '1.5px solid var(--brand-800)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'transparent', color: 'var(--brand-800)',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+            cursor: 'pointer',
+          }}
         >
-          <Share2 size={18} />
-          Share on WhatsApp
+          <Share2 size={16} /> Share on WhatsApp
         </button>
 
         <button
           onClick={() => navigate('/')}
-          className="w-full h-12 bg-white border border-gray-200 rounded-2xl text-gray-700 font-semibold flex items-center justify-center gap-2"
+          className="flex items-center justify-center gap-2"
+          style={{
+            width: '100%', height: 44,
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg-card)', color: 'var(--text-mid)',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500,
+            cursor: 'pointer',
+          }}
         >
-          <ShoppingBag size={18} />
-          Continue Shopping
+          <ShoppingBag size={16} /> Continue Shopping
         </button>
       </div>
     </div>

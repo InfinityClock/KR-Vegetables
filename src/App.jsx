@@ -179,7 +179,7 @@ function AppRoutes() {
     }
   }, [])
 
-  if (!onboardingDone && !location.pathname.startsWith('/admin')) return <Onboarding />
+  if (!onboardingDone && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/order-success') && !location.pathname.startsWith('/track')) return <Onboarding />
 
   return (
     <Routes>

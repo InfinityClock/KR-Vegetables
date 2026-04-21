@@ -57,26 +57,6 @@ export const useCartStore = create(
 
       setDeliverySlot: (slot) => set({ deliverySlot: slot }),
       setNotes: (notes) => set({ notes }),
-
-      // Computed
-      get itemCount() {
-        return get().items.reduce((sum, i) => sum + i.quantity, 0)
-      },
-
-      get subtotal() {
-        return get().items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-      },
-
-      get deliveryFee() {
-        const sub = get().items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-        return sub >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
-      },
-
-      get total() {
-        const sub = get().items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-        const fee = sub >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
-        return sub + fee
-      },
     }),
     {
       name: 'kr-cart',
