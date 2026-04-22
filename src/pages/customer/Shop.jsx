@@ -110,63 +110,33 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* All chips + Sort row */}
-        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5">
+        {/* Category pills + Sort */}
+        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => { setSelectedCategory(''); setSearchParams({}) }}
             className={`filter-chip flex-shrink-0 ${!selectedCategory ? 'active' : ''}`}
           >
             All
           </button>
-          <div className="flex-1 min-w-0" />
-          <button
-            onClick={() => setShowSortSheet(true)}
-            className={`filter-chip flex-shrink-0 gap-1.5 ${sort !== 'default' ? 'active' : ''}`}
-          >
-            <SlidersHorizontal size={12} />
-            {sort !== 'default' ? SORT_OPTIONS.find(o => o.value === sort)?.label : 'Sort'}
-          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => { setSelectedCategory(cat.id); setSearchParams({ category: cat.id }) }}
+              className={`filter-chip flex-shrink-0 ${selectedCategory === cat.id ? 'active' : ''}`}
+            >
+              {cat.emoji} {cat.name}
+            </button>
+          ))}
+          <div className="flex-shrink-0 ml-auto pl-2">
+            <button
+              onClick={() => setShowSortSheet(true)}
+              className={`filter-chip flex-shrink-0 gap-1.5 ${sort !== 'default' ? 'active' : ''}`}
+            >
+              <SlidersHorizontal size={12} />
+              {sort !== 'default' ? SORT_OPTIONS.find(o => o.value === sort)?.label : 'Sort'}
+            </button>
+          </div>
         </div>
-
-        {/* Category pills — vegetables */}
-        {categories.filter((c) => c.type === 'vegetable').length > 0 && (
-          <div className="flex items-center gap-2 px-4 lg:px-8 pt-1.5">
-            <span className="text-xs font-bold shrink-0 w-14" style={{ color: 'var(--brand-700)' }}>
-              🥦 Vegs
-            </span>
-            <div className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
-              {categories.filter((c) => c.type === 'vegetable').map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setSearchParams({ category: cat.id }) }}
-                  className={`filter-chip flex-shrink-0 ${selectedCategory === cat.id ? 'active' : ''}`}
-                >
-                  {cat.emoji} {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Category pills — fruits */}
-        {categories.filter((c) => c.type === 'fruit').length > 0 && (
-          <div className="flex items-center gap-2 px-4 lg:px-8 pt-1.5">
-            <span className="text-xs font-bold shrink-0 w-14" style={{ color: 'var(--amber-600)' }}>
-              🍎 Fruits
-            </span>
-            <div className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
-              {categories.filter((c) => c.type === 'fruit').map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setSearchParams({ category: cat.id }) }}
-                  className={`filter-chip flex-shrink-0 ${selectedCategory === cat.id ? 'active' : ''}`}
-                >
-                  {cat.emoji} {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Results summary */}
