@@ -34,10 +34,13 @@ export default function AdminDelivery() {
 
   const saveSlots = async () => {
     setSaving(true)
-    await supabase
-      .from('store_settings')
-      .upsert({ key: 'delivery_slots', value: JSON.stringify(slots) }, { onConflict: 'key' })
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key: 'delivery_slots', value: JSON.stringify(slots) } }),
+    })
     setSaving(false)
+    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Save failed'); return }
     toast.success('Delivery slots saved!')
   }
 

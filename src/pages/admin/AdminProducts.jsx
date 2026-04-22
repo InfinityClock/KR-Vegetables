@@ -79,11 +79,14 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       offer_price: form.offer_price ? Number(form.offer_price) : null,
       offer_label: form.offer_label || null,
     }
-    const { data, error } = product
-      ? await supabase.from('products').update(payload).eq('id', product.id).select().single()
-      : await supabase.from('products').insert(payload).select().single()
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'products', action: product ? 'update' : 'create', id: product?.id, payload }),
+    })
+    const data = await res.json()
     setSaving(false)
-    if (error) { toast.error(error.message); return }
+    if (!res.ok) { toast.error(data.error || 'Save failed'); return }
     toast.success(product ? 'Product updated!' : 'Product added!')
     onSaved(data)
     onClose()
@@ -277,7 +280,7 @@ export default function AdminProducts() {
     let q = supabase
       .from('products')
       .select('*, categories(name, emoji)')
-      .order('sort_order', { nullsFirst: false })
+      .order('created_at', { ascending: false })
     if (search)           q = q.ilike('name', `%${search}%`)
     if (selectedCategory) q = q.eq('category_id', selectedCategory)
     const { data, error } = await q
@@ -286,35 +289,50 @@ export default function AdminProducts() {
     setAllLoading(false)
   }
 
+  const adminWrite = async (action, id, payload) => {
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'products', action, id, payload }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }
+
   const handleToggleActive = async (product) => {
-    const { error } = await supabase.from('products').update({ is_active: !product.is_active }).eq('id', product.id)
-    if (error) { toast.error(error.message); return }
-    setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p))
-    toast.success(product.is_active ? 'Product hidden' : 'Product visible')
+    try {
+      await adminWrite('update', product.id, { is_active: !product.is_active })
+      setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p))
+      toast.success(product.is_active ? 'Product hidden' : 'Product visible')
+    } catch (e) { toast.error(e.message) }
   }
 
   const handleStockChange = async (product, newStatus) => {
-    const { error } = await supabase.from('products').update({ stock_status: newStatus }).eq('id', product.id)
-    if (error) { toast.error(error.message); return }
-    setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock_status: newStatus } : p))
-    toast.success('Stock updated')
+    try {
+      await adminWrite('update', product.id, { stock_status: newStatus })
+      setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock_status: newStatus } : p))
+      toast.success('Stock updated')
+    } catch (e) { toast.error(e.message) }
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this product? This cannot be undone.')) return
-    const { error } = await supabase.from('products').delete().eq('id', id)
-    if (error) { toast.error(error.message); return }
-    setAllProducts(prev => prev.filter(p => p.id !== id))
-    toast.success('Product deleted')
+    try {
+      await adminWrite('delete', id)
+      setAllProducts(prev => prev.filter(p => p.id !== id))
+      toast.success('Product deleted')
+    } catch (e) { toast.error(e.message) }
   }
 
   const handlePriceChange = async (product, newPrice) => {
     const price = Number(newPrice)
     if (!price || price === product.price) return
-    const { error } = await supabase.from('products').update({ price }).eq('id', product.id)
-    if (error) { toast.error(error.message); return }
-    setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, price } : p))
-    toast.success('Price updated')
+    try {
+      await adminWrite('update', product.id, { price })
+      setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, price } : p))
+      toast.success('Price updated')
+    } catch (e) { toast.error(e.message) }
   }
 
   const stockColors = {
