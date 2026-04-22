@@ -8,7 +8,6 @@ function CategoryModal({ category, onClose, onSaved }) {
   const [form, setForm] = useState({
     name: category?.name || '',
     emoji: category?.emoji || '🥬',
-    type: category?.type || 'vegetable',
     display_order: category?.display_order || 0,
     is_active: category?.is_active ?? true,
   })
@@ -91,27 +90,6 @@ function CategoryModal({ category, onClose, onSaved }) {
           />
         </div>
 
-        <div>
-          <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>Type</label>
-          <div className="flex gap-2">
-            {['vegetable', 'fruit', 'other'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setForm({ ...form, type: t })}
-                className="flex-1 h-10 rounded-xl text-xs font-semibold capitalize transition-all"
-                style={
-                  form.type === t
-                    ? { background: 'var(--brand-700)', color: '#fff', border: '1.5px solid var(--brand-700)' }
-                    : { background: 'var(--gray-50)', color: 'var(--text-mid)', border: '1.5px solid var(--border)' }
-                }
-              >
-                {t === 'vegetable' ? '🥦 ' : t === 'fruit' ? '🍎 ' : '📦 '}{t}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
@@ -185,8 +163,6 @@ export default function AdminCategories() {
     } catch (e) { toast.error(e.message) }
   }
 
-  const typeLabel = { vegetable: { label: '🥦 Veg', color: 'var(--brand-700)', bg: 'var(--brand-50)' }, fruit: { label: '🍎 Fruit', color: '#D97706', bg: '#FEF3C7' }, other: { label: '📦 Other', color: 'var(--text-mid)', bg: 'var(--gray-100)' } }
-
   return (
     <div className="p-4 lg:p-6 max-w-3xl">
       <div className="flex items-center justify-between mb-6">
@@ -231,7 +207,6 @@ export default function AdminCategories() {
           style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
         >
           {categories.map((cat, idx) => {
-            const tl = typeLabel[cat.type] || typeLabel.other
             return (
               <div
                 key={cat.id}
@@ -248,12 +223,6 @@ export default function AdminCategories() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>{cat.name}</p>
-                    <span
-                      className="text-xs font-semibold px-1.5 py-0.5 rounded-full"
-                      style={{ background: tl.bg, color: tl.color }}
-                    >
-                      {tl.label}
-                    </span>
                   </div>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Order: {cat.display_order}</p>
                 </div>
