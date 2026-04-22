@@ -53,11 +53,16 @@ export default function AdminSettings() {
 
   const updateSetting = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }))
 
+  const adminUpsert = async (key, value) =>
+    fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key, value: String(value) } }),
+    })
+
   const saveSettings = async () => {
     setSaving(true)
-    for (const [key, value] of Object.entries(settings)) {
-      await supabase.from('store_settings').upsert({ key, value: String(value) }, { onConflict: 'key' })
-    }
+    await Promise.all(Object.entries(settings).map(([key, value]) => adminUpsert(key, value)))
     setSaving(false)
     toast.success('Settings saved!')
   }
@@ -65,7 +70,7 @@ export default function AdminSettings() {
   const toggleStoreOpen = async () => {
     const newVal = settings.store_open === 'true' ? 'false' : 'true'
     updateSetting('store_open', newVal)
-    await supabase.from('store_settings').upsert({ key: 'store_open', value: newVal }, { onConflict: 'key' })
+    await adminUpsert('store_open', newVal)
     toast.success(newVal === 'true' ? 'Store is now OPEN 🟢' : 'Store is now CLOSED 🔴')
   }
 

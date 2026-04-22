@@ -19,18 +19,21 @@ function OfferModal({ product, onClose, onSaved }) {
 
   const save = async () => {
     setSaving(true)
-    const { data, error } = await supabase
-      .from('products')
-      .update({
-        offer_price: offerPrice ? Number(offerPrice) : null,
-        offer_label: offerLabel || null,
-        offer_expires_at: expiresAt || null,
-      })
-      .eq('id', product.id)
-      .select()
-      .single()
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'products', action: 'update', id: product.id,
+        payload: {
+          offer_price: offerPrice ? Number(offerPrice) : null,
+          offer_label: offerLabel || null,
+          offer_expires_at: expiresAt || null,
+        },
+      }),
+    })
+    const data = await res.json()
     setSaving(false)
-    if (error) { toast.error(error.message); return }
+    if (!res.ok) { toast.error(data.error || 'Save failed'); return }
     toast.success('Offer updated!')
     onSaved(data)
     onClose()
@@ -167,11 +170,12 @@ export default function AdminOffers() {
   }, [])
 
   const removeOffer = async (productId) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ offer_price: null, offer_label: null, offer_expires_at: null })
-      .eq('id', productId)
-    if (error) { toast.error(error.message); return }
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'products', action: 'update', id: productId, payload: { offer_price: null, offer_label: null, offer_expires_at: null } }),
+    })
+    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Failed'); return }
     setProducts((prev) => prev.map((p) => p.id === productId ? { ...p, offer_price: null, offer_label: null } : p))
     toast.success('Offer removed')
   }

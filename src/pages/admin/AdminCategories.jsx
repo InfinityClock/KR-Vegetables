@@ -17,11 +17,14 @@ function CategoryModal({ category, onClose, onSaved }) {
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return }
     setSaving(true)
-    const { data, error } = category
-      ? await supabase.from('categories').update(form).eq('id', category.id).select().single()
-      : await supabase.from('categories').insert(form).select().single()
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'categories', action: category ? 'update' : 'create', id: category?.id, payload: form }),
+    })
+    const data = await res.json()
     setSaving(false)
-    if (error) { toast.error(error.message); return }
+    if (!res.ok) { toast.error(data.error || 'Save failed'); return }
     toast.success(category ? 'Category updated!' : 'Category created!')
     onSaved(data)
     onClose()
@@ -155,17 +158,31 @@ export default function AdminCategories() {
       .then(({ data }) => { setCategories(data || []); setLoading(false) })
   }, [])
 
+  const adminWrite = async (action, id, payload) => {
+    const res = await fetch('/api/admin-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'categories', action, id, payload }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }
+
   const handleToggle = async (cat) => {
-    await supabase.from('categories').update({ is_active: !cat.is_active }).eq('id', cat.id)
-    setCategories((prev) => prev.map((c) => c.id === cat.id ? { ...c, is_active: !c.is_active } : c))
+    try {
+      await adminWrite('update', cat.id, { is_active: !cat.is_active })
+      setCategories((prev) => prev.map((c) => c.id === cat.id ? { ...c, is_active: !c.is_active } : c))
+    } catch (e) { toast.error(e.message) }
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this category? Products in this category will not be deleted.')) return
-    const { error } = await supabase.from('categories').delete().eq('id', id)
-    if (error) { toast.error(error.message); return }
-    setCategories((prev) => prev.filter((c) => c.id !== id))
-    toast.success('Category deleted')
+    try {
+      await adminWrite('delete', id)
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      toast.success('Category deleted')
+    } catch (e) { toast.error(e.message) }
   }
 
   const typeLabel = { vegetable: { label: '🥦 Veg', color: 'var(--brand-700)', bg: 'var(--brand-50)' }, fruit: { label: '🍎 Fruit', color: '#D97706', bg: '#FEF3C7' }, other: { label: '📦 Other', color: 'var(--text-mid)', bg: 'var(--gray-100)' } }
