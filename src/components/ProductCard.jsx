@@ -27,69 +27,68 @@ export default function ProductCard({ product }) {
   return (
     <article
       onClick={() => navigate(`/product/${product.id}`)}
-      className="card-hover cursor-pointer flex flex-col"
+      className="cursor-pointer flex flex-col"
       style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-light)',
-        borderRadius: 'var(--radius-md)',
+        background: '#fff',
+        borderRadius: 18,
+        boxShadow: '0 2px 12px rgba(28,26,23,.07)',
         overflow: 'hidden',
         fontFamily: 'var(--font-body)',
+        transition: 'box-shadow .22s ease, transform .2s cubic-bezier(.22,1,.36,1)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 10px 32px rgba(28,26,23,.14)'
+        e.currentTarget.style.transform = 'translateY(-3px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(28,26,23,.07)'
+        e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
       {/* ── Image ── */}
-      <div
-        className="relative overflow-hidden"
-        style={{ height: 152, background: 'var(--warm-50)', flexShrink: 0 }}
-      >
-        {/* Discount badge */}
+      <div className="relative overflow-hidden flex-shrink-0" style={{ height: 168, background: 'var(--warm-50)' }}>
         {hasOffer && (
           <div
-            className="absolute top-2 left-2 z-10"
+            className="absolute top-2.5 left-2.5 z-10"
             style={{
-              background: 'var(--brand-800)',
+              background: '#e53e3e',
               color: '#fff',
-              fontFamily: 'var(--font-body)',
-              fontSize: '9px',
-              fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 'var(--radius-xs)',
-              letterSpacing: '.4px',
-              textTransform: 'uppercase',
+              fontSize: '10px',
+              fontWeight: 800,
+              padding: '3px 9px',
+              borderRadius: 99,
+              letterSpacing: '.3px',
             }}
           >
-            −{discount}%
+            -{discount}%
           </div>
         )}
         {!hasOffer && product.offer_label && (
           <div
-            className="absolute top-2 left-2 z-10"
+            className="absolute top-2.5 left-2.5 z-10"
             style={{
               background: 'var(--amber-600)',
               color: '#fff',
-              fontFamily: 'var(--font-body)',
               fontSize: '9px',
               fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 'var(--radius-xs)',
-              letterSpacing: '.4px',
+              padding: '3px 9px',
+              borderRadius: 99,
             }}
           >
             {product.offer_label}
           </div>
         )}
-
         {product.stock_status === 'limited' && (
           <div
-            className="absolute top-2 right-2 z-10"
+            className="absolute top-2.5 right-2.5 z-10"
             style={{
-              background: 'var(--amber-50)',
-              color: 'var(--amber-800)',
-              fontFamily: 'var(--font-body)',
+              background: '#fff8e6',
+              color: '#b45309',
               fontSize: '9px',
               fontWeight: 600,
-              padding: '2px 6px',
-              borderRadius: 'var(--radius-xs)',
-              border: '1px solid var(--amber-100)',
+              padding: '3px 9px',
+              borderRadius: 99,
+              border: '1px solid #fde68a',
             }}
           >
             Few left
@@ -102,25 +101,23 @@ export default function ProductCard({ product }) {
           className="w-full h-full object-cover transition-transform duration-500"
           onError={(e) => { e.target.src = PLACEHOLDER_IMAGE }}
           loading="lazy"
-          style={{ transformOrigin: 'center' }}
         />
 
         {isOutOfStock && (
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ background: 'rgba(245,242,236,.75)', backdropFilter: 'blur(2px)' }}
+            style={{ background: 'rgba(250,248,244,.84)', backdropFilter: 'blur(3px)' }}
           >
             <span
               style={{
-                fontFamily: 'var(--font-body)',
                 fontSize: '10px',
                 fontWeight: 700,
                 color: 'var(--text-mid)',
-                letterSpacing: '.08em',
+                letterSpacing: '.07em',
                 textTransform: 'uppercase',
-                background: 'var(--bg-card)',
-                padding: '5px 12px',
-                borderRadius: 'var(--radius-full)',
+                background: '#fff',
+                padding: '5px 14px',
+                borderRadius: 99,
                 border: '1px solid var(--border)',
               }}
             >
@@ -131,48 +128,29 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex flex-col flex-1 p-3 gap-1">
-        {/* Name */}
+      <div className="flex flex-col flex-1" style={{ padding: '11px 12px 13px', gap: 2 }}>
         <h3
-          className="leading-tight line-clamp-2"
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '13px',
-            fontWeight: 600,
-            color: 'var(--text-dark)',
-            letterSpacing: '-.01em',
-          }}
+          className="line-clamp-2 leading-snug"
+          style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)', letterSpacing: '-.01em' }}
         >
           {product.name}
         </h3>
 
-        {/* Tamil name */}
         {product.tamil_name && (
-          <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-            {product.tamil_name}
-          </p>
+          <p style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>{product.tamil_name}</p>
         )}
 
-        {/* Unit */}
-        <p style={{ fontSize: '11px', color: 'var(--text-light)', fontFamily: 'var(--font-body)' }}>
-          {product.unit}
-        </p>
+        <p style={{ fontSize: '11px', color: 'var(--text-light)' }}>{product.unit}</p>
 
         <div className="flex-1" />
 
         {/* Price */}
-        <div className="flex items-baseline gap-1.5 mt-1">
-          <span style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '15px',
-            fontWeight: 700,
-            color: 'var(--text-dark)',
-            letterSpacing: '-.02em',
-          }}>
+        <div className="flex items-baseline gap-1.5 mt-1.5">
+          <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '-.02em' }}>
             {formatPrice(displayPrice)}
           </span>
           {hasOffer && (
-            <span style={{ fontSize: '11px', color: 'var(--text-light)', textDecoration: 'line-through', fontFamily: 'var(--font-body)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-light)', textDecoration: 'line-through' }}>
               {formatPrice(product.price)}
             </span>
           )}
@@ -183,34 +161,53 @@ export default function ProductCard({ product }) {
           <button
             onClick={handleAdd}
             disabled={isOutOfStock}
-            className="btn-ripple transition-all"
-            style={isOutOfStock ? {
-              width: '100%',
-              height: 32,
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--warm-100)',
-              color: 'var(--text-light)',
-              cursor: 'not-allowed',
-              fontFamily: 'var(--font-body)',
-              fontSize: '12px',
-              fontWeight: 600,
-              border: 'none',
-            } : {
-              width: '100%',
-              height: 32,
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--brand-800)',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              fontFamily: 'var(--font-body)',
-              fontSize: '12px',
-              fontWeight: 600,
-              letterSpacing: '.02em',
+            className="btn-ripple mt-2"
+            style={
+              isOutOfStock
+                ? {
+                    width: '100%',
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'var(--warm-100)',
+                    color: 'var(--text-light)',
+                    border: 'none',
+                    cursor: 'not-allowed',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-body)',
+                  }
+                : {
+                    width: '100%',
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'transparent',
+                    border: '1.5px solid var(--brand-500)',
+                    color: 'var(--brand-700)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-body)',
+                    letterSpacing: '.01em',
+                    transition: 'background .15s, color .15s',
+                  }
+            }
+            onMouseEnter={(e) => {
+              if (!isOutOfStock) {
+                e.currentTarget.style.background = 'var(--brand-800)'
+                e.currentTarget.style.color = '#fff'
+                e.currentTarget.style.borderColor = 'var(--brand-800)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isOutOfStock) {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--brand-700)'
+                e.currentTarget.style.borderColor = 'var(--brand-500)'
+              }
             }}
           >
             <Plus size={13} strokeWidth={2.5} />
@@ -218,29 +215,38 @@ export default function ProductCard({ product }) {
           </button>
         ) : (
           <div
-            className="flex items-center justify-between px-1.5"
+            className="flex items-center justify-between mt-2"
             style={{
-              height: 32,
-              borderRadius: 'var(--radius-sm)',
+              height: 36,
+              borderRadius: 10,
               background: 'var(--brand-800)',
+              paddingInline: 6,
             }}
           >
             <button
               onClick={handleDecrease}
-              className="qty-btn"
-              style={{ color: '#fff', background: 'rgba(255,255,255,.12)' }}
+              style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'rgba(255,255,255,.15)',
+                border: 'none', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              <Minus size={12} strokeWidth={2.5} />
+              <Minus size={11} strokeWidth={2.5} />
             </button>
-            <span style={{ color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '13px' }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-body)' }}>
               {qty}
             </span>
             <button
               onClick={handleIncrease}
-              className="qty-btn"
-              style={{ color: '#fff', background: 'rgba(255,255,255,.12)' }}
+              style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'rgba(255,255,255,.15)',
+                border: 'none', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              <Plus size={12} strokeWidth={2.5} />
+              <Plus size={11} strokeWidth={2.5} />
             </button>
           </div>
         )}

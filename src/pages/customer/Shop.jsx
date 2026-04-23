@@ -47,20 +47,23 @@ export default function Shop() {
   const selectedCategoryName = categories.find((c) => c.id === selectedCategory)?.name
 
   return (
-    <div className="pb-nav page-enter" style={{ background: '#fff', minHeight: '100dvh' }}>
+    <div className="pb-nav page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
       {/* Mobile topbar */}
       <PageTopBar title="Shop" showBack={false} />
 
       {/* Desktop heading */}
-      <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-4">
+      <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-5">
         <div>
           <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.2rem', fontWeight: 600,
+              letterSpacing: '-.03em', color: 'var(--text-dark)', lineHeight: 1.1,
+            }}
           >
             Browse All Products
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', marginTop: 4, color: 'var(--text-muted)' }}>
             Fresh · Daily · Delivered to your door
           </p>
         </div>
@@ -68,9 +71,9 @@ export default function Shop() {
           <button
             onClick={() => { setSelectedCategory(''); setSearchParams({}) }}
             className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
-            style={{ background: 'var(--gray-100)', color: 'var(--text-mid)', border: '1px solid var(--border)' }}
+            style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: '1.5px solid var(--red-100)' }}
           >
-            <X size={14} /> Clear filter
+            <X size={13} /> Clear filter
           </button>
         )}
       </div>
@@ -79,12 +82,12 @@ export default function Shop() {
       <div
         className="sticky-top"
         style={{
-          background: 'rgba(255,255,255,0.97)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
+          background: 'rgba(245,242,236,0.97)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--border-light)',
           paddingBottom: 10,
-          boxShadow: '0 2px 12px rgba(15,23,42,.04)',
+          boxShadow: '0 2px 16px rgba(28,26,23,.05)',
         }}
       >
         {/* Search */}
@@ -95,14 +98,15 @@ export default function Shop() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search vegetables, fruits..."
+              placeholder="Search vegetables, fruits…"
               className="flex-1 text-sm outline-none bg-transparent"
-              style={{ color: 'var(--text-dark)' }}
+              style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-body)' }}
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors hover:bg-gray-100"
+                className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--warm-100)', border: 'none', cursor: 'pointer' }}
               >
                 <X size={13} style={{ color: 'var(--text-muted)' }} />
               </button>
@@ -142,21 +146,21 @@ export default function Shop() {
       {/* Results summary */}
       {!loading && (
         <div className="px-4 lg:px-8 pt-3 pb-1 flex items-center justify-between">
-          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-            <span className="font-bold" style={{ color: 'var(--text-dark)' }}>{sorted.length}</span>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{sorted.length}</span>
             {' '}item{sorted.length !== 1 ? 's' : ''}
             {selectedCategoryName ? (
-              <> in <span className="font-semibold" style={{ color: 'var(--brand-600)' }}>{selectedCategoryName}</span></>
+              <> in <span style={{ fontWeight: 600, color: 'var(--brand-600)' }}>{selectedCategoryName}</span></>
             ) : ''}
             {search ? (
-              <> for "<span className="font-semibold" style={{ color: 'var(--brand-600)' }}>{search}</span>"</>
+              <> for "<span style={{ fontWeight: 600, color: 'var(--brand-600)' }}>{search}</span>"</>
             ) : ''}
           </p>
           {sort !== 'default' && (
             <button
               onClick={() => setSort('default')}
-              className="text-xs font-medium flex items-center gap-1 transition-colors"
-              style={{ color: 'var(--red-600)' }}
+              className="flex items-center gap-1"
+              style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--red-600)', background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <X size={11} /> Clear sort
             </button>
@@ -170,36 +174,43 @@ export default function Shop() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i}>
-                <div className="skeleton rounded-2xl mb-2" style={{ height: 148 }} />
+                <div className="skeleton mb-2" style={{ height: 164, borderRadius: 18 }} />
                 <div className="skeleton h-4 w-3/4 rounded mb-1.5" />
                 <div className="skeleton h-5 w-1/2 rounded mb-2" />
-                <div className="skeleton h-8 rounded-xl" />
+                <div className="skeleton h-9 rounded-xl" />
               </div>
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="flex flex-col items-center justify-center py-20 gap-5">
             <div
-              className="w-20 h-20 rounded-full flex items-center justify-center"
-              style={{ background: 'var(--gray-100)' }}
+              style={{
+                width: 80, height: 80, borderRadius: '50%',
+                background: 'var(--warm-100)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
               <ShoppingBag size={34} style={{ color: 'var(--text-light)' }} />
             </div>
             <div className="text-center">
               <p
-                className="font-bold text-xl mb-2 tracking-tight"
-                style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.5rem', fontWeight: 600,
+                  color: 'var(--text-dark)', letterSpacing: '-.02em',
+                  marginBottom: 6,
+                }}
               >
                 No products found
               </p>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)' }}>
                 {search ? `No results for "${search}"` : 'No products in this category yet.'}
               </p>
             </div>
             {(search || selectedCategory) && (
               <button
                 onClick={() => { setSearch(''); setSelectedCategory(''); setSearchParams({}) }}
-                className="btn-primary px-6 py-2.5 text-sm font-semibold"
+                className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-xl"
               >
                 Clear filters
               </button>
@@ -219,46 +230,61 @@ export default function Shop() {
           <div className="bottom-sheet">
             <div className="flex items-center justify-between mb-5">
               <h3
-                className="text-xl font-bold tracking-tight"
-                style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.5rem', fontWeight: 600,
+                  letterSpacing: '-.02em', color: 'var(--text-dark)',
+                }}
               >
                 Sort By
               </h3>
               <button
                 onClick={() => setShowSortSheet(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--gray-100)' }}
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  background: 'var(--warm-100)', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                }}
               >
-                <X size={16} style={{ color: 'var(--text-muted)' }} />
+                <X size={15} style={{ color: 'var(--text-muted)' }} />
               </button>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => { setSort(opt.value); setShowSortSheet(false) }}
-                  className="flex items-center justify-between px-4 py-3.5 rounded-xl transition-all"
+                  className="flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all"
                   style={{
-                    background: sort === opt.value ? 'var(--brand-50)' : 'var(--gray-50)',
+                    background: sort === opt.value ? 'var(--brand-50)' : 'var(--warm-50)',
                     border: sort === opt.value ? '1.5px solid var(--brand-200)' : '1.5px solid transparent',
+                    cursor: 'pointer',
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{opt.emoji}</span>
+                    <span style={{ fontSize: 24 }}>{opt.emoji}</span>
                     <div className="text-left">
                       <span
-                        className="text-sm font-semibold block"
-                        style={{ color: sort === opt.value ? 'var(--brand-700)' : 'var(--text-dark)' }}
+                        style={{
+                          fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600,
+                          color: sort === opt.value ? 'var(--brand-700)' : 'var(--text-dark)',
+                          display: 'block',
+                        }}
                       >
                         {opt.label}
                       </span>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{opt.desc}</span>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                        {opt.desc}
+                      </span>
                     </div>
                   </div>
                   {sort === opt.value && (
                     <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center"
-                      style={{ background: 'var(--brand-600)' }}
+                      style={{
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: 'var(--brand-700)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}
                     >
                       <Check size={13} color="#fff" strokeWidth={2.5} />
                     </div>
