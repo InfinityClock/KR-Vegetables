@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocati
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
 import { Home, ShoppingBag, ShoppingCart, Package, User, Leaf, Truck, Star } from 'lucide-react'
-import logoImg from './assets/logo.png'
+import logoImg from './assets/Logo.jpg'
 
 // Auth
 import { useAuthInit } from './hooks/useAuth'
@@ -67,39 +67,26 @@ function DesktopSidebar() {
       {/* ── Logo ── */}
       <div
         className="flex flex-col items-center cursor-pointer"
-        style={{ padding: '28px 20px 20px', borderBottom: '1px solid rgba(255,255,255,.07)' }}
+        style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,.07)' }}
         onClick={() => navigate('/')}
       >
         <div
           style={{
-            width: 72, height: 72, borderRadius: 18,
-            background: 'rgba(255,255,255,.08)',
+            width: 140, height: 140,
+            borderRadius: 16,
+            background: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: 10,
-            border: '1px solid rgba(255,255,255,.1)',
+            marginBottom: 8,
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,.3)',
           }}
         >
           <img
             src={logoImg}
             alt="KR Vegetables & Fruits"
-            style={{ height: 56, width: 56, objectFit: 'contain' }}
+            style={{ width: 136, height: 136, objectFit: 'contain' }}
           />
         </div>
-        <p
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '15px',
-            fontWeight: 600,
-            color: '#fff',
-            letterSpacing: '-.01em',
-            marginBottom: 2,
-          }}
-        >
-          KR Vegetables
-        </p>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 500, color: 'rgba(255,255,255,.4)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Precision in Freshness
-        </p>
       </div>
 
       {/* ── Nav links ── */}

@@ -1,7 +1,7 @@
 import { Search, ShoppingCart, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCartCount } from '../store/cartStore'
-import logoImg from '../assets/logo.png'
+import logoImg from '../assets/Logo.jpg'
 
 export function HomeTopBar({ onSearchClick }) {
   const navigate = useNavigate()
@@ -24,7 +24,7 @@ export function HomeTopBar({ onSearchClick }) {
           src={logoImg}
           alt="KR Vegetables & Fruits"
           onClick={() => navigate('/')}
-          style={{ height: 40, width: 'auto', objectFit: 'contain', flexShrink: 0, cursor: 'pointer' }}
+          style={{ height: 48, width: 48, objectFit: 'contain', flexShrink: 0, cursor: 'pointer', borderRadius: 8 }}
         />
 
         {/* Search — takes remaining space */}
