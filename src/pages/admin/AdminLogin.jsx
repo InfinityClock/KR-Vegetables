@@ -108,7 +108,7 @@ export default function AdminLogin() {
           <div className="mb-2">
             <h2
               className="text-lg font-bold"
-              style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}
+              style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}
             >
               Sign in
             </h2>

@@ -23,7 +23,7 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
           style={{ borderBottom: '1px solid var(--border-light)', zIndex: 1 }}
         >
           <div>
-            <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}>
+            <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
               {order.order_number}
             </h3>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</p>
@@ -212,7 +212,7 @@ export default function AdminOrders() {
         <div>
           <h1
             className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             Orders
           </h1>

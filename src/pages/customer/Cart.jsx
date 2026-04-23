@@ -156,7 +156,7 @@ export default function Cart() {
           <div className="text-6xl">🛒</div>
           <h2
             className="text-xl font-bold text-center"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             Your cart is empty
           </h2>
@@ -195,7 +195,7 @@ export default function Cart() {
 
       {/* Desktop heading */}
       <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-4">
-        <h1 className="text-2xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}>
+        <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}>
           My Cart ({itemCount} item{itemCount !== 1 ? 's' : ''})
         </h1>
         <button

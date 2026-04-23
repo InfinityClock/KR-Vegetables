@@ -39,7 +39,7 @@ function CategoryModal({ category, onClose, onSaved }) {
         style={{ background: '#fff', boxShadow: 'var(--shadow-xl)' }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}>
+          <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
             {category ? 'Edit Category' : 'Add Category'}
           </h3>
           <button
@@ -169,7 +169,7 @@ export default function AdminCategories() {
         <div>
           <h1
             className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             Categories
           </h1>
