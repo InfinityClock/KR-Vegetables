@@ -30,7 +30,7 @@ function MarqueeTicker() {
       className="overflow-hidden"
       style={{
         background: 'var(--brand-800)',
-        height: 34,
+        height: 36,
         display: 'flex',
         alignItems: 'center',
       }}
@@ -43,9 +43,9 @@ function MarqueeTicker() {
               fontFamily: 'var(--font-body)',
               fontSize: '11px',
               fontWeight: 500,
-              color: 'rgba(255,255,255,.85)',
-              letterSpacing: '.04em',
-              paddingRight: 48,
+              color: 'rgba(255,255,255,.8)',
+              letterSpacing: '.05em',
+              paddingRight: 52,
             }}
           >
             {item}
@@ -69,8 +69,8 @@ function HeroCarousel() {
 
   return (
     <div
-      className="relative overflow-hidden"
-      style={{ margin: '0 16px', height: 200, borderRadius: 'var(--radius-lg)', cursor: 'pointer' }}
+      className="relative overflow-hidden cursor-pointer"
+      style={{ height: 272 }}
       onClick={() => navigate('/shop')}
     >
       {BANNERS.map((banner, i) => (
@@ -80,65 +80,73 @@ function HeroCarousel() {
           style={{
             background: banner.gradient,
             opacity: i === current ? 1 : 0,
-            transition: 'opacity .7s ease',
+            transition: 'opacity .75s ease',
             pointerEvents: i === current ? 'auto' : 'none',
           }}
         >
-          {/* Subtle texture overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.08)' }} />
+          {/* Radial light overlay */}
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 80% at 15% 50%, rgba(255,255,255,.06) 0%, transparent 65%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.45) 0%, transparent 55%)' }} />
 
           {/* Content */}
-          <div className="absolute inset-0 flex flex-col justify-end p-5 z-10">
+          <div className="absolute inset-0 flex flex-col justify-end z-10" style={{ padding: '0 22px 26px' }}>
             <span
-              className="label-caps self-start mb-2"
-              style={{ color: 'rgba(255,255,255,.65)' }}
+              style={{
+                display: 'inline-block', alignSelf: 'flex-start',
+                fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
+                letterSpacing: '.1em', textTransform: 'uppercase',
+                color: 'rgba(255,255,255,.65)',
+                background: 'rgba(255,255,255,.12)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: 99, padding: '4px 10px',
+                marginBottom: 10,
+              }}
             >
               Today's Special
             </span>
             <h2
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: '1.65rem',
+                fontSize: '2rem',
                 fontWeight: 600,
                 color: '#fff',
-                lineHeight: 1.15,
-                letterSpacing: '-.02em',
-                marginBottom: 6,
+                lineHeight: 1.1,
+                letterSpacing: '-.03em',
+                marginBottom: 7,
               }}
             >
               {banner.title}
             </h2>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,.8)', marginBottom: 14 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.75)', marginBottom: 16 }}>
               {banner.subtitle}
             </p>
             {banner.cta && (
               <div
                 className="inline-flex items-center gap-1.5 self-start"
                 style={{
-                  background: 'rgba(255,255,255,.2)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 'var(--radius-full)',
-                  padding: '5px 14px',
-                  color: '#fff',
+                  background: '#fff',
+                  borderRadius: 99,
+                  padding: '7px 18px',
+                  color: 'var(--brand-800)',
                   fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  fontWeight: 600,
+                  fontSize: '12.5px',
+                  fontWeight: 700,
                 }}
               >
-                {banner.cta} <ArrowRight size={12} />
+                {banner.cta} <ArrowRight size={13} />
               </div>
             )}
           </div>
 
-          {/* Emoji decoration */}
+          {/* Large emoji decoration */}
           <div
-            className="absolute"
             style={{
-              right: 20, top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: 72,
-              opacity: .2,
+              position: 'absolute', right: 24, top: '50%',
+              transform: 'translateY(-55%)',
+              fontSize: 90,
+              opacity: .18,
               userSelect: 'none',
+              filter: 'blur(1px)',
             }}
           >
             {banner.emoji}
@@ -147,20 +155,18 @@ function HeroCarousel() {
       ))}
 
       {/* Dots */}
-      <div className="absolute bottom-3 right-4 flex gap-1.5 items-center z-20">
+      <div className="absolute bottom-4 right-5 flex gap-1.5 items-center z-20">
         {BANNERS.map((_, i) => (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); setCurrent(i) }}
             style={{
-              width: i === current ? 16 : 4,
-              height: 4,
-              borderRadius: 'var(--radius-full)',
+              width: i === current ? 18 : 5,
+              height: 5,
+              borderRadius: 99,
               background: i === current ? '#fff' : 'rgba(255,255,255,.4)',
               transition: 'width .3s, background .3s',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
+              border: 'none', cursor: 'pointer', padding: 0,
             }}
           />
         ))}
@@ -170,16 +176,28 @@ function HeroCarousel() {
 }
 
 // ─── Category Strip ────────────────────────────────────────────────────────────
+// Assign a pastel bg per category index
+const CAT_PALETTES = [
+  { bg: '#e8f5e9', border: '#c8e6c9' },
+  { bg: '#fff3e0', border: '#ffe0b2' },
+  { bg: '#fce4ec', border: '#f8bbd0' },
+  { bg: '#e3f2fd', border: '#bbdefb' },
+  { bg: '#f3e5f5', border: '#e1bee7' },
+  { bg: '#e0f7fa', border: '#b2ebf2' },
+  { bg: '#fff9c4', border: '#fff176' },
+  { bg: '#e8f5e9', border: '#c8e6c9' },
+]
+
 function CategoryStrip({ categories, loading, onSelect }) {
   const navigate = useNavigate()
 
   if (loading) {
     return (
-      <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-4 px-4 overflow-x-auto scrollbar-hide pb-1">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0">
-            <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 'var(--radius-md)' }} />
-            <div className="skeleton" style={{ width: 44, height: 10, borderRadius: 4 }} />
+            <div className="skeleton" style={{ width: 62, height: 62, borderRadius: '50%' }} />
+            <div className="skeleton" style={{ width: 48, height: 10, borderRadius: 4 }} />
           </div>
         ))}
       </div>
@@ -187,64 +205,64 @@ function CategoryStrip({ categories, loading, onSelect }) {
   }
 
   return (
-    <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
-      {categories.map((cat) => (
-        <button
-          key={cat.id}
-          onClick={() => onSelect(cat)}
-          className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all active:scale-95"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 26,
-            }}
+    <div className="flex gap-4 px-4 overflow-x-auto scrollbar-hide pb-1">
+      {categories.map((cat, idx) => {
+        const pal = CAT_PALETTES[idx % CAT_PALETTES.length]
+        return (
+          <button
+            key={cat.id}
+            onClick={() => onSelect(cat)}
+            className="flex flex-col items-center gap-2 flex-shrink-0 transition-all active:scale-90"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            {cat.emoji}
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '10px',
-              fontWeight: 500,
-              color: 'var(--text-muted)',
-              textAlign: 'center',
-              maxWidth: 58,
-              lineHeight: 1.3,
-            }}
-          >
-            {cat.name}
-          </span>
-        </button>
-      ))}
+            <div
+              style={{
+                width: 62, height: 62, borderRadius: '50%',
+                background: pal.bg,
+                border: `1.5px solid ${pal.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26,
+                transition: 'transform .18s, box-shadow .18s',
+                boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,.12)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.06)' }}
+            >
+              {cat.emoji}
+            </div>
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '10.5px',
+                fontWeight: 500,
+                color: 'var(--text-mid)',
+                textAlign: 'center',
+                maxWidth: 66,
+                lineHeight: 1.3,
+              }}
+            >
+              {cat.name}
+            </span>
+          </button>
+        )
+      })}
       <button
         onClick={() => navigate('/shop')}
-        className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-all active:scale-95"
+        className="flex flex-col items-center gap-2 flex-shrink-0 transition-all active:scale-90"
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
       >
         <div
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: 62, height: 62, borderRadius: '50%',
+            background: 'var(--warm-100)',
+            border: '1.5px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,.06)',
           }}
         >
-          <ChevronRight size={20} style={{ color: 'var(--text-muted)' }} />
+          <ChevronRight size={22} style={{ color: 'var(--text-muted)' }} />
         </div>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 500, color: 'var(--text-muted)' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 500, color: 'var(--text-muted)' }}>
           All
         </span>
       </button>
@@ -255,11 +273,22 @@ function CategoryStrip({ categories, loading, onSelect }) {
 // ─── Section Header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, subtitle, onSeeAll }) {
   return (
-    <div className="section-header">
+    <div className="flex items-end justify-between px-4 mb-4">
       <div>
-        <h2 className="section-title">{title}</h2>
+        <h2
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.75rem',
+            fontWeight: 600,
+            color: 'var(--text-dark)',
+            letterSpacing: '-.025em',
+            lineHeight: 1.15,
+          }}
+        >
+          {title}
+        </h2>
         {subtitle && (
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)', marginTop: 2 }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-light)', marginTop: 3 }}>
             {subtitle}
           </p>
         )}
@@ -269,14 +298,9 @@ function SectionHeader({ title, subtitle, onSeeAll }) {
           onClick={onSeeAll}
           className="flex items-center gap-1 shrink-0"
           style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: 'var(--brand-600)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            letterSpacing: '.02em',
+            fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
+            color: 'var(--brand-600)', background: 'none', border: 'none',
+            cursor: 'pointer', letterSpacing: '.01em',
           }}
         >
           See all <ChevronRight size={13} />
@@ -292,11 +316,11 @@ function ProductRow({ products, loading }) {
     return (
       <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex-shrink-0" style={{ width: 148 }}>
-            <div className="skeleton rounded-xl mb-2" style={{ height: 140 }} />
+          <div key={i} className="flex-shrink-0" style={{ width: 152 }}>
+            <div className="skeleton mb-2" style={{ height: 148, borderRadius: 16 }} />
             <div className="skeleton mb-1.5" style={{ height: 12, width: '75%', borderRadius: 4 }} />
             <div className="skeleton mb-2" style={{ height: 16, width: '50%', borderRadius: 4 }} />
-            <div className="skeleton" style={{ height: 30, borderRadius: 6 }} />
+            <div className="skeleton" style={{ height: 32, borderRadius: 10 }} />
           </div>
         ))}
       </div>
@@ -305,76 +329,9 @@ function ProductRow({ products, loading }) {
   return (
     <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
       {products.map((p) => (
-        <div key={p.id} className="flex-shrink-0" style={{ width: 148 }}>
+        <div key={p.id} className="flex-shrink-0" style={{ width: 152 }}>
           <ProductCard product={p} />
         </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Editorial Promo Cards ─────────────────────────────────────────────────────
-function PromoCards({ navigate }) {
-  const cards = [
-    {
-      label: 'FRESH TODAY',
-      title: 'Greens & Herbs',
-      subtitle: 'Harvested this morning',
-      link: '/shop?category=cat-1',
-      accent: 'var(--brand-800)',
-      bg: 'var(--brand-50)',
-    },
-    {
-      label: 'BEST DEALS',
-      title: 'Up to 30% Off',
-      subtitle: 'Limited-time prices',
-      link: '/shop?sort=offers',
-      accent: 'var(--amber-700)',
-      bg: 'var(--amber-50)',
-    },
-  ]
-
-  return (
-    <div className="px-4 grid grid-cols-2 gap-3">
-      {cards.map((c, i) => (
-        <button
-          key={i}
-          onClick={() => navigate(c.link)}
-          className="text-left transition-all active:scale-96"
-          style={{
-            background: c.bg,
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px 14px',
-            cursor: 'pointer',
-          }}
-        >
-          <span className="label-caps block mb-2" style={{ color: c.accent }}>
-            {c.label}
-          </span>
-          <p
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.2rem',
-              fontWeight: 600,
-              color: 'var(--text-dark)',
-              lineHeight: 1.2,
-              letterSpacing: '-.02em',
-              marginBottom: 4,
-            }}
-          >
-            {c.title}
-          </p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
-            {c.subtitle}
-          </p>
-          <div
-            className="flex items-center gap-1 mt-3"
-            style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: c.accent }}
-          >
-            Shop now <ArrowRight size={11} />
-          </div>
-        </button>
       ))}
     </div>
   )
@@ -388,31 +345,28 @@ function DealCard({ product }) {
   return (
     <div
       onClick={() => navigate(`/product/${product.id}`)}
-      className="flex-shrink-0 cursor-pointer transition-all active:scale-97"
+      className="flex-shrink-0 cursor-pointer"
       style={{
         width: 152,
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-md)',
+        background: '#fff',
+        borderRadius: 16,
         overflow: 'hidden',
+        boxShadow: '0 2px 12px rgba(28,26,23,.07)',
+        transition: 'transform .18s, box-shadow .18s',
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(28,26,23,.13)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(28,26,23,.07)' }}
     >
-      <div className="relative" style={{ height: 110, background: 'var(--warm-50)' }}>
+      <div className="relative" style={{ height: 114, background: 'var(--warm-50)' }}>
         <span
-          className="absolute top-2 left-2 z-10"
+          className="absolute top-2.5 left-2.5 z-10"
           style={{
-            background: 'var(--brand-800)',
-            color: '#fff',
-            fontFamily: 'var(--font-body)',
-            fontSize: '9px',
-            fontWeight: 700,
-            padding: '2px 6px',
-            borderRadius: 'var(--radius-xs)',
-            letterSpacing: '.4px',
-            textTransform: 'uppercase',
+            background: '#e53e3e', color: '#fff',
+            fontSize: '10px', fontWeight: 800,
+            padding: '3px 9px', borderRadius: 99,
           }}
         >
-          −{discount}%
+          -{discount}%
         </span>
         <img
           src={product.image_url}
@@ -422,15 +376,15 @@ function DealCard({ product }) {
           loading="lazy"
         />
       </div>
-      <div style={{ padding: '10px 12px' }}>
+      <div style={{ padding: '10px 12px 12px' }}>
         <p
           className="line-clamp-1"
-          style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 4 }}
+          style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 5 }}
         >
           {product.name}
         </p>
         <div className="flex items-baseline gap-1.5">
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--text-dark)' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '15px', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '-.02em' }}>
             {formatPrice(product.offer_price)}
           </span>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)', textDecoration: 'line-through' }}>
@@ -442,27 +396,110 @@ function DealCard({ product }) {
   )
 }
 
+// ─── Editorial Promo Cards ─────────────────────────────────────────────────────
+function PromoCards({ navigate }) {
+  const cards = [
+    {
+      label: 'FRESH TODAY',
+      title: 'Greens & Herbs',
+      subtitle: 'Harvested this morning',
+      link: '/shop?category=cat-1',
+      accent: 'var(--brand-700)',
+      bg: 'linear-gradient(135deg, #e8f5e9 0%, #f1f8f3 100%)',
+      border: 'var(--brand-100)',
+      emoji: '🥬',
+    },
+    {
+      label: 'BEST DEALS',
+      title: 'Up to 30% Off',
+      subtitle: 'Limited-time prices',
+      link: '/shop?sort=offers',
+      accent: 'var(--amber-700)',
+      bg: 'linear-gradient(135deg, #fff8e6 0%, #fffbf0 100%)',
+      border: '#fde68a',
+      emoji: '🏷️',
+    },
+  ]
+
+  return (
+    <div className="px-4 grid grid-cols-2 gap-3">
+      {cards.map((c, i) => (
+        <button
+          key={i}
+          onClick={() => navigate(c.link)}
+          className="text-left transition-all active:scale-96"
+          style={{
+            background: c.bg,
+            border: `1.5px solid ${c.border}`,
+            borderRadius: 18,
+            padding: '18px 16px',
+            cursor: 'pointer',
+          }}
+        >
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'var(--font-body)', fontSize: '9.5px',
+              fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+              color: c.accent, marginBottom: 8,
+            }}
+          >
+            {c.label}
+          </span>
+          <div style={{ fontSize: 32, marginBottom: 6 }}>{c.emoji}</div>
+          <p
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.25rem', fontWeight: 600,
+              color: 'var(--text-dark)',
+              lineHeight: 1.2, letterSpacing: '-.02em',
+              marginBottom: 4,
+            }}
+          >
+            {c.title}
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
+            {c.subtitle}
+          </p>
+          <div
+            className="flex items-center gap-1 mt-3"
+            style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', fontWeight: 700, color: c.accent }}
+          >
+            Shop now <ArrowRight size={11} />
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Why KR Section ────────────────────────────────────────────────────────────
 const WHY_KR = [
-  { icon: Sprout,      title: 'Farm Fresh',   desc: 'Sourced daily from local farms' },
-  { icon: Clock,       title: 'Same-Day',     desc: 'Order before 12pm, get today' },
-  { icon: ShieldCheck, title: 'Guaranteed',   desc: 'Full refund if not satisfied' },
-  { icon: Headphones,  title: '24/7 Support', desc: 'Always here to help you' },
+  { icon: Sprout,      title: 'Farm Fresh',   desc: 'Sourced daily from local farms', bg: '#e8f5e9', color: 'var(--brand-700)' },
+  { icon: Clock,       title: 'Same-Day',     desc: 'Order before 12pm, get today',   bg: '#e3f2fd', color: '#1565C0' },
+  { icon: ShieldCheck, title: 'Guaranteed',   desc: 'Full refund if not satisfied',   bg: '#f3e5f5', color: '#7B1FA2' },
+  { icon: Headphones,  title: '24/7 Support', desc: 'Always here to help you',        bg: '#fff8e6', color: 'var(--amber-700)' },
 ]
 
 function WhyKR() {
   return (
-    <div className="mx-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-      <div style={{ borderBottom: '1px solid var(--border)', padding: '16px 20px' }}>
-        <span className="label-caps">The KR Promise</span>
+    <div className="mx-4" style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 16px rgba(28,26,23,.08)', background: '#fff' }}>
+      <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--border-light)' }}>
+        <span
+          style={{
+            display: 'inline-block', fontFamily: 'var(--font-body)', fontSize: '10px',
+            fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+            color: 'var(--brand-600)', background: 'var(--brand-50)',
+            padding: '3px 10px', borderRadius: 99, marginBottom: 8,
+          }}
+        >
+          The KR Promise
+        </span>
         <h3
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.5rem',
-            fontWeight: 600,
-            color: 'var(--text-dark)',
-            letterSpacing: '-.02em',
-            marginTop: 4,
+            fontSize: '1.5rem', fontWeight: 600,
+            color: 'var(--text-dark)', letterSpacing: '-.025em',
             lineHeight: 1.2,
           }}
         >
@@ -470,34 +507,29 @@ function WhyKR() {
         </h3>
       </div>
       <div className="grid grid-cols-2">
-        {WHY_KR.map(({ icon: Icon, title, desc }, i) => (
+        {WHY_KR.map(({ icon: Icon, title, desc, bg, color }, i) => (
           <div
             key={i}
             style={{
-              padding: '16px 18px',
+              padding: '18px 18px',
               borderTop: i >= 2 ? '1px solid var(--border-light)' : 'none',
               borderLeft: i % 2 !== 0 ? '1px solid var(--border-light)' : 'none',
-              background: 'var(--bg-card)',
             }}
           >
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--brand-50)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: 40, height: 40, borderRadius: 12,
+                background: bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginBottom: 10,
               }}
             >
-              <Icon size={18} style={{ color: 'var(--brand-700)' }} />
+              <Icon size={19} style={{ color }} />
             </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 2 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 3 }}>
               {title}
             </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
               {desc}
             </p>
           </div>
@@ -511,48 +543,54 @@ function WhyKR() {
 function DesktopHero({ navigate }) {
   return (
     <div
-      className="hidden lg:block mx-6 mb-6 relative overflow-hidden"
+      className="hidden lg:block mx-6 mb-8 relative overflow-hidden"
       style={{
-        background: 'var(--brand-800)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '52px 64px',
-        minHeight: 320,
+        background: 'linear-gradient(135deg, #0c1e12 0%, #1b3e2c 50%, #17706a 100%)',
+        borderRadius: 24,
+        padding: '56px 68px',
+        minHeight: 340,
       }}
     >
-      {/* Subtle tonal background pattern */}
-      <div
-        style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 60% 80% at 85% 50%, rgba(23,112,106,.35) 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Radial glow */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 50% 70% at 90% 50%, rgba(36,168,158,.22) 0%, transparent 65%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 40% 60% at 10% 80%, rgba(255,255,255,.04) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
-      <div style={{ position: 'relative', zIndex: 2, maxWidth: 560 }}>
-        <span className="label-caps" style={{ color: 'rgba(255,255,255,.55)' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: 580 }}>
+        <div
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)',
+            borderRadius: 99, padding: '5px 14px',
+            fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600,
+            color: 'rgba(255,255,255,.7)', letterSpacing: '.06em', textTransform: 'uppercase',
+            marginBottom: 20,
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#52d18a', display: 'inline-block' }} />
           Farm to Doorstep · Tamil Nadu
-        </span>
+        </div>
+
         <h1
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(2.5rem, 4vw, 3.5rem)',
+            fontSize: 'clamp(2.6rem, 4.2vw, 3.8rem)',
             fontWeight: 600,
             color: '#fff',
             letterSpacing: '-.03em',
-            lineHeight: 1.1,
-            margin: '16px 0 20px',
+            lineHeight: 1.08,
+            marginBottom: 20,
           }}
         >
           Fresh Vegetables,<br />
-          <em style={{ fontStyle: 'italic', fontWeight: 400 }}>Delivered Today</em>
+          <em style={{ fontStyle: 'italic', fontWeight: 400, color: 'rgba(255,255,255,.75)' }}>Delivered Today</em>
         </h1>
         <p
           style={{
             fontFamily: 'var(--font-body)',
             fontSize: '15px',
-            color: 'rgba(255,255,255,.7)',
-            lineHeight: 1.65,
-            marginBottom: 32,
+            color: 'rgba(255,255,255,.62)',
+            lineHeight: 1.7,
+            marginBottom: 36,
             maxWidth: 440,
           }}
         >
@@ -564,16 +602,10 @@ function DesktopHero({ navigate }) {
             onClick={() => navigate('/shop')}
             className="flex items-center gap-2 transition-all active:scale-95"
             style={{
-              background: '#fff',
-              color: 'var(--brand-800)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '14px',
-              fontWeight: 700,
-              padding: '12px 24px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              cursor: 'pointer',
-              letterSpacing: '.01em',
+              background: '#fff', color: 'var(--brand-800)',
+              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700,
+              padding: '13px 28px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              letterSpacing: '.01em', boxShadow: '0 4px 20px rgba(0,0,0,.2)',
             }}
           >
             Shop Now <ArrowRight size={15} />
@@ -582,15 +614,11 @@ function DesktopHero({ navigate }) {
             onClick={() => navigate('/shop?sort=offers')}
             className="flex items-center gap-2 transition-all active:scale-95"
             style={{
-              background: 'rgba(255,255,255,.12)',
-              color: '#fff',
-              fontFamily: 'var(--font-body)',
-              fontSize: '14px',
-              fontWeight: 600,
-              padding: '12px 24px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid rgba(255,255,255,.2)',
-              cursor: 'pointer',
+              background: 'rgba(255,255,255,.1)', color: '#fff',
+              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600,
+              padding: '13px 28px', borderRadius: 12,
+              border: '1px solid rgba(255,255,255,.2)', cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
             }}
           >
             <Percent size={14} /> Today's Deals
@@ -601,15 +629,12 @@ function DesktopHero({ navigate }) {
       {/* Large decorative text */}
       <div
         style={{
-          position: 'absolute', right: 64, top: '50%',
+          position: 'absolute', right: 60, top: '50%',
           transform: 'translateY(-50%)',
           fontFamily: 'var(--font-display)',
-          fontSize: 200,
-          lineHeight: 1,
-          color: 'rgba(255,255,255,.04)',
-          userSelect: 'none',
-          letterSpacing: '-.04em',
-          pointerEvents: 'none',
+          fontSize: 210, lineHeight: 1,
+          color: 'rgba(255,255,255,.03)',
+          userSelect: 'none', letterSpacing: '-.04em', pointerEvents: 'none',
         }}
       >
         KR
@@ -632,24 +657,30 @@ export default function Home() {
       {/* Mobile TopBar */}
       <HomeTopBar onSearchClick={() => navigate('/shop')} />
 
-      {/* Marquee ticker (mobile) */}
+      {/* Ticker (mobile only) */}
       <div className="lg:hidden">
         <MarqueeTicker />
       </div>
 
       {/* Desktop greeting */}
-      <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-4">
+      <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-6">
         <div>
-          <span className="label-caps">Welcome back</span>
+          <span
+            style={{
+              display: 'inline-block', fontFamily: 'var(--font-body)', fontSize: '10px',
+              fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+              color: 'var(--brand-600)', background: 'var(--brand-50)',
+              padding: '3px 10px', borderRadius: 99, marginBottom: 8,
+            }}
+          >
+            Welcome back
+          </span>
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '2rem',
-              fontWeight: 600,
-              color: 'var(--text-dark)',
-              letterSpacing: '-.03em',
-              lineHeight: 1.2,
-              marginTop: 4,
+              fontSize: '2.2rem', fontWeight: 600,
+              color: 'var(--text-dark)', letterSpacing: '-.03em',
+              lineHeight: 1.15,
             }}
           >
             What would you like today?
@@ -657,7 +688,7 @@ export default function Home() {
         </div>
         <button
           onClick={() => navigate('/shop')}
-          className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm"
+          className="btn-primary flex items-center gap-2 px-5 py-3 text-sm rounded-xl"
         >
           Browse All <ArrowRight size={14} />
         </button>
@@ -667,67 +698,68 @@ export default function Home() {
       <div className="hidden lg:block">
         <DesktopHero navigate={navigate} />
 
-        <div className="px-6 grid grid-cols-[260px_1fr] gap-6 items-start">
+        <div className="px-6 grid grid-cols-[256px_1fr] gap-6 items-start">
           {/* Left: Categories sidebar */}
           <div
             className="sticky"
             style={{
               top: 24,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
+              background: '#fff',
+              borderRadius: 18,
               overflow: 'hidden',
+              boxShadow: '0 2px 16px rgba(28,26,23,.08)',
             }}
           >
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-light)' }}>
-              <span className="label-caps">Categories</span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)', fontSize: '10px',
+                  fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Categories
+              </span>
             </div>
             <div className="flex flex-col" style={{ padding: '6px 8px' }}>
               <button
                 onClick={() => navigate('/shop')}
                 className="flex items-center gap-3 transition-all"
                 style={{
-                  padding: '9px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'var(--brand-700)',
-                  background: 'var(--brand-50)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  marginBottom: 2,
+                  padding: '10px 12px', borderRadius: 10,
+                  fontFamily: 'var(--font-body)', fontSize: '13px',
+                  fontWeight: 600, color: 'var(--brand-700)',
+                  background: 'var(--brand-50)', border: 'none',
+                  cursor: 'pointer', textAlign: 'left', marginBottom: 2,
                 }}
               >
                 <span style={{ fontSize: 18 }}>🛒</span> All Products
               </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => navigate(`/shop?category=${cat.id}`)}
-                  className="flex items-center gap-3 transition-all"
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '13px',
-                    fontWeight: 400,
-                    color: 'var(--text-mid)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{cat.emoji}</span> {cat.name}
-                </button>
-              ))}
+              {categories.map((cat, idx) => {
+                const pal = CAT_PALETTES[idx % CAT_PALETTES.length]
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => navigate(`/shop?category=${cat.id}`)}
+                    className="flex items-center gap-3 transition-all"
+                    style={{
+                      padding: '9px 12px', borderRadius: 10,
+                      fontFamily: 'var(--font-body)', fontSize: '13px',
+                      fontWeight: 400, color: 'var(--text-mid)',
+                      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = pal.bg; e.currentTarget.style.color = 'var(--text-dark)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-mid)' }}
+                  >
+                    <span style={{ fontSize: 18 }}>{cat.emoji}</span> {cat.name}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
           {/* Right: main content */}
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-10 pb-10">
             {/* Featured picks */}
             <div>
               <SectionHeader
@@ -739,7 +771,7 @@ export default function Home() {
                 {featuredLoading
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <div key={i}>
-                        <div className="skeleton rounded-xl mb-2" style={{ height: 156 }} />
+                        <div className="skeleton mb-2" style={{ height: 164, borderRadius: 18 }} />
                         <div className="skeleton mb-1" style={{ height: 13, width: '75%', borderRadius: 4 }} />
                         <div className="skeleton" style={{ height: 13, width: '50%', borderRadius: 4 }} />
                       </div>
@@ -757,7 +789,7 @@ export default function Home() {
                   subtitle="Limited-time prices on your favourites"
                   onSeeAll={() => navigate('/shop?sort=offers')}
                 />
-                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                   {dealProducts.slice(0, 12).map((p) => (
                     <DealCard key={p.id} product={p} />
                   ))}
@@ -784,51 +816,52 @@ export default function Home() {
         </div>
 
         {/* Why KR — desktop */}
-        <div className="px-6 py-8 mt-2">
-          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'var(--bg-card)' }}>
-            <div style={{ padding: '28px 40px', borderBottom: '1px solid var(--border-light)' }}>
-              <span className="label-caps">The KR Promise</span>
+        <div className="px-6 pb-10 mt-2">
+          <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 16px rgba(28,26,23,.08)' }}>
+            <div style={{ padding: '32px 44px', borderBottom: '1px solid var(--border-light)' }}>
+              <span
+                style={{
+                  display: 'inline-block', fontFamily: 'var(--font-body)', fontSize: '10px',
+                  fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+                  color: 'var(--brand-600)', background: 'var(--brand-50)',
+                  padding: '3px 10px', borderRadius: 99, marginBottom: 10,
+                }}
+              >
+                The KR Promise
+              </span>
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '1.85rem',
-                  fontWeight: 600,
-                  color: 'var(--text-dark)',
-                  letterSpacing: '-.03em',
-                  marginTop: 6,
+                  fontSize: '2rem', fontWeight: 600,
+                  color: 'var(--text-dark)', letterSpacing: '-.03em',
                 }}
               >
                 Why 10,000+ families choose us
               </h2>
             </div>
             <div className="grid grid-cols-4">
-              {WHY_KR.map(({ icon: Icon, title, desc }, i) => (
+              {WHY_KR.map(({ icon: Icon, title, desc, bg, color }, i) => (
                 <div
                   key={i}
                   style={{
-                    padding: '28px 32px',
+                    padding: '30px 34px',
                     borderLeft: i > 0 ? '1px solid var(--border-light)' : 'none',
                   }}
                 >
                   <div
                     style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'var(--brand-50)',
-                      border: '1px solid var(--brand-100)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: 48, height: 48, borderRadius: 14,
+                      background: bg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       marginBottom: 14,
                     }}
                   >
-                    <Icon size={22} style={{ color: 'var(--brand-700)' }} />
+                    <Icon size={22} style={{ color }} />
                   </div>
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 4 }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: 5 }}>
                     {title}
                   </p>
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                     {desc}
                   </p>
                 </div>
@@ -839,8 +872,8 @@ export default function Home() {
       </div>
 
       {/* ─── Mobile layout ─── */}
-      <div className="lg:hidden flex flex-col gap-6 pt-3 pb-2">
-        {/* Hero Carousel */}
+      <div className="lg:hidden flex flex-col gap-7 pt-2 pb-2">
+        {/* Hero Carousel — full bleed */}
         <HeroCarousel />
 
         {/* Quick Categories */}
@@ -884,10 +917,7 @@ export default function Home() {
         {/* Best sellers grid */}
         {!allLoading && allProducts.length > 0 && (
           <div>
-            <SectionHeader
-              title="Best Sellers"
-              onSeeAll={() => navigate('/shop')}
-            />
+            <SectionHeader title="Best Sellers" onSeeAll={() => navigate('/shop')} />
             <div className="px-4 grid grid-cols-2 gap-3">
               {allProducts.slice(0, 6).map((p) => (
                 <ProductCard key={p.id} product={p} />
