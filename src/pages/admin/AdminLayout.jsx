@@ -5,7 +5,7 @@ import {
   Truck, Settings, Menu, X, LogOut, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
-import logoImg from '../../assets/logo.png'
+import logoImg from '../../assets/Logo.jpg'
 import toast from 'react-hot-toast'
 
 const navItems = [

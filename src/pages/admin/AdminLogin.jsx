@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import logoImg from '../../assets/logo.png'
+import logoImg from '../../assets/Logo.jpg'
 import toast from 'react-hot-toast'
 
 export default function AdminLogin() {
