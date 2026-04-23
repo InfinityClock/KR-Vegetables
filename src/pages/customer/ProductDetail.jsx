@@ -45,7 +45,7 @@ export default function ProductDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-3">
         <div className="text-4xl">🌿</div>
-        <p className="text-lg font-semibold" style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}>
+        <p className="text-lg font-semibold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
           Product not found
         </p>
         <button
@@ -198,7 +198,7 @@ export default function ProductDetail() {
               <div className="flex-1">
                 <h1
                   className="text-2xl lg:text-3xl font-bold leading-tight"
-                  style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
                 >
                   {product.name}
                 </h1>
@@ -237,7 +237,7 @@ export default function ProductDetail() {
                 <div className="flex items-baseline gap-2">
                   <span
                     className="text-3xl font-bold"
-                    style={{ color: hasOffer ? 'var(--orange-dark)' : 'var(--green-dark)', fontFamily: 'Playfair Display, serif' }}
+                    style={{ color: hasOffer ? 'var(--orange-dark)' : 'var(--green-dark)', fontFamily: 'var(--font-display)' }}
                   >
                     {formatPrice(displayPrice)}
                   </span>
@@ -381,7 +381,7 @@ export default function ProductDetail() {
         <div className="mt-6 pb-4 lg:px-8">
           <h3
             className="px-4 lg:px-0 mb-3 text-lg font-bold"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             More from this category
           </h3>

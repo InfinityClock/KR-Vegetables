@@ -90,7 +90,7 @@ export default function AdminSettings() {
         <div>
           <h1
             className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             Settings
           </h1>

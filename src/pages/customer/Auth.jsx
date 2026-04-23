@@ -109,7 +109,7 @@ export default function Auth({ redirectTo = '/' }) {
         <div className="w-20 h-20 bg-[#2D6A4F] rounded-3xl flex items-center justify-center mb-4 shadow-lg">
           <Leaf size={36} className="text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-[#2D6A4F]" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <h1 className="text-2xl font-bold text-[#2D6A4F]" style={{ fontFamily: 'var(--font-display)' }}>
           KR Vegetables & Fruits
         </h1>
         <p className="text-gray-500 text-sm mt-1">Fresh daily from local farms 🌿</p>
@@ -120,7 +120,7 @@ export default function Auth({ redirectTo = '/' }) {
         {step === 'phone' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>Enter your number</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'var(--font-display)' }}>Enter your number</h2>
               <p className="text-gray-500 text-sm">We'll send you a one-time password</p>
             </div>
 
@@ -156,7 +156,7 @@ export default function Auth({ redirectTo = '/' }) {
         {step === 'otp' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>Verify OTP</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'var(--font-display)' }}>Verify OTP</h2>
               <p className="text-gray-500 text-sm">Enter the 6-digit OTP sent to +91 {phone}</p>
             </div>
 
@@ -190,7 +190,7 @@ export default function Auth({ redirectTo = '/' }) {
         {step === 'name' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>What's your name?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'var(--font-display)' }}>What's your name?</h2>
               <p className="text-gray-500 text-sm">Help us personalize your experience</p>
             </div>
 

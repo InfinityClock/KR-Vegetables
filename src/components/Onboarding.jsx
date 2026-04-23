@@ -52,7 +52,7 @@ export default function Onboarding() {
       {/* Content */}
       <div className="flex flex-col items-center text-center px-8 max-w-sm">
         <div className="text-8xl mb-8 animate-bounce">{slide.emoji}</div>
-        <h2 className="text-3xl font-bold text-white mb-4 leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <h2 className="text-3xl font-bold text-white mb-4 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
           {slide.title}
         </h2>
         <p className="text-white/80 text-base leading-relaxed">{slide.subtitle}</p>

@@ -180,7 +180,7 @@ export default function AdminDashboard() {
           >
             <AlertTriangle size={28} style={{ color: 'var(--red-600)' }} />
           </div>
-          <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}>
+          <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
             Unable to load dashboard
           </h2>
           <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
         <div>
           <h1
             className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
             Dashboard
           </h1>

@@ -346,7 +346,7 @@ export default function AdminProducts() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
             Products
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{allProducts.length} total</p>

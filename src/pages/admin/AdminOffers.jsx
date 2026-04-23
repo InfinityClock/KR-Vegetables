@@ -50,7 +50,7 @@ function OfferModal({ product, onClose, onSaved }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'Playfair Display, serif' }}>
+            <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
               Set Offer
             </h3>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{product.name}</p>
@@ -194,7 +194,7 @@ export default function AdminOffers() {
       <div className="mb-6">
         <h1
           className="text-2xl font-bold tracking-tight"
-          style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-dark)' }}
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
         >
           Offers & Promotions
         </h1>
