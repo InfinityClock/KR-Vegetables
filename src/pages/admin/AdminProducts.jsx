@@ -33,6 +33,7 @@ function useRealCategories() {
 function ProductModal({ product, categories, onClose, onSaved }) {
   const [form, setForm] = useState(product ? {
     name:         product.name,
+    tamil_name:   product.tamil_name || '',
     description:  product.description || '',
     category_id:  product.category_id,
     unit:         product.unit,
@@ -44,7 +45,7 @@ function ProductModal({ product, categories, onClose, onSaved }) {
     is_active:    product.is_active,
     image_url:    product.image_url || '',
   } : {
-    name: '', description: '', category_id: categories[0]?.id || '',
+    name: '', tamil_name: '', description: '', category_id: categories[0]?.id || '',
     unit: 'kg', price: '', offer_price: '', offer_label: '',
     stock_status: 'in_stock', is_featured: false, is_active: true, image_url: '',
   })
@@ -78,6 +79,7 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       price:       Number(form.price),
       offer_price: form.offer_price ? Number(form.offer_price) : null,
       offer_label: form.offer_label || null,
+      tamil_name:  form.tamil_name.trim() || null,
     }
     const res = await fetch('/api/admin-write', {
       method: 'POST',
@@ -139,6 +141,13 @@ function ProductModal({ product, categories, onClose, onSaved }) {
             <label className={labelCls}>Product Name *</label>
             <input value={form.name} onChange={(e) => set('name', e.target.value)}
               placeholder="e.g. Fresh Spinach" className={input} />
+          </div>
+
+          {/* Tamil Name */}
+          <div>
+            <label className={labelCls}>Tamil Name (தமிழ் பெயர்)</label>
+            <input value={form.tamil_name} onChange={(e) => set('tamil_name', e.target.value)}
+              placeholder="e.g. பாலக் கீரை" className={input} lang="ta" />
           </div>
 
           {/* Category + Unit */}
@@ -438,6 +447,9 @@ export default function AdminProducts() {
                         />
                         <div>
                           <p className="font-semibold text-gray-900 text-sm leading-tight">{product.name}</p>
+                          {product.tamil_name && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--brand-600)', fontWeight: 500 }}>{product.tamil_name}</p>
+                          )}
                           <p className="text-xs text-gray-400 mt-0.5">{product.unit}</p>
                         </div>
                       </div>
