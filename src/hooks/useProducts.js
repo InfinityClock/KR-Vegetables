@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const PRODUCT_SELECT = `
-  id, name, description, unit, price, offer_price,
+  id, name, tamil_name, description, unit, price, offer_price,
   offer_label, image_url, stock_status, is_featured, is_active,
   category_id, categories(id, name, emoji)
 `.trim();

@@ -70,26 +70,32 @@ function DesktopSidebar() {
       {/* ── Logo ── */}
       <div
         className="flex flex-col items-center cursor-pointer"
-        style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,.07)' }}
+        style={{ padding: '16px 16px 14px', borderBottom: '1px solid rgba(255,255,255,.1)' }}
         onClick={() => navigate('/')}
       >
         <div
           style={{
-            width: 140, height: 140,
-            borderRadius: 16,
+            width: 88, height: 88,
+            borderRadius: 14,
             background: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: 8,
+            marginBottom: 10,
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,.3)',
+            boxShadow: '0 4px 16px rgba(0,0,0,.35)',
           }}
         >
           <img
             src={logoImg}
             alt="KR Vegetables & Fruits"
-            style={{ width: 136, height: 136, objectFit: 'contain' }}
+            style={{ width: 84, height: 84, objectFit: 'contain' }}
           />
         </div>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,.9)', letterSpacing: '-.01em', textAlign: 'center', lineHeight: 1.3 }}>
+          KR Vegetables
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,.45)', marginTop: 2 }}>
+          & Fruits
+        </p>
       </div>
 
       {/* ── Nav links ── */}
@@ -106,16 +112,14 @@ function DesktopSidebar() {
               padding: '11px 14px',
               borderRadius: 12,
               textDecoration: 'none',
-              fontWeight: isActive ? 600 : 400,
-              fontSize: 13.5,
+              fontWeight: isActive ? 600 : 500,
+              fontSize: 14,
               fontFamily: 'var(--font-body)',
-              color: isActive ? '#fff' : 'rgba(255,255,255,.5)',
-              background: isActive ? 'rgba(255,255,255,.1)' : 'transparent',
+              color: isActive ? '#fff' : 'rgba(255,255,255,.82)',
+              background: isActive ? 'rgba(255,255,255,.12)' : 'transparent',
               transition: 'background .15s, color .15s',
               letterSpacing: '-.01em',
             })}
-            onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('active')) e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.color = 'rgba(255,255,255,.8)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' }}
           >
             {({ isActive }) => (
               <>
@@ -130,8 +134,8 @@ function DesktopSidebar() {
                 >
                   <Icon
                     size={17}
-                    strokeWidth={isActive ? 2.2 : 1.6}
-                    style={{ color: isActive ? '#fff' : 'rgba(255,255,255,.45)' }}
+                    strokeWidth={isActive ? 2.2 : 1.8}
+                    style={{ color: isActive ? '#fff' : 'rgba(255,255,255,.72)' }}
                   />
                   {isCart && cartCount > 0 && (
                     <span
@@ -171,7 +175,7 @@ function DesktopSidebar() {
             Free Delivery
           </p>
         </div>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', lineHeight: 1.55, color: 'rgba(255,255,255,.45)' }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', lineHeight: 1.55, color: 'rgba(255,255,255,.72)' }}>
           Order above ₹299 — same-day, free.
         </p>
       </div>
@@ -179,8 +183,8 @@ function DesktopSidebar() {
       {/* ── Footer ── */}
       <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
         <div className="flex items-center gap-2">
-          <Leaf size={12} style={{ color: 'rgba(255,255,255,.25)' }} />
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.25)' }}>
+          <Leaf size={12} style={{ color: 'rgba(255,255,255,.45)' }} />
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.45)' }}>
             100% Fresh · Farm to Door
           </p>
         </div>
