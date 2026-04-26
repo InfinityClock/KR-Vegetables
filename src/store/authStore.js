@@ -13,7 +13,10 @@ export const useAuthStore = create(
 
       setSession: (session) => {
         const user = session?.user ?? null
-        const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin'
+        const isAdmin =
+          user?.user_metadata?.role === 'admin' ||
+          user?.app_metadata?.role === 'admin' ||
+          user?.email === 'krajesh@gmail.com'
         set({ session, user, loading: false, isAdmin })
       },
 

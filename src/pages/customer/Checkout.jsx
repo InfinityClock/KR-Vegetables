@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  MapPin, Navigation, Search, CreditCard, Banknote,
-  ChevronRight, CheckCircle, Loader2, AlertCircle,
+  Navigation, Search, CreditCard, Banknote,
+  CheckCircle, Loader2, AlertCircle,
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartDeliveryFee, useCartTotal } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
 import { PageTopBar } from '../../components/TopBar'
+import { supabase } from '../../lib/supabase'
+import { openRazorpayCheckout } from '../../lib/razorpay'
 import toast from 'react-hot-toast'
 
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -161,7 +163,7 @@ export default function Checkout() {
   const deliveryFee = useCartDeliveryFee()
   const total       = useCartTotal()
 
-  // Show payment cancelled toast if redirected back from Zoho
+  // Show payment cancelled toast if redirected back with ?payment=cancelled
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('payment') === 'cancelled') {
@@ -244,7 +246,7 @@ export default function Checkout() {
   }
 
   // ── Payment ───────────────────────────────────────────────────────────────
-  const [paymentMethod, setPaymentMethod] = useState('zoho')
+  const [paymentMethod, setPaymentMethod] = useState('razorpay')
   const [placing, setPlacing] = useState(false)
 
   const handlePlaceOrder = async () => {
@@ -259,7 +261,7 @@ export default function Checkout() {
     setPlacing(true)
 
     try {
-      // 1. Create order via serverless API
+      // 1. Create order record in DB
       const orderRes = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,37 +286,47 @@ export default function Checkout() {
       const { orderId, orderNumber, order } = orderData
 
       if (paymentMethod === 'cod') {
-        // COD — done immediately
         clearCart()
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
       }
 
-      // 2. Create Zoho payment link
-      const zohoRes = await fetch('/api/zoho-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          orderNumber,
-          amount: total,
-          customerName: name.trim(),
-          customerPhone: phone.trim(),
-        }),
+      // 2. Create Razorpay order via Supabase Edge Function
+      const { data: rzpOrder, error: rzpErr } = await supabase.functions.invoke('create-razorpay-order', {
+        body: { amount: total },
       })
-      const zohoData = await zohoRes.json()
-
-      if (!zohoRes.ok || !zohoData.paymentUrl) {
-        // Zoho not configured — fall back to COD and show message
-        toast('Zoho Payments not yet configured. Order placed as COD.', { icon: 'ℹ️', duration: 5000 })
-        clearCart()
-        navigate(`/order-success/${orderId}`, { state: { order: { ...order, payment_method: 'cod' }, name } })
-        return
+      if (rzpErr || !rzpOrder?.id) {
+        throw new Error(rzpErr?.message || 'Could not initiate payment. Please try again.')
       }
 
-      // 3. Clear cart and redirect to Zoho payment page
-      clearCart()
-      window.location.href = zohoData.paymentUrl
+      // 3. Open Razorpay checkout modal — callbacks handle the rest
+      openRazorpayCheckout({
+        orderId: rzpOrder.id,
+        amount: total,
+        customerName: name.trim(),
+        customerPhone: phone.trim(),
+        description: `Order ${orderNumber}`,
+        onSuccess: async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+          try {
+            // 4. Verify signature server-side and mark order as paid
+            const { error: vErr } = await supabase.functions.invoke('verify-razorpay-payment', {
+              body: { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id: orderId },
+            })
+            if (vErr) throw new Error(`Payment verification failed. Quote order ${orderNumber} when contacting support.`)
+            clearCart()
+            navigate(`/order-success/${orderId}`, { state: { order, name } })
+          } catch (e) {
+            toast.error(e.message)
+            setPlacing(false)
+          }
+        },
+        onFailure: (msg) => {
+          if (msg && msg !== 'Payment cancelled') toast.error(msg)
+          else toast('Payment cancelled.', { icon: 'ℹ️' })
+          setPlacing(false)
+        },
+      })
+      // placing stays true while modal is open; callbacks reset it on failure/cancel
 
     } catch (err) {
       toast.error(err.message || 'Something went wrong. Please try again.')
@@ -536,11 +548,11 @@ export default function Checkout() {
         <Section step="4" title="Payment Method">
           <div className="flex flex-col gap-2">
             <RadioCard
-              selected={paymentMethod === 'zoho'}
-              onClick={() => setPaymentMethod('zoho')}
+              selected={paymentMethod === 'razorpay'}
+              onClick={() => setPaymentMethod('razorpay')}
               icon={CreditCard}
               label="Pay Online"
-              subtitle="UPI, Cards, Netbanking via Zoho Payments"
+              subtitle="UPI, Cards, Netbanking via Razorpay"
             />
             <RadioCard
               selected={paymentMethod === 'cod'}
@@ -577,7 +589,7 @@ export default function Checkout() {
         >
           {placing
             ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Placing Order…</>
-            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay'} — ${formatPrice(total)}`
+            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay via Razorpay'} — ${formatPrice(total)}`
           }
         </button>
 

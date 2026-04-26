@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
-import { Home, ShoppingBag, ShoppingCart, Package, User, Leaf, Truck, Star } from 'lucide-react'
+import { Home, ShoppingBag, ShoppingCart, Package, User, Leaf, Truck } from 'lucide-react'
 import logoImg from './assets/Logo.jpg'
 
 // Auth
@@ -38,8 +38,11 @@ import BottomNav from './components/BottomNav'
 import Onboarding from './components/Onboarding'
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
-function AdminGuard({ children }) {
-  return children
+function AdminGuard() {
+  const { isAdmin, loading } = useAuthStore()
+  if (loading) return null
+  if (!isAdmin) return <Navigate to="/admin/login" replace />
+  return <Outlet />
 }
 
 // ─── Desktop Sidebar Nav ──────────────────────────────────────────────────────
@@ -237,14 +240,16 @@ function AppRoutes() {
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
-        <Route index             element={<AdminDashboard />} />
-        <Route path="orders"     element={<AdminOrders />} />
-        <Route path="products"   element={<AdminProducts />} />
-        <Route path="categories" element={<AdminCategories />} />
-        <Route path="offers"     element={<AdminOffers />} />
-        <Route path="delivery"   element={<AdminDelivery />} />
-        <Route path="settings"   element={<AdminSettings />} />
+      <Route element={<AdminGuard />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index             element={<AdminDashboard />} />
+          <Route path="orders"     element={<AdminOrders />} />
+          <Route path="products"   element={<AdminProducts />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="offers"     element={<AdminOffers />} />
+          <Route path="delivery"   element={<AdminDelivery />} />
+          <Route path="settings"   element={<AdminSettings />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

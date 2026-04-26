@@ -10,6 +10,7 @@ const PRODUCT_SELECT = `
 export const useProducts = (filters = {}) => {
   const { category_id, search, is_featured, sort, limit } = filters;
   const [state, setState] = useState({ products: [], loading: true, error: null });
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,10 +41,9 @@ export const useProducts = (filters = {}) => {
     })();
 
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category_id, search, is_featured, sort, limit]);
+  }, [category_id, search, is_featured, sort, limit, tick]);
 
-  return { ...state, refetch: () => {} };
+  return { ...state, refetch: () => setTick((t) => t + 1) };
 };
 
 export const useProduct = (id) => {

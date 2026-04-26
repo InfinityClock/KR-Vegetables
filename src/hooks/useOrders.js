@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 
@@ -10,7 +10,7 @@ export const useOrders = (filter = 'all') => {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const fetch = async () => {
+    const loadOrders = async () => {
       setLoading(true)
       let query = supabase
         .from('orders')
@@ -27,7 +27,7 @@ export const useOrders = (filter = 'all') => {
       else setOrders(data || [])
       setLoading(false)
     }
-    fetch()
+    loadOrders()
   }, [user, filter])
 
   return { orders, loading, error }
@@ -40,7 +40,7 @@ export const useOrder = (orderId) => {
 
   useEffect(() => {
     if (!orderId) return
-    const fetch = async () => {
+    const loadOrder = async () => {
       const [orderRes, trackingRes] = await Promise.all([
         supabase
           .from('orders')
@@ -57,7 +57,7 @@ export const useOrder = (orderId) => {
       setTracking(trackingRes.data || [])
       setLoading(false)
     }
-    fetch()
+    loadOrder()
 
     // Realtime subscription
     const channel = supabase
@@ -81,10 +81,9 @@ export const useAdminOrders = (statusFilter = 'all') => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true)
 
-    // Step 1: Fetch orders + customer + address (no order_items join — avoids broken admin RLS)
     let query = supabase
       .from('orders')
       .select(`*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode)`)
@@ -96,40 +95,37 @@ export const useAdminOrders = (statusFilter = 'all') => {
     const { data: ordersData, error: err } = await query
     if (err) { setError(err.message); setLoading(false); return }
 
-    const orders = ordersData || []
+    const rows = ordersData || []
 
-    // Step 2: Fetch order_items in a separate query so RLS is evaluated
-    // per-item row (uses order_items_own policy) instead of through the join.
-    if (orders.length > 0) {
-      const orderIds = orders.map((o) => o.id)
+    if (rows.length > 0) {
+      const orderIds = rows.map((o) => o.id)
       const { data: itemsData } = await supabase
         .from('order_items')
         .select('id, order_id, product_name, unit, quantity, unit_price, total_price')
         .in('order_id', orderIds)
 
-      // Group items by order_id and attach to each order
       const byOrder = {}
       ;(itemsData || []).forEach((item) => {
         if (!byOrder[item.order_id]) byOrder[item.order_id] = []
         byOrder[item.order_id].push(item)
       })
-      orders.forEach((o) => { o.order_items = byOrder[o.id] || [] })
+      rows.forEach((o) => { o.order_items = byOrder[o.id] || [] })
     }
 
-    setOrders(orders)
+    setOrders(rows)
     setLoading(false)
-  }
+  }, [statusFilter])
 
-  useEffect(() => { fetchOrders() }, [statusFilter])
+  useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  // Realtime
+  // Realtime — re-subscribes whenever fetchOrders identity changes (i.e. statusFilter changes)
   useEffect(() => {
     const channel = supabase
       .channel('admin-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [])
+  }, [fetchOrders])
 
   return { orders, loading, error, refetch: fetchOrders }
 }
