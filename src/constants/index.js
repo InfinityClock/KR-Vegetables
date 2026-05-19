@@ -61,7 +61,7 @@ export const MIN_ORDER_AMOUNT = 150
 export const DELIVERY_FEE = 40
 export const FREE_DELIVERY_THRESHOLD = 300
 
-export const WHATSAPP_NUMBER = '+919876543210'
+export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
 
 export const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80'
 

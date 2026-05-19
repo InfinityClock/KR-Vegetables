@@ -12,15 +12,30 @@
 
 export const config = { runtime: 'edge' }
 
-export default async function handler(req) {
-  // CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  }
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
+}
 
+async function verifyAdmin(req, supabaseUrl, serviceKey) {
+  const auth = req.headers.get('Authorization') || ''
+  if (!auth.startsWith('Bearer ')) return false
+  const token = auth.slice(7)
+  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
+  })
+  if (!res.ok) return false
+  const { user_metadata, app_metadata, email } = await res.json()
+  return (
+    user_metadata?.role === 'admin' ||
+    app_metadata?.role === 'admin' ||
+    email === process.env.VITE_ADMIN_EMAIL
+  )
+}
+
+export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders })
   }
@@ -42,10 +57,27 @@ export default async function handler(req) {
     'Prefer': 'return=representation',
   }
 
-  // ── GET: fetch all orders ────────────────────────────────────────────────
+  // ── GET: fetch orders ────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const url = new URL(req.url)
-    const status = url.searchParams.get('status') || 'all'
+    const orderId = url.searchParams.get('orderId')
+    const status  = url.searchParams.get('status') || 'all'
+
+    // Single-order lookup (used by OrderSuccess page — no admin auth required)
+    if (orderId) {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*)`,
+        { headers: sbHeaders }
+      )
+      const data = await res.json()
+      const order = Array.isArray(data) ? data[0] : null
+      return new Response(JSON.stringify(order ?? null), { status: order ? 200 : 404, headers: corsHeaders })
+    }
+
+    // Admin order list — requires admin JWT
+    if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    }
 
     let ordersUrl = `${supabaseUrl}/rest/v1/orders?select=*,customers(full_name,phone),order_items(*),addresses(*)&order=placed_at.desc`
     if (status !== 'all') {
@@ -57,8 +89,12 @@ export default async function handler(req) {
     return new Response(JSON.stringify(data), { status: res.status, headers: corsHeaders })
   }
 
-  // ── POST: actions ────────────────────────────────────────────────────────
+  // ── POST: actions (admin only) ───────────────────────────────────────────
   if (req.method === 'POST') {
+    if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    }
+
     let body
     try { body = await req.json() } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders })

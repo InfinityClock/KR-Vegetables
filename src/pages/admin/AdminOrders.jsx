@@ -5,6 +5,7 @@ import { formatDateTime, formatPrice } from '../../utils/format'
 import { ORDER_STATUS, ORDER_STATUS_MESSAGES } from '../../constants'
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/OrderStatusBadge'
 import { SkeletonList } from '../../components/Skeleton'
+import { adminFetch } from '../../lib/adminApi'
 import toast from 'react-hot-toast'
 
 const STATUS_FLOW = ['placed', 'confirmed', 'packing', 'out_for_delivery', 'delivered']
@@ -179,9 +180,8 @@ export default function AdminOrders() {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const res = await fetch('/api/admin-orders', {
+      const res = await adminFetch('/api/admin-orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update_status',
           orderId,

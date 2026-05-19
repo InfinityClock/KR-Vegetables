@@ -115,7 +115,7 @@ export default async function handler(req) {
         address_id: finalAddressId,
         status: 'placed',
         payment_status: 'pending',
-        payment_method: paymentMethod || 'razorpay',
+        payment_method: paymentMethod || 'zoho',
         subtotal,
         delivery_fee: deliveryFee,
         discount: 0,

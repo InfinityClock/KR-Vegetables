@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, GripVertical, Tags } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { adminFetch } from '../../lib/adminApi'
 import { SkeletonList } from '../../components/Skeleton'
 import toast from 'react-hot-toast'
 
@@ -16,9 +17,8 @@ function CategoryModal({ category, onClose, onSaved }) {
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return }
     setSaving(true)
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'categories', action: category ? 'update' : 'create', id: category?.id, payload: form }),
     })
     const data = await res.json()
@@ -137,9 +137,8 @@ export default function AdminCategories() {
   }, [])
 
   const adminWrite = async (action, id, payload) => {
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'categories', action, id, payload }),
     })
     const data = await res.json()

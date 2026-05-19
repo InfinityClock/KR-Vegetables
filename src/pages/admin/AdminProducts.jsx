@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Search, Edit2, Trash2, Image, ToggleLeft, ToggleRight, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { adminFetch } from '../../lib/adminApi'
 import { formatPrice } from '../../utils/format'
 import { STOCK_STATUS, PLACEHOLDER_IMAGE } from '../../constants'
 import toast from 'react-hot-toast'
@@ -81,9 +82,8 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       offer_label: form.offer_label || null,
       tamil_name:  form.tamil_name.trim() || null,
     }
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'products', action: product ? 'update' : 'create', id: product?.id, payload }),
     })
     const data = await res.json()
@@ -299,9 +299,8 @@ export default function AdminProducts() {
   }
 
   const adminWrite = async (action, id, payload) => {
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'products', action, id, payload }),
     })
     const data = await res.json()

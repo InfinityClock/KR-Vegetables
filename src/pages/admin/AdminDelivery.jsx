@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Save, Clock, Truck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { adminFetch } from '../../lib/adminApi'
 import toast from 'react-hot-toast'
 
 export default function AdminDelivery() {
@@ -34,9 +35,8 @@ export default function AdminDelivery() {
 
   const saveSlots = async () => {
     setSaving(true)
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key: 'delivery_slots', value: JSON.stringify(slots) } }),
     })
     setSaving(false)

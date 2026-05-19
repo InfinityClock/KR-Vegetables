@@ -19,6 +19,22 @@ const CORS = {
 
 const ALLOWED_TABLES = ['products', 'categories', 'store_settings']
 
+async function verifyAdmin(req, supabaseUrl, serviceKey) {
+  const auth = req.headers.get('Authorization') || ''
+  if (!auth.startsWith('Bearer ')) return false
+  const token = auth.slice(7)
+  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
+  })
+  if (!res.ok) return false
+  const { user_metadata, app_metadata, email } = await res.json()
+  return (
+    user_metadata?.role === 'admin' ||
+    app_metadata?.role === 'admin' ||
+    email === process.env.VITE_ADMIN_EMAIL
+  )
+}
+
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: CORS })
@@ -28,6 +44,10 @@ export default async function handler(req) {
 
   if (!serviceKey || !supabaseUrl) {
     return new Response(JSON.stringify({ error: 'Missing server env vars' }), { status: 500, headers: CORS })
+  }
+
+  if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS })
   }
 
   let body

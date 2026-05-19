@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Save, ToggleLeft, ToggleRight, Settings } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { adminFetch } from '../../lib/adminApi'
 import toast from 'react-hot-toast'
 
 function SettingInput({ label, value, onChange, placeholder, type = 'text', hint }) {
@@ -54,9 +55,8 @@ export default function AdminSettings() {
   const updateSetting = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }))
 
   const adminUpsert = async (key, value) =>
-    fetch('/api/admin-write', {
+    adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key, value: String(value) } }),
     })
 
@@ -190,24 +190,24 @@ export default function AdminSettings() {
       </SectionCard>
 
       {/* Payment */}
-      <SectionCard title="Payment (Razorpay)">
+      <SectionCard title="Payment (Zoho Pay)">
         <div
           className="rounded-xl p-3 text-xs"
           style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
         >
-          ⚠️ Razorpay keys are configured via environment variables (<code>VITE_RAZORPAY_KEY_ID</code>). Never store secret keys in the database.
+          ⚠️ Zoho Pay credentials are configured via Vercel environment variables (<code>ZOHO_PAYMENTS_API_KEY</code>, <code>ZOHO_ORG_ID</code>). Never store secret keys in the database.
         </div>
         <div>
           <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>
-            Current Key ID
+            API Key Status
           </label>
           <div
             className="h-11 px-4 rounded-xl flex items-center text-sm"
             style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-muted)' }}
           >
-            {import.meta.env.VITE_RAZORPAY_KEY_ID
-              ? `${import.meta.env.VITE_RAZORPAY_KEY_ID.slice(0, 8)}••••••••`
-              : 'Not configured'
+            {import.meta.env.VITE_ZOHO_ORG_ID
+              ? `Org ${import.meta.env.VITE_ZOHO_ORG_ID} — configured`
+              : 'Not configured — add ZOHO_PAYMENTS_API_KEY & ZOHO_ORG_ID in Vercel'
             }
           </div>
         </div>

@@ -16,7 +16,7 @@ export const useAuthStore = create(
         const isAdmin =
           user?.user_metadata?.role === 'admin' ||
           user?.app_metadata?.role === 'admin' ||
-          user?.email === 'krajesh@gmail.com'
+          user?.email === import.meta.env.VITE_ADMIN_EMAIL
         set({ session, user, loading: false, isAdmin })
       },
 

@@ -7,7 +7,8 @@ import {
   useCartTotal,
 } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
-import { DELIVERY_SLOTS, MIN_ORDER_AMOUNT, FREE_DELIVERY_THRESHOLD, PLACEHOLDER_IMAGE } from '../../constants'
+import { DELIVERY_SLOTS, PLACEHOLDER_IMAGE } from '../../constants'
+import { useSettingsStore } from '../../store/settingsStore'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
 
@@ -94,11 +95,11 @@ function CartItem({ item }) {
 }
 
 // ─── Delivery Progress Bar ────────────────────────────────────────────────────
-function DeliveryProgress({ subtotal }) {
-  const pct = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)
-  const remaining = FREE_DELIVERY_THRESHOLD - subtotal
+function DeliveryProgress({ subtotal, freeDeliveryAbove }) {
+  const pct = Math.min(100, (subtotal / freeDeliveryAbove) * 100)
+  const remaining = freeDeliveryAbove - subtotal
 
-  if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+  if (subtotal >= freeDeliveryAbove) {
     return (
       <div
         className="flex items-center gap-2 px-4 py-3 rounded-2xl"
@@ -145,7 +146,8 @@ export default function Cart() {
   const subtotal    = useCartSubtotal()
   const deliveryFee = useCartDeliveryFee()
   const total       = useCartTotal()
-  const isMinOrder  = subtotal >= MIN_ORDER_AMOUNT
+  const { min_order_amount, free_delivery_above } = useSettingsStore()
+  const isMinOrder  = subtotal >= min_order_amount
 
   // Empty cart
   if (items.length === 0) {
@@ -226,17 +228,17 @@ export default function Cart() {
               <Tag size={15} style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 1 }} />
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
-                  Minimum order: {formatPrice(MIN_ORDER_AMOUNT)}
+                  Minimum order: {formatPrice(min_order_amount)}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
-                  Add {formatPrice(MIN_ORDER_AMOUNT - subtotal)} more to proceed to checkout
+                  Add {formatPrice(min_order_amount - subtotal)} more to proceed to checkout
                 </p>
               </div>
             </div>
           )}
 
           {/* Free delivery progress */}
-          <DeliveryProgress subtotal={subtotal} />
+          <DeliveryProgress subtotal={subtotal} freeDeliveryAbove={free_delivery_above} />
 
           {/* Delivery slot */}
           <div
@@ -341,7 +343,7 @@ export default function Cart() {
           <button
             onClick={() => {
               if (!isMinOrder) {
-                toast.error(`Minimum order is ${formatPrice(MIN_ORDER_AMOUNT)}`)
+                toast.error(`Minimum order is ${formatPrice(min_order_amount)}`)
                 return
               }
               navigate('/checkout')

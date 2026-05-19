@@ -7,8 +7,6 @@ import {
 import { useCartStore, useCartSubtotal, useCartDeliveryFee, useCartTotal } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
 import { PageTopBar } from '../../components/TopBar'
-import { supabase } from '../../lib/supabase'
-import { openRazorpayCheckout } from '../../lib/razorpay'
 import toast from 'react-hot-toast'
 
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -246,7 +244,7 @@ export default function Checkout() {
   }
 
   // ── Payment ───────────────────────────────────────────────────────────────
-  const [paymentMethod, setPaymentMethod] = useState('razorpay')
+  const [paymentMethod, setPaymentMethod] = useState('zoho')
   const [placing, setPlacing] = useState(false)
 
   const handlePlaceOrder = async () => {
@@ -291,42 +289,26 @@ export default function Checkout() {
         return
       }
 
-      // 2. Create Razorpay order via Supabase Edge Function
-      const { data: rzpOrder, error: rzpErr } = await supabase.functions.invoke('create-razorpay-order', {
-        body: { amount: total },
+      // 2. Create Zoho payment link
+      const payRes = await fetch('/api/zoho-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          orderNumber,
+          amount: total,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+        }),
       })
-      if (rzpErr || !rzpOrder?.id) {
-        throw new Error(rzpErr?.message || 'Could not initiate payment. Please try again.')
+      const payData = await payRes.json()
+      if (!payRes.ok || !payData.paymentUrl) {
+        throw new Error(payData.error || 'Could not initiate payment. Please try again.')
       }
 
-      // 3. Open Razorpay checkout modal — callbacks handle the rest
-      openRazorpayCheckout({
-        orderId: rzpOrder.id,
-        amount: total,
-        customerName: name.trim(),
-        customerPhone: phone.trim(),
-        description: `Order ${orderNumber}`,
-        onSuccess: async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
-          try {
-            // 4. Verify signature server-side and mark order as paid
-            const { error: vErr } = await supabase.functions.invoke('verify-razorpay-payment', {
-              body: { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id: orderId },
-            })
-            if (vErr) throw new Error(`Payment verification failed. Quote order ${orderNumber} when contacting support.`)
-            clearCart()
-            navigate(`/order-success/${orderId}`, { state: { order, name } })
-          } catch (e) {
-            toast.error(e.message)
-            setPlacing(false)
-          }
-        },
-        onFailure: (msg) => {
-          if (msg && msg !== 'Payment cancelled') toast.error(msg)
-          else toast('Payment cancelled.', { icon: 'ℹ️' })
-          setPlacing(false)
-        },
-      })
-      // placing stays true while modal is open; callbacks reset it on failure/cancel
+      // 3. Clear cart and redirect to Zoho payment page
+      clearCart()
+      window.location.href = payData.paymentUrl
 
     } catch (err) {
       toast.error(err.message || 'Something went wrong. Please try again.')
@@ -443,7 +425,7 @@ export default function Checkout() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: 'var(--amber-50)', border: '1px solid var(--amber-100)', borderRadius: 'var(--radius-sm)' }}>
                 <AlertCircle size={14} style={{ color: 'var(--amber-700)', flexShrink: 0, marginTop: 1 }} />
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--amber-800)' }}>
-                  Add <strong>VITE_GOOGLE_MAPS_API_KEY</strong> in Vercel env vars to enable location search &amp; GPS.
+                  Location search is currently unavailable. Please enter your address manually below.
                 </p>
               </div>
             )}
@@ -548,11 +530,11 @@ export default function Checkout() {
         <Section step="4" title="Payment Method">
           <div className="flex flex-col gap-2">
             <RadioCard
-              selected={paymentMethod === 'razorpay'}
-              onClick={() => setPaymentMethod('razorpay')}
+              selected={paymentMethod === 'zoho'}
+              onClick={() => setPaymentMethod('zoho')}
               icon={CreditCard}
               label="Pay Online"
-              subtitle="UPI, Cards, Netbanking via Razorpay"
+              subtitle="UPI, Cards, Netbanking via Zoho Pay"
             />
             <RadioCard
               selected={paymentMethod === 'cod'}
@@ -589,7 +571,7 @@ export default function Checkout() {
         >
           {placing
             ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Placing Order…</>
-            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay via Razorpay'} — ${formatPrice(total)}`
+            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay via Zoho Pay'} — ${formatPrice(total)}`
           }
         </button>
 

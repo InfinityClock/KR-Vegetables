@@ -26,8 +26,7 @@ export default function OrderSuccess() {
     fetch(`/api/admin-orders?orderId=${orderId}`)
       .then((r) => r.json())
       .then((data) => {
-        const match = Array.isArray(data) ? data.find((o) => o.id === orderId) : null
-        setOrder(match || null)
+        setOrder(data || null)
       })
       .catch(() => {})
       .finally(() => setLoading(false))

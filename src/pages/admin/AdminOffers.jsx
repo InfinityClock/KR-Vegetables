@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Tag, Plus, Trash2, Edit2, X, Zap } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { adminFetch } from '../../lib/adminApi'
 import { formatPrice } from '../../utils/format'
 import { PLACEHOLDER_IMAGE } from '../../constants'
 import toast from 'react-hot-toast'
@@ -19,9 +20,8 @@ function OfferModal({ product, onClose, onSaved }) {
 
   const save = async () => {
     setSaving(true)
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         table: 'products', action: 'update', id: product.id,
         payload: {
@@ -170,9 +170,8 @@ export default function AdminOffers() {
   }, [])
 
   const removeOffer = async (productId) => {
-    const res = await fetch('/api/admin-write', {
+    const res = await adminFetch('/api/admin-write', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'products', action: 'update', id: productId, payload: { offer_price: null, offer_label: null, offer_expires_at: null } }),
     })
     if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Failed'); return }
