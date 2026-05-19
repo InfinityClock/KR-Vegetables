@@ -238,7 +238,7 @@ function ProductModal({ product, categories, onClose, onSaved }) {
             <label className={labelCls}>Description</label>
             <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
               rows={3} placeholder="Product description..."
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#166634] resize-none" />
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#166534] resize-none" />
           </div>
 
           {/* Toggles */}

@@ -263,8 +263,8 @@ h1, h2, h3, .serif, .display {
 
 /* ─── Qty Controls ───────────────────────────────────────────────────────── */
 .qty-btn {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -273,6 +273,8 @@ h1, h2, h3, .serif, .display {
   transition: background .12s, transform .1s;
   cursor: pointer;
   user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .qty-btn:active { transform: scale(.82); }
 
@@ -468,6 +470,20 @@ input[type=number]::-webkit-outer-spin-button {
   border-radius: var(--radius-full);
   border: 1px solid var(--teal-100);
   font-family: var(--font-body);
+}
+
+/* ─── Green → Brand aliases (components use --green-* shorthand) ─────────── */
+:root {
+  --green-dark:  var(--brand-800);  /* #1b3e2c deep forest */
+  --green-mid:   var(--brand-600);  /* #2a5c40 interactive */
+  --green-light: var(--brand-400);  /* #5a9e77 accent */
+  --green-pale:  var(--brand-100);  /* #daeee4 subtle border */
+  --green-tint:  var(--brand-50);   /* #eef7f2 bg tint */
+}
+
+/* ─── Orange → Amber alias (offer/sale accents) ──────────────────────────── */
+:root {
+  --orange-dark: var(--amber-700);  /* #b45309 */
 }
 
 /* ─── Gray → Warm backward-compat aliases ───────────────────────────────── */

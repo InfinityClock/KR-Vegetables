@@ -232,28 +232,25 @@ export default function Cart() {
             </div>
           )}
 
+          {/* Min order warning — shown at top so it's immediately visible */}
+          {!isMinOrder && (
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl"
+              style={{ background: '#FFF7ED', border: '1.5px solid #FDDCB5' }}
+            >
+              <Tag size={15} style={{ color: '#B45309', flexShrink: 0 }} />
+              <p className="text-sm font-medium" style={{ color: '#92400E' }}>
+                Add{' '}
+                <span className="font-bold">{formatPrice(min_order_amount - subtotal)}</span>
+                {' '}more to reach the ₹{min_order_amount} minimum
+              </p>
+            </div>
+          )}
+
           {/* Items */}
           <div className="flex flex-col gap-2.5">
             {items.map((item) => <CartItem key={item.id} item={item} />)}
           </div>
-
-          {/* Min order warning */}
-          {!isMinOrder && (
-            <div
-              className="flex items-start gap-2.5 px-4 py-3 rounded-2xl"
-              style={{ background: '#FFF7ED', border: '1.5px solid #FDDCB5' }}
-            >
-              <Tag size={15} style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
-                  Minimum order: {formatPrice(min_order_amount)}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
-                  Add {formatPrice(min_order_amount - subtotal)} more to proceed to checkout
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Free delivery progress */}
           <DeliveryProgress subtotal={subtotal} freeDeliveryAbove={free_delivery_above} />
