@@ -79,7 +79,15 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       ...form,
       price:       Number(form.price),
       offer_price: form.offer_price ? Number(form.offer_price) : null,
-      offer_label: form.offer_label || null,
+      offer_label: (() => {
+        const op = form.offer_price ? Number(form.offer_price) : null
+        const p  = Number(form.price)
+        if (op && op < p) {
+          const pct = Math.round(((p - op) / p) * 100)
+          return form.offer_label?.trim() || `${pct}% OFF`
+        }
+        return form.offer_label?.trim() || null
+      })(),
       tamil_name:  form.tamil_name.trim() || null,
     }
     const res = await adminFetch('/api/admin-write', {
@@ -337,8 +345,15 @@ export default function AdminProducts() {
     const price = Number(newPrice)
     if (!price || price === product.price) return
     try {
-      await adminWrite('update', product.id, { price })
-      setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, price } : p))
+      const updates = { price }
+      if (product.offer_price && product.offer_price < price) {
+        const pct = Math.round(((price - product.offer_price) / price) * 100)
+        updates.offer_label = `${pct}% OFF`
+      } else if (!product.offer_price) {
+        updates.offer_label = null
+      }
+      await adminWrite('update', product.id, updates)
+      setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, ...updates } : p))
       toast.success('Price updated')
     } catch (e) { toast.error(e.message) }
   }
@@ -464,8 +479,19 @@ export default function AdminProducts() {
                         className="w-20 h-8 px-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#166534] text-center"
                       />
                     </td>
-                    <td className="px-4 py-3 text-xs font-semibold" style={{ color: product.offer_price ? 'var(--red-600)' : 'var(--text-light)' }}>
-                      {product.offer_price ? formatPrice(product.offer_price) : '—'}
+                    <td className="px-4 py-3">
+                      {product.offer_price && product.offer_price < product.price ? (
+                        <div className="flex flex-col">
+                          <span className="text-xs font-semibold" style={{ color: 'var(--red-600)' }}>
+                            {formatPrice(product.offer_price)}
+                          </span>
+                          <span className="text-xs font-bold" style={{ color: '#dc2626' }}>
+                            {Math.round(((product.price - product.offer_price) / product.price) * 100)}% OFF
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs" style={{ color: 'var(--text-light)' }}>—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <select
