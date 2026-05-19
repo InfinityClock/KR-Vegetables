@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, ShoppingBag, ShoppingCart, Package, User } from 'lucide-react'
+import { Home, ShoppingBag, ShoppingCart, Package } from 'lucide-react'
 import { useCartCount } from '../store/cartStore'
 
 const tabs = [
@@ -7,7 +7,6 @@ const tabs = [
   { to: '/shop',    icon: ShoppingBag,  label: 'Shop'  },
   { to: '/cart',    icon: ShoppingCart, label: 'Cart'  },
   { to: '/orders',  icon: Package,      label: 'Orders'},
-  { to: '/profile', icon: User,         label: 'Profile'},
 ]
 
 export default function BottomNav() {

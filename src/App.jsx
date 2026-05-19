@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
-import { Home, ShoppingBag, ShoppingCart, Package, User, Leaf, Truck } from 'lucide-react'
+import { Home, ShoppingBag, ShoppingCart, Package, Leaf, Truck } from 'lucide-react'
 import logoImg from './assets/Logo.jpg'
 
 // Auth
@@ -19,8 +19,6 @@ import Checkout from './pages/customer/Checkout'
 import OrderSuccess from './pages/customer/OrderSuccess'
 import OrderTracking from './pages/customer/OrderTracking'
 import Orders from './pages/customer/Orders'
-import Profile from './pages/customer/Profile'
-import Auth from './pages/customer/Auth'
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout'
@@ -51,7 +49,6 @@ const NAV_ITEMS = [
   { to: '/shop',    icon: ShoppingBag,  label: 'Shop' },
   { to: '/cart',    icon: ShoppingCart, label: 'Cart',   isCart: true },
   { to: '/orders',  icon: Package,      label: 'Orders' },
-  { to: '/profile', icon: User,         label: 'Profile' },
 ]
 
 function DesktopSidebar() {
@@ -239,8 +236,6 @@ function AppRoutes() {
       <Route path="/order-success/:orderId" element={<OrderSuccess />} />
       <Route path="/track/:orderId"         element={<OrderTracking />} />
       <Route path="/orders"      element={<CustomerLayout><Orders /></CustomerLayout>} />
-      <Route path="/profile"     element={<CustomerLayout><Profile /></CustomerLayout>} />
-      <Route path="/auth"        element={<Auth />} />
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />

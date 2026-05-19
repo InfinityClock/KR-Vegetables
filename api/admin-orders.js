@@ -63,10 +63,12 @@ export default async function handler(req) {
     const orderId = url.searchParams.get('orderId')
     const status  = url.searchParams.get('status') || 'all'
 
-    // Single-order lookup (used by OrderSuccess page — no admin auth required)
-    if (orderId) {
+    // Single-order lookup by id or order_number — no admin auth required
+    if (orderId || url.searchParams.get('orderNumber')) {
+      const orderNumber = url.searchParams.get('orderNumber')
+      const filter = orderId ? `id=eq.${orderId}` : `order_number=eq.${orderNumber}`
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*)`,
+        `${supabaseUrl}/rest/v1/orders?${filter}&select=*,order_items(*)`,
         { headers: sbHeaders }
       )
       const data = await res.json()

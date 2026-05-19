@@ -1,111 +1,99 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
-import { useOrders } from '../../hooks/useOrders'
-import { useAuthStore } from '../../store/authStore'
-import { formatDate, formatPrice } from '../../utils/format'
-import { OrderStatusBadge } from '../../components/OrderStatusBadge'
-import { SkeletonOrderCard } from '../../components/Skeleton'
-import EmptyState from '../../components/EmptyState'
+import { Search, Package } from 'lucide-react'
 import { PageTopBar } from '../../components/TopBar'
-
-const FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
-]
-
-function OrderCard({ order, onClick }) {
-  const itemNames = order.order_items?.slice(0, 2).map((i) => i.product_name || i.products?.name).join(', ')
-  const moreCount = (order.order_items?.length || 0) - 2
-
-  return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-2xl border border-gray-100 p-4 cursor-pointer active:scale-[0.98] transition-transform"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <p className="text-sm font-bold text-gray-900">{order.order_number}</p>
-          <p className="text-xs text-gray-400">{formatDate(order.placed_at)}</p>
-        </div>
-        <OrderStatusBadge status={order.status} />
-      </div>
-
-      <p className="text-xs text-gray-500 mb-2 line-clamp-1">
-        {itemNames}
-        {moreCount > 0 && ` +${moreCount} more`}
-      </p>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-base font-bold text-[#2D6A4F]">{formatPrice(order.total_amount)}</span>
-          <span className="text-xs text-gray-400 ml-1">• {order.order_items?.length || 0} items</span>
-        </div>
-        <ChevronRight size={18} className="text-gray-400" />
-      </div>
-    </div>
-  )
-}
+import toast from 'react-hot-toast'
 
 export default function Orders() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const [filter, setFilter] = useState('all')
-  const { orders, loading } = useOrders(filter)
+  const [orderNumber, setOrderNumber] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  if (!user) {
-    return (
-      <div className="pb-nav min-h-screen bg-[#FFFDF7] page-enter">
-        <PageTopBar title="My Orders" showBack={false} />
-        <EmptyState
-          icon="📦"
-          title="Login to view orders"
-          subtitle="Sign in with your phone number to see your order history"
-          action={{ label: 'Login', onClick: () => navigate('/auth') }}
-        />
-      </div>
-    )
+  const handleTrack = async (e) => {
+    e.preventDefault()
+    const num = orderNumber.trim().toUpperCase()
+    if (!num) { toast.error('Please enter your order number'); return }
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin-orders?orderNumber=${encodeURIComponent(num)}`)
+      const data = await res.json()
+      if (!data?.id) {
+        toast.error('Order not found. Check the number and try again.')
+        return
+      }
+      navigate(`/track/${data.id}`)
+    } catch {
+      toast.error('Could not look up order. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="pb-nav min-h-screen bg-[#FFFDF7] page-enter">
-      <PageTopBar title="My Orders" showBack={false} />
+    <div className="pb-nav page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
+      <PageTopBar title="Track Order" showBack={false} />
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-        {FILTERS.map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setFilter(value)}
-            className={`flex-shrink-0 px-4 h-8 rounded-full text-xs font-semibold border transition-colors
-              ${filter === value ? 'bg-[#2D6A4F] text-white border-[#2D6A4F]' : 'bg-white text-gray-600 border-gray-200'}`}
+      <div className="flex flex-col items-center justify-center px-6 pt-20 pb-10 gap-6">
+        <div
+          className="flex items-center justify-center rounded-full"
+          style={{ width: 80, height: 80, background: 'var(--green-tint)', border: '2px solid var(--green-pale)' }}
+        >
+          <Package size={36} strokeWidth={1.5} style={{ color: 'var(--green-mid)' }} />
+        </div>
+
+        <div className="text-center">
+          <h1
+            className="text-2xl font-bold mb-2"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
           >
-            {label}
-          </button>
-        ))}
-      </div>
+            Track Your Order
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)', maxWidth: 280, margin: '0 auto' }}>
+            Enter your order number from the confirmation page or WhatsApp message
+          </p>
+        </div>
 
-      <div className="px-4 space-y-3">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonOrderCard key={i} />)
-        ) : orders.length === 0 ? (
-          <EmptyState
-            icon="📦"
-            title={filter === 'all' ? "No orders yet" : `No ${filter} orders`}
-            subtitle="Your order history will appear here"
-            action={{ label: 'Start Shopping', onClick: () => navigate('/shop') }}
-          />
-        ) : (
-          orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onClick={() => navigate(`/track/${order.id}`)}
+        <form onSubmit={handleTrack} className="w-full" style={{ maxWidth: 360 }}>
+          <div className="flex flex-col gap-3">
+            <input
+              type="text"
+              value={orderNumber}
+              onChange={(e) => setOrderNumber(e.target.value)}
+              placeholder="e.g. KRV-260519-1234"
+              className="w-full h-13 px-4 rounded-2xl text-sm outline-none"
+              style={{
+                height: 52,
+                border: '1.5px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-dark)',
+                fontFamily: 'var(--font-body)',
+                letterSpacing: '.04em',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = 'var(--green-mid)' }}
+              onBlur={(e) => { e.target.style.borderColor = 'var(--border)' }}
             />
-          ))
-        )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-13 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 btn-ripple"
+              style={{
+                height: 52,
+                background: loading ? 'var(--green-light)' : 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
+                border: 'none',
+                fontFamily: 'var(--font-body)',
+                cursor: loading ? 'wait' : 'pointer',
+              }}
+            >
+              <Search size={16} />
+              {loading ? 'Looking up…' : 'Track Order'}
+            </button>
+          </div>
+        </form>
+
+        <p className="text-xs text-center" style={{ color: 'var(--text-light)', maxWidth: 280 }}>
+          Your order number was shown on the confirmation screen and sent via WhatsApp after placing your order.
+        </p>
       </div>
     </div>
   )
