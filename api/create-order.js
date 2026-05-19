@@ -58,15 +58,21 @@ export default async function handler(req) {
     })
 
   try {
-    // 1. Upsert customer by phone — generate a UUID for new customers
-    const custRes = await sb('customers?on_conflict=phone', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({ id: crypto.randomUUID(), full_name: name, phone, email: null }),
-    })
-    const custData = await custRes.json()
-    if (!custRes.ok) throw new Error(custData?.message || custData?.details || 'Failed to create customer')
-    const customerId = custData[0]?.id
+    // 1. Find or create customer by phone
+    let customerId
+    const findRes = await sb(`customers?phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`)
+    const findData = await findRes.json()
+    if (findData?.[0]?.id) {
+      customerId = findData[0].id
+    } else {
+      const custRes = await sb('customers', {
+        method: 'POST',
+        body: JSON.stringify({ id: crypto.randomUUID(), full_name: name, phone, email: null }),
+      })
+      const custData = await custRes.json()
+      if (!custRes.ok) throw new Error(custData?.message || custData?.details || 'Failed to create customer')
+      customerId = custData[0]?.id
+    }
 
     // 2. Create address
     const addrRes = await sb('addresses', {
