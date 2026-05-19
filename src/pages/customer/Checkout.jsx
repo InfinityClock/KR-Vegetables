@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Navigation, Search, CreditCard, Banknote,
-  CheckCircle, Loader2, AlertCircle,
+  CheckCircle, Loader2,
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartDeliveryFee, useCartTotal } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
@@ -421,14 +421,6 @@ export default function Checkout() {
               </div>
             )}
 
-            {!MAPS_KEY && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: 'var(--amber-50)', border: '1px solid var(--amber-100)', borderRadius: 'var(--radius-sm)' }}>
-                <AlertCircle size={14} style={{ color: 'var(--amber-700)', flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--amber-800)' }}>
-                  Location search is currently unavailable. Please enter your address manually below.
-                </p>
-              </div>
-            )}
 
             {/* Address label */}
             <div className="flex gap-2">

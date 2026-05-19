@@ -822,7 +822,7 @@ export const BANNERS = [
     cta: 'View Offers →',
     ctaPath: '/shop?sort=offers',
     emoji: '🌿🧄🧅',
-    gradient: 'linear-gradient(135deg, #6B4226 0%, #A0522D 60%, #D2691E 100%)',
+    gradient: 'linear-gradient(135deg, #1A5276 0%, #2E86C1 60%, #5DADE2 100%)',
   },
 ]
 

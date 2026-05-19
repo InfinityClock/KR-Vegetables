@@ -169,6 +169,12 @@ h1, h2, h3, .serif, .display {
 }
 @media (min-width: 1024px) { .pb-nav { padding-bottom: 48px; } }
 
+/* Cart page — extra space for the sticky checkout bar */
+.pb-cart {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 88px);
+}
+@media (min-width: 1024px) { .pb-cart { padding-bottom: 48px; } }
+
 .pt-topbar {
   padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
 }

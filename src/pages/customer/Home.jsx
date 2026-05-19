@@ -801,8 +801,8 @@ export default function Home() {
             {!allLoading && allProducts.length > 0 && (
               <div>
                 <SectionHeader
-                  title="Best Sellers"
-                  subtitle="Most-loved by our customers"
+                  title="Popular Picks"
+                  subtitle="Fresh picks from our store"
                   onSeeAll={() => navigate('/shop')}
                 />
                 <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
@@ -836,7 +836,7 @@ export default function Home() {
                   color: 'var(--text-dark)', letterSpacing: '-.03em',
                 }}
               >
-                Why 10,000+ families choose us
+                Why families choose us
               </h2>
             </div>
             <div className="grid grid-cols-4">

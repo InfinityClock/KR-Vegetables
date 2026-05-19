@@ -43,12 +43,6 @@ export default function Orders() {
         </div>
 
         <div className="text-center">
-          <h1
-            className="text-2xl font-bold mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
-          >
-            Track Your Order
-          </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)', maxWidth: 280, margin: '0 auto' }}>
             Enter your order number from the confirmation page or WhatsApp message
           </p>

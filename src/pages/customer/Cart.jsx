@@ -180,7 +180,7 @@ export default function Cart() {
   const itemCount = items.reduce((s, i) => s + i.quantity, 0)
 
   return (
-    <div className="pb-nav page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
+    <div className="pb-cart page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
       <PageTopBar
         title={`My Cart (${itemCount})`}
         showBack={false}
@@ -366,6 +366,54 @@ export default function Cart() {
         </div>
 
       </div>
+
+      {/* ── Sticky checkout bar — mobile only ── */}
+      <div
+        className="lg:hidden fixed left-0 right-0 z-40 px-4 py-3"
+        style={{
+          bottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px))',
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid var(--border-light)',
+          boxShadow: '0 -4px 20px rgba(28,26,23,.08)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col" style={{ minWidth: 0 }}>
+            <span className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
+              Total
+            </span>
+            <span className="text-base font-bold" style={{ color: 'var(--green-dark)', fontFamily: 'var(--font-body)' }}>
+              {formatPrice(total)}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              if (!isMinOrder) {
+                toast.error(`Minimum order is ${formatPrice(min_order_amount)}`)
+                return
+              }
+              navigate('/checkout')
+            }}
+            disabled={!isMinOrder}
+            className="flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 btn-ripple"
+            style={isMinOrder ? {
+              background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
+              color: '#fff',
+              boxShadow: 'var(--shadow-sm)',
+            } : {
+              background: 'var(--bg-muted)',
+              color: 'var(--text-light)',
+              cursor: 'not-allowed',
+            }}
+          >
+            <ShoppingBag size={17} />
+            Proceed to Checkout
+          </button>
+        </div>
+      </div>
+
     </div>
   )
 }
