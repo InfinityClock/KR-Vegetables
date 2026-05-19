@@ -289,26 +289,30 @@ export default function Checkout() {
         return
       }
 
-      // 2. Create Zoho payment link
-      const payRes = await fetch('/api/zoho-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          orderNumber,
-          amount: total,
-          customerName: name.trim(),
-          customerPhone: phone.trim(),
-        }),
-      })
-      const payData = await payRes.json()
-      if (!payRes.ok || !payData.paymentUrl) {
-        throw new Error(payData.error || 'Could not initiate payment. Please try again.')
-      }
+      // 2. Try to create Zoho payment link — fall back to success page if it fails
+      let paymentUrl = null
+      try {
+        const payRes = await fetch('/api/zoho-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            orderNumber,
+            amount: total,
+            customerName: name.trim(),
+            customerPhone: phone.trim(),
+          }),
+        })
+        const payData = await payRes.json()
+        if (payRes.ok && payData.paymentUrl) paymentUrl = payData.paymentUrl
+      } catch {}
 
-      // 3. Clear cart and redirect to Zoho payment page
       clearCart()
-      window.location.href = payData.paymentUrl
+      if (paymentUrl) {
+        window.location.href = paymentUrl
+      } else {
+        navigate(`/order-success/${orderId}`, { state: { order, name } })
+      }
 
     } catch (err) {
       toast.error(err.message || 'Something went wrong. Please try again.')
