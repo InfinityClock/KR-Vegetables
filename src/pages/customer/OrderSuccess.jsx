@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, Package, ShoppingBag, Share2 } from 'lucide-react'
+import { CheckCircle, Package, ShoppingBag, Share2, Copy, Check } from 'lucide-react'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { WHATSAPP_NUMBER } from '../../constants'
 
@@ -13,6 +13,7 @@ export default function OrderSuccess() {
   // or we show generic success if user landed via Zoho redirect
   const [order, setOrder] = useState(state?.order || null)
   const [loading, setLoading] = useState(!state?.order)
+  const [copied, setCopied] = useState(false)
 
   const params = new URLSearchParams(search)
   const paymentStatus = params.get('payment') // 'success' from Zoho redirect
@@ -90,17 +91,32 @@ export default function OrderSuccess() {
 
       {order && !loading && (
         <>
-          <div style={{
-            background: 'var(--brand-50)',
-            border: '1px solid var(--brand-100)',
-            borderRadius: 'var(--radius-full)',
-            padding: '6px 20px',
-            marginBottom: 6,
-          }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-800)', letterSpacing: '.06em' }}>
-              {order.order_number}
-            </span>
-          </div>
+          <button
+            onClick={() => navigator.clipboard.writeText(order.order_number).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })}
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            <div style={{
+              background: 'var(--brand-50)',
+              border: '1px solid var(--brand-100)',
+              borderRadius: 'var(--radius-full)',
+              padding: '6px 20px',
+              marginBottom: 6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-800)', letterSpacing: '.06em' }}>
+                {order.order_number}
+              </span>
+              {copied
+                ? <Check size={12} style={{ color: 'var(--brand-700)' }} />
+                : <Copy size={12} style={{ color: 'var(--brand-800)' }} />
+              }
+            </div>
+          </button>
+          <p style={{ fontSize: '10px', color: 'var(--text-light)', marginBottom: 20, marginTop: -2 }}>
+            {copied ? 'Copied!' : 'Tap to copy order number'}
+          </p>
 
           {order.placed_at && (
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: 4 }}>

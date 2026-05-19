@@ -226,10 +226,11 @@ export default function ProductCard({ product }) {
             <button
               onClick={handleDecrease}
               style={{
-                width: 26, height: 26, borderRadius: '50%',
+                width: 30, height: 30, borderRadius: '50%',
                 background: 'rgba(255,255,255,.15)',
                 border: 'none', color: '#fff', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                touchAction: 'manipulation',
               }}
             >
               <Minus size={11} strokeWidth={2.5} />
@@ -240,10 +241,11 @@ export default function ProductCard({ product }) {
             <button
               onClick={handleIncrease}
               style={{
-                width: 26, height: 26, borderRadius: '50%',
+                width: 30, height: 30, borderRadius: '50%',
                 background: 'rgba(255,255,255,.15)',
                 border: 'none', color: '#fff', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                touchAction: 'manipulation',
               }}
             >
               <Plus size={11} strokeWidth={2.5} />
