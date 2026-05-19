@@ -24,15 +24,11 @@ export default function AdminLogin() {
       const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
       const role = userMetadata.role || appMetadata.role || (data.user?.email === ADMIN_EMAIL ? 'admin' : null)
 
-      if (role !== 'admin') {
+      if (!['admin', 'sales'].includes(role)) {
         await supabase.auth.signOut()
-        toast.error(`Access denied. Role "${role || 'none'}" is not "admin".`)
+        toast.error(`Access denied. Role "${role || 'none'}" is not authorized.`)
         setLoading(false)
         return
-      }
-
-      if (!userMetadata.role) {
-        await supabase.auth.updateUser({ data: { role: 'admin' } })
       }
 
       navigate('/admin')

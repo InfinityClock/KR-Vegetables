@@ -37,9 +37,16 @@ import Onboarding from './components/Onboarding'
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 function AdminGuard() {
-  const { isAdmin, loading } = useAuthStore()
+  const { userRole, loading } = useAuthStore()
   if (loading) return null
-  if (!isAdmin) return <Navigate to="/admin/login" replace />
+  if (!userRole || !['admin', 'sales'].includes(userRole)) return <Navigate to="/admin/login" replace />
+  return <Outlet />
+}
+
+function AdminOnlyGuard() {
+  const { userRole, loading } = useAuthStore()
+  if (loading) return null
+  if (userRole !== 'admin') return <Navigate to="/admin" replace />
   return <Outlet />
 }
 
@@ -245,9 +252,11 @@ function AppRoutes() {
           <Route path="orders"     element={<AdminOrders />} />
           <Route path="products"   element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
-          <Route path="offers"     element={<AdminOffers />} />
           <Route path="delivery"   element={<AdminDelivery />} />
-          <Route path="settings"   element={<AdminSettings />} />
+          <Route element={<AdminOnlyGuard />}>
+            <Route path="offers"   element={<AdminOffers />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
         </Route>
       </Route>
 

@@ -20,7 +20,7 @@ const navItems = [
 
 function Sidebar({ open, onClose }) {
   const navigate = useNavigate()
-  const { logout, user } = useAuthStore()
+  const { logout, user, userRole } = useAuthStore()
 
   const handleLogout = async () => {
     await logout()
@@ -83,7 +83,10 @@ function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ to, icon: Icon, label, exact }) => (
+          {navItems.filter(({ to }) => {
+            if (userRole === 'sales') return !['/admin/offers', '/admin/settings'].includes(to)
+            return true
+          }).map(({ to, icon: Icon, label, exact }) => (
             <NavLink
               key={to}
               to={to}
@@ -131,7 +134,7 @@ function Sidebar({ open, onClose }) {
                 {user.email}
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'rgba(45,212,191,.6)', fontSize: 10 }}>
-                Administrator
+                {userRole === 'sales' ? 'Sales' : 'Administrator'}
               </p>
             </div>
           )}

@@ -10,21 +10,23 @@ export const useAuthStore = create(
       session: null,
       loading: true,
       isAdmin: false,
+      userRole: null,
 
       setSession: (session) => {
         const user = session?.user ?? null
-        const isAdmin =
-          user?.user_metadata?.role === 'admin' ||
-          user?.app_metadata?.role === 'admin' ||
-          user?.email === import.meta.env.VITE_ADMIN_EMAIL
-        set({ session, user, loading: false, isAdmin })
+        const userRole =
+          user?.user_metadata?.role ||
+          user?.app_metadata?.role ||
+          (user?.email === import.meta.env.VITE_ADMIN_EMAIL ? 'admin' : null)
+        const isAdmin = userRole === 'admin' || userRole === 'sales'
+        set({ session, user, loading: false, isAdmin, userRole })
       },
 
       setCustomer: (customer) => set({ customer }),
 
       logout: async () => {
         await supabase.auth.signOut()
-        set({ user: null, customer: null, session: null, isAdmin: false })
+        set({ user: null, customer: null, session: null, isAdmin: false, userRole: null })
       },
 
       refreshCustomer: async () => {

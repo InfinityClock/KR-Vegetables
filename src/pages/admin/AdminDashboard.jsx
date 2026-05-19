@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore'
 import {
   Package, TrendingUp, Clock, AlertTriangle, ChevronRight,
   ShoppingBag, RefreshCw, ArrowUpRight, Zap,
@@ -70,6 +71,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const { userRole } = useAuthStore()
   const [stats, setStats] = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
   const [chartData, setChartData] = useState([])
@@ -247,13 +249,15 @@ export default function AdminDashboard() {
           accent="var(--brand-600)"
           loading={loading}
         />
-        <KPICard
-          icon={TrendingUp}
-          label="Today's Revenue"
-          value={stats ? formatPrice(stats.todayRevenue) : '—'}
-          accent="#7C3AED"
-          loading={loading}
-        />
+        {userRole !== 'sales' && (
+          <KPICard
+            icon={TrendingUp}
+            label="Today's Revenue"
+            value={stats ? formatPrice(stats.todayRevenue) : '—'}
+            accent="#7C3AED"
+            loading={loading}
+          />
+        )}
         <KPICard
           icon={Clock}
           label="Pending Orders"
@@ -273,58 +277,60 @@ export default function AdminDashboard() {
       </div>
 
       {/* Chart + Quick Actions */}
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className={`grid ${userRole === 'sales' ? '' : 'lg:grid-cols-3'} gap-4`}>
         {/* Revenue Chart */}
-        <div
-          className="lg:col-span-2 rounded-2xl p-5"
-          style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
-        >
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Revenue — Last 7 Days</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Paid orders only</p>
+        {userRole !== 'sales' && (
+          <div
+            className="lg:col-span-2 rounded-2xl p-5"
+            style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Revenue — Last 7 Days</h2>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Paid orders only</p>
+              </div>
+              {stats && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--brand-50)', color: 'var(--brand-700)' }}>
+                  {formatPrice(stats.todayRevenue)} today
+                </span>
+              )}
             </div>
-            {stats && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--brand-50)', color: 'var(--brand-700)' }}>
-                {formatPrice(stats.todayRevenue)} today
-              </span>
+            {loading ? (
+              <div className="skeleton rounded-xl" style={{ height: 180 }} />
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--brand-600)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="var(--brand-600)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--text-light)' }} tickFormatter={(v) => `₹${v}`} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--brand-600)"
+                    strokeWidth={2.5}
+                    fill="url(#revenueGrad)"
+                    dot={{ fill: 'var(--brand-600)', r: 3, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div
+                className="rounded-xl flex items-center justify-center"
+                style={{ height: 180, background: 'var(--gray-50)', color: 'var(--text-muted)', fontSize: 13 }}
+              >
+                No revenue data yet
+              </div>
             )}
           </div>
-          {loading ? (
-            <div className="skeleton rounded-xl" style={{ height: 180 }} />
-          ) : chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <defs>
-                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--brand-600)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="var(--brand-600)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-light)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: 'var(--text-light)' }} tickFormatter={(v) => `₹${v}`} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="var(--brand-600)"
-                  strokeWidth={2.5}
-                  fill="url(#revenueGrad)"
-                  dot={{ fill: 'var(--brand-600)', r: 3, strokeWidth: 0 }}
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div
-              className="rounded-xl flex items-center justify-center"
-              style={{ height: 180, background: 'var(--gray-50)', color: 'var(--text-muted)', fontSize: 13 }}
-            >
-              No revenue data yet
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Quick Actions */}
         <div
@@ -435,9 +441,11 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold mb-1" style={{ color: 'var(--brand-700)' }}>
-                    {formatPrice(order.total_amount)}
-                  </p>
+                  {userRole !== 'sales' && (
+                    <p className="text-sm font-bold mb-1" style={{ color: 'var(--brand-700)' }}>
+                      {formatPrice(order.total_amount)}
+                    </p>
+                  )}
                   <OrderStatusBadge status={order.status} />
                 </div>
               </div>

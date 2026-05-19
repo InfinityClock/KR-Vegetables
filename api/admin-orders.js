@@ -30,7 +30,9 @@ async function verifyAdmin(req, supabaseUrl, serviceKey) {
   const { user_metadata, app_metadata, email } = await res.json()
   return (
     user_metadata?.role === 'admin' ||
+    user_metadata?.role === 'sales' ||
     app_metadata?.role === 'admin' ||
+    app_metadata?.role === 'sales' ||
     email === process.env.VITE_ADMIN_EMAIL
   )
 }

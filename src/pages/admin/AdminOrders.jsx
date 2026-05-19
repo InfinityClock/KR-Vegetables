@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, X, Package } from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
 import { formatDateTime, formatPrice } from '../../utils/format'
 import { ORDER_STATUS, ORDER_STATUS_MESSAGES } from '../../constants'
@@ -10,7 +11,7 @@ import toast from 'react-hot-toast'
 
 const STATUS_FLOW = ['placed', 'confirmed', 'packing', 'out_for_delivery', 'delivered']
 
-function OrderDetailModal({ order, onClose, onStatusChange }) {
+function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
   if (!order) return null
 
   return (
@@ -83,9 +84,11 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
                       {item.product_name}
                       <span className="ml-1" style={{ color: 'var(--text-muted)' }}>× {item.quantity} {item.unit}</span>
                     </span>
-                    <span className="font-semibold" style={{ color: 'var(--brand-700)' }}>
-                      {formatPrice(item.total_price)}
-                    </span>
+                    {userRole !== 'sales' && (
+                      <span className="font-semibold" style={{ color: 'var(--brand-700)' }}>
+                        {formatPrice(item.total_price)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -95,30 +98,34 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
           </div>
 
           {/* Totals */}
-          <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--gray-50)' }}>
-            <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
-              <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
+          {userRole !== 'sales' && (
+            <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--gray-50)' }}>
+              <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
+                <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
+                <span>Delivery</span><span>{formatPrice(order.delivery_fee)}</span>
+              </div>
+              <div
+                className="flex justify-between font-bold text-base pt-2"
+                style={{ borderTop: '1px solid var(--border)', color: 'var(--text-dark)' }}
+              >
+                <span>Total</span>
+                <span style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
-              <span>Delivery</span><span>{formatPrice(order.delivery_fee)}</span>
-            </div>
-            <div
-              className="flex justify-between font-bold text-base pt-2"
-              style={{ borderTop: '1px solid var(--border)', color: 'var(--text-dark)' }}
-            >
-              <span>Total</span>
-              <span style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>
-            </div>
-          </div>
+          )}
 
           {/* Payment */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Payment:</span>
-            <PaymentStatusBadge status={order.payment_status} />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              {order.payment_method === 'cod' ? '(Cash on Delivery)' : '(Online)'}
-            </span>
-          </div>
+          {userRole !== 'sales' && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Payment:</span>
+              <PaymentStatusBadge status={order.payment_status} />
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {order.payment_method === 'cod' ? '(Cash on Delivery)' : '(Online)'}
+              </span>
+            </div>
+          )}
 
           {/* Notes */}
           {order.notes && (
@@ -177,6 +184,7 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const { orders, loading, refetch } = useAdminOrders(statusFilter)
+  const { userRole } = useAuthStore()
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
@@ -266,7 +274,7 @@ export default function AdminOrders() {
             <table className="w-full text-sm">
               <thead style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--border-light)' }}>
                 <tr>
-                  {['Order #', 'Customer', 'Items', 'Total', 'Payment', 'Method', 'Status', 'Time', 'Action'].map((h) => (
+                  {['Order #', 'Customer', 'Items', ...(userRole !== 'sales' ? ['Total', 'Payment'] : []), 'Method', 'Status', 'Time', 'Action'].map((h) => (
                     <th
                       key={h}
                       className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide"
@@ -298,10 +306,14 @@ export default function AdminOrders() {
                         ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     </td>
-                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-700)' }}>
-                      {formatPrice(order.total_amount)}
-                    </td>
-                    <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
+                    {userRole !== 'sales' && (
+                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-700)' }}>
+                        {formatPrice(order.total_amount)}
+                      </td>
+                    )}
+                    {userRole !== 'sales' && (
+                      <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
+                    )}
                     <td className="px-4 py-3">
                       <span
                         className="text-xs font-bold uppercase px-2 py-1 rounded-lg"
@@ -374,9 +386,11 @@ export default function AdminOrders() {
                   <OrderStatusBadge status={order.status} />
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
-                    {formatPrice(order.total_amount)}
-                  </span>
+                  {userRole !== 'sales' && (
+                    <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
+                      {formatPrice(order.total_amount)}
+                    </span>
+                  )}
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {order.order_items?.length > 0
                       ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
@@ -395,6 +409,7 @@ export default function AdminOrders() {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onStatusChange={updateOrderStatus}
+          userRole={userRole}
         />
       )}
     </div>
