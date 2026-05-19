@@ -58,6 +58,17 @@ export default async function handler(req) {
     })
 
   try {
+    // 0. Check store is open
+    const settingsRes = await sb("store_settings?key=eq.store_open&select=value")
+    const settingsData = await settingsRes.json()
+    const storeOpen = settingsData?.[0]?.value
+    if (storeOpen === 'false') {
+      return new Response(
+        JSON.stringify({ error: 'Store is currently closed. Please try again later.' }),
+        { status: 403, headers: corsHeaders }
+      )
+    }
+
     // 1. Find or create customer by phone
     let customerId
     const findRes = await sb(`customers?phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`)

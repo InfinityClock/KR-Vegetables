@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2, ShoppingBag, Truck, Tag } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, Truck, Tag, Clock } from 'lucide-react'
 import {
   useCartStore,
   useCartSubtotal,
@@ -146,8 +146,9 @@ export default function Cart() {
   const subtotal    = useCartSubtotal()
   const deliveryFee = useCartDeliveryFee()
   const total       = useCartTotal()
-  const { min_order_amount, free_delivery_above } = useSettingsStore()
+  const { min_order_amount, free_delivery_above, store_open } = useSettingsStore()
   const isMinOrder  = subtotal >= min_order_amount
+  const canCheckout = store_open && isMinOrder
 
   // Empty cart
   if (items.length === 0) {
@@ -214,6 +215,23 @@ export default function Cart() {
 
         {/* ── Left column: items + slot + notes ── */}
         <div className="flex flex-col gap-3">
+
+          {/* Store closed banner */}
+          {!store_open && (
+            <div
+              className="flex items-start gap-3 px-4 py-3 rounded-2xl"
+              style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5' }}
+            >
+              <Clock size={16} style={{ color: '#DC2626', flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#DC2626' }}>Store is currently closed</p>
+                <p className="text-xs mt-0.5" style={{ color: '#B91C1C' }}>
+                  You can keep items in your cart and place the order when we reopen.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Items */}
           <div className="flex flex-col gap-2.5">
             {items.map((item) => <CartItem key={item.id} item={item} />)}
@@ -342,15 +360,13 @@ export default function Cart() {
           {/* CTA */}
           <button
             onClick={() => {
-              if (!isMinOrder) {
-                toast.error(`Minimum order is ${formatPrice(min_order_amount)}`)
-                return
-              }
+              if (!store_open) { toast.error('Store is currently closed'); return }
+              if (!isMinOrder) { toast.error(`Minimum order is ${formatPrice(min_order_amount)}`); return }
               navigate('/checkout')
             }}
-            disabled={!isMinOrder}
+            disabled={!canCheckout}
             className="w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 btn-ripple"
-            style={isMinOrder ? {
+            style={canCheckout ? {
               background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
               color: '#fff',
               boxShadow: 'var(--shadow-md)',
@@ -361,7 +377,7 @@ export default function Cart() {
             }}
           >
             <ShoppingBag size={20} />
-            Proceed to Checkout · {formatPrice(total)}
+            {store_open ? `Proceed to Checkout · ${formatPrice(total)}` : 'Store Closed'}
           </button>
         </div>
 
@@ -390,26 +406,24 @@ export default function Cart() {
           </div>
           <button
             onClick={() => {
-              if (!isMinOrder) {
-                toast.error(`Minimum order is ${formatPrice(min_order_amount)}`)
-                return
-              }
+              if (!store_open) { toast.error('Store is currently closed'); return }
+              if (!isMinOrder) { toast.error(`Minimum order is ${formatPrice(min_order_amount)}`); return }
               navigate('/checkout')
             }}
-            disabled={!isMinOrder}
+            disabled={!canCheckout}
             className="flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 btn-ripple"
-            style={isMinOrder ? {
+            style={canCheckout ? {
               background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
               color: '#fff',
               boxShadow: 'var(--shadow-sm)',
             } : {
-              background: 'var(--bg-muted)',
-              color: 'var(--text-light)',
+              background: !store_open ? '#FEE2E2' : 'var(--bg-muted)',
+              color: !store_open ? '#DC2626' : 'var(--text-light)',
               cursor: 'not-allowed',
             }}
           >
-            <ShoppingBag size={17} />
-            Proceed to Checkout
+            {store_open ? <ShoppingBag size={17} /> : <Clock size={17} />}
+            {store_open ? 'Proceed to Checkout' : 'Store Closed'}
           </button>
         </div>
       </div>
