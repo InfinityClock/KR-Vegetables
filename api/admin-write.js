@@ -19,20 +19,18 @@ const CORS = {
 
 const ALLOWED_TABLES = ['products', 'categories', 'store_settings']
 
-async function verifyAdmin(req, supabaseUrl, serviceKey) {
+async function getRole(req, supabaseUrl, serviceKey) {
   const auth = req.headers.get('Authorization') || ''
-  if (!auth.startsWith('Bearer ')) return false
+  if (!auth.startsWith('Bearer ')) return null
   const token = auth.slice(7)
   const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
   })
-  if (!res.ok) return false
+  if (!res.ok) return null
   const { user_metadata, app_metadata, email } = await res.json()
-  return (
-    user_metadata?.role === 'admin' ||
-    app_metadata?.role === 'admin' ||
-    email === process.env.VITE_ADMIN_EMAIL
-  )
+  if (user_metadata?.role === 'admin' || app_metadata?.role === 'admin' || email === process.env.VITE_ADMIN_EMAIL) return 'admin'
+  if (user_metadata?.role === 'sales' || app_metadata?.role === 'sales') return 'sales'
+  return null
 }
 
 export default async function handler(req) {
@@ -46,7 +44,8 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Missing server env vars' }), { status: 500, headers: CORS })
   }
 
-  if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+  const userRole = await getRole(req, supabaseUrl, serviceKey)
+  if (!userRole) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS })
   }
 
@@ -58,6 +57,16 @@ export default async function handler(req) {
 
   if (!ALLOWED_TABLES.includes(table)) {
     return new Response(JSON.stringify({ error: `Table '${table}' not allowed` }), { status: 400, headers: CORS })
+  }
+
+  // Sales role: only allowed to update stock_status on products
+  if (userRole === 'sales') {
+    const allowedKeys = ['stock_status']
+    const payloadKeys = Object.keys(payload || {})
+    const isStockUpdate = action === 'update' && table === 'products' && payloadKeys.every(k => allowedKeys.includes(k))
+    if (!isStockUpdate) {
+      return new Response(JSON.stringify({ error: 'Sales role can only update product stock status' }), { status: 403, headers: CORS })
+    }
   }
 
   const sb = (path, opts = {}) =>
