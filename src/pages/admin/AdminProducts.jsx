@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { adminFetch } from '../../lib/adminApi'
 import { formatPrice } from '../../utils/format'
 import { STOCK_STATUS, PLACEHOLDER_IMAGE } from '../../constants'
+import { useAuthStore } from '../../store/authStore'
 import toast from 'react-hot-toast'
 
 // ── CSS helpers ────────────────────────────────────────────────────────────────
@@ -178,14 +179,21 @@ function ProductModal({ product, categories, onClose, onSaved }) {
             <div>
               <label className={labelCls}>Price (₹) *</label>
               <input type="number" value={form.price} onChange={(e) => set('price', e.target.value)}
-                placeholder="0" className={input} />
+                placeholder="0" className={input} disabled={isSales}
+                style={isSales ? { background: 'var(--gray-100)', color: 'var(--text-muted)', cursor: 'not-allowed' } : {}} />
             </div>
             <div>
               <label className={labelCls}>Offer Price (₹)</label>
               <input type="number" value={form.offer_price} onChange={(e) => set('offer_price', e.target.value)}
-                placeholder="Optional" className={input} />
+                placeholder="Optional" className={input} disabled={isSales}
+                style={isSales ? { background: 'var(--gray-100)', color: 'var(--text-muted)', cursor: 'not-allowed' } : {}} />
             </div>
           </div>
+          {isSales && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: -6 }}>
+              🔒 Price fields are managed by admin only
+            </p>
+          )}
 
           {/* Offer preview */}
           {form.offer_price && Number(form.offer_price) < Number(form.price) && (
@@ -270,6 +278,9 @@ function ProductModal({ product, categories, onClose, onSaved }) {
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 export default function AdminProducts() {
+  const { userRole } = useAuthStore()
+  const isSales = userRole === 'sales'
+
   const [search, setSearch]               = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [showModal, setShowModal]         = useState(false)
@@ -457,12 +468,18 @@ export default function AdminProducts() {
                       {product.categories?.emoji} {product.categories?.name || '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        defaultValue={product.price}
-                        onBlur={(e) => handlePriceChange(product, e.target.value)}
-                        className="w-20 h-8 px-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#166534] text-center"
-                      />
+                      {isSales ? (
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>
+                          {formatPrice(product.price)}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          defaultValue={product.price}
+                          onBlur={(e) => handlePriceChange(product, e.target.value)}
+                          className="w-20 h-8 px-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#166534] text-center"
+                        />
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs font-semibold" style={{ color: product.offer_price ? 'var(--red-600)' : 'var(--text-light)' }}>
                       {product.offer_price ? formatPrice(product.offer_price) : '—'}

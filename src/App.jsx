@@ -252,10 +252,10 @@ function AppRoutes() {
           <Route path="orders"     element={<AdminOrders />} />
           <Route path="products"   element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
-          <Route path="delivery"   element={<AdminDelivery />} />
           <Route element={<AdminOnlyGuard />}>
-            <Route path="offers"   element={<AdminOffers />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="delivery"   element={<AdminDelivery />} />
+            <Route path="offers"     element={<AdminOffers />} />
+            <Route path="settings"   element={<AdminSettings />} />
           </Route>
         </Route>
       </Route>

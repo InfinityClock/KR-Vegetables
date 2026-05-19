@@ -84,7 +84,7 @@ function Sidebar({ open, onClose }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.filter(({ to }) => {
-            if (userRole === 'sales') return !['/admin/offers', '/admin/settings'].includes(to)
+            if (userRole === 'sales') return !['/admin/offers', '/admin/settings', '/admin/delivery'].includes(to)
             return true
           }).map(({ to, icon: Icon, label, exact }) => (
             <NavLink

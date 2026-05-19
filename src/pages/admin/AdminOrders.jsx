@@ -162,15 +162,17 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                     Mark as {ORDER_STATUS[s]?.label}
                   </button>
                 ))}
-                <button
-                  onClick={() => { onStatusChange(order.id, 'cancelled'); onClose() }}
-                  className="h-10 rounded-xl text-xs font-semibold transition-all"
-                  style={{ border: '1.5px solid #FCA5A5', color: '#DC2626', background: '#FEF2F2' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#DC2626'; e.currentTarget.style.color = '#fff' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626' }}
-                >
-                  Cancel Order
-                </button>
+                {userRole !== 'sales' && (
+                  <button
+                    onClick={() => { onStatusChange(order.id, 'cancelled'); onClose() }}
+                    className="h-10 rounded-xl text-xs font-semibold transition-all"
+                    style={{ border: '1.5px solid #FCA5A5', color: '#DC2626', background: '#FEF2F2' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#DC2626'; e.currentTarget.style.color = '#fff' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626' }}
+                  >
+                    Cancel Order
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -355,7 +357,7 @@ export default function AdminOrders() {
                             {STATUS_FLOW.slice(STATUS_FLOW.indexOf(order.status) + 1).map((s) => (
                               <option key={s} value={s}>{ORDER_STATUS[s]?.label}</option>
                             ))}
-                            <option value="cancelled">Cancel</option>
+                            {userRole !== 'sales' && <option value="cancelled">Cancel</option>}
                           </select>
                         )}
                       </div>
