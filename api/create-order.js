@@ -58,13 +58,14 @@ export default async function handler(req) {
     })
 
   try {
-    // 1. Upsert customer by phone
+    // 1. Upsert customer by phone — generate a UUID for new customers
     const custRes = await sb('customers?on_conflict=phone', {
       method: 'POST',
-      body: JSON.stringify({ full_name: name, phone, email: null }),
+      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ id: crypto.randomUUID(), full_name: name, phone, email: null }),
     })
     const custData = await custRes.json()
-    if (!custRes.ok) throw new Error(custData?.message || 'Failed to create customer')
+    if (!custRes.ok) throw new Error(custData?.message || custData?.details || 'Failed to create customer')
     const customerId = custData[0]?.id
 
     // 2. Create address
