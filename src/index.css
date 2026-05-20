@@ -1,15 +1,17 @@
 /* ─── Fonts ──────────────────────────────────────────────────────────────────
-   Playfair Display — bold editorial serif matching the KR logo letterforms
-   Poppins          — clean, friendly sans for all UI / labels / prices
+   Inter           — corporate-grade geometric sans (used by Figma, Vercel,
+                     Linear, Stripe…). Clean, neutral, highly legible.
+   Noto Sans Tamil — Google's professional Tamil companion. Same geometric
+                     structure as Inter; seamless bilingual rendering.
    ────────────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Tamil:wght@300;400;500;600;700;800&display=swap&subset=latin,tamil');
 @import "tailwindcss";
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 :root {
   /* ── Typefaces ── */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Poppins', system-ui, sans-serif;
+  --font-display: 'Inter', 'Noto Sans Tamil', system-ui, sans-serif;
+  --font-body:    'Inter', 'Noto Sans Tamil', system-ui, sans-serif;
 
   /* ── Brand: Forest Green (from KRVeg logo leaves) ── */
   --brand-950: #060f09;

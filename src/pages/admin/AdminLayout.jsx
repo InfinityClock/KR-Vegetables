@@ -159,7 +159,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--gray-50)', fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--gray-50)', fontFamily: 'var(--font-body)' }}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
