@@ -61,7 +61,7 @@ export const MIN_ORDER_AMOUNT = 150
 export const DELIVERY_FEE = 40
 export const FREE_DELIVERY_THRESHOLD = 300
 
-export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
+export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '+919176260992'
 
 export const STORE_ADDRESS = '1/37, Thalambur Main Road, Mullai Nagar, Chennai – 600130'
 export const STORE_MAPS_URL = 'https://maps.google.com/?q=1/37+Thalambur+Main+Road+Mullai+Nagar+Chennai+600130'
