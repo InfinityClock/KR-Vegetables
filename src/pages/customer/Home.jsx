@@ -1016,19 +1016,36 @@ export default function Home() {
                 💬 WhatsApp Us
               </a>
             )}
-            <Link
-              to="/terms"
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,.5)',
-                textDecoration: 'none',
-                borderBottom: '1px solid rgba(255,255,255,.2)',
-                paddingBottom: 1,
-              }}
-            >
-              Terms of Service
-            </Link>
+            <div className="flex flex-col gap-1.5">
+              <Link
+                to="/terms"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,.5)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,.2)',
+                  paddingBottom: 1,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                Terms of Service
+              </Link>
+              <Link
+                to="/refund-policy"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,.5)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,.2)',
+                  paddingBottom: 1,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                Refund &amp; Cancellation Policy
+              </Link>
+            </div>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.35)', marginTop: 4 }}>
               © {new Date().getFullYear()} KR Vegetables &amp; Fruits
             </p>

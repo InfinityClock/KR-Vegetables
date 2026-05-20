@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Leaf } from 'lucide-react'
 import { STORE_ADDRESS } from '../../constants'
 
@@ -142,7 +142,12 @@ export default function Terms() {
         <Section title="6. Cancellations &amp; Refunds">
           <Bullet>You can cancel your order before it is confirmed by our team. Please WhatsApp us as soon as possible.</Bullet>
           <Bullet>Once an order is confirmed and packing has begun, we are unable to cancel it as fresh produce is perishable.</Bullet>
-          <Bullet>Refunds for valid complaints (wrong items, damaged produce) will be processed within 2–3 business days to your original payment method, or as store credit — whichever you prefer.</Bullet>
+          <Bullet>We do not offer cash refunds. If you receive a rotten or faulty item, we will replace it free of charge in your next delivery after reviewing your complaint.</Bullet>
+          <p style={{ marginTop: 4 }}>
+            <Link to="/refund-policy" style={{ color: 'var(--brand-600)', fontWeight: 600, textDecoration: 'none', borderBottom: '1px solid var(--brand-200)' }}>
+              Read our full Refund &amp; Cancellation Policy →
+            </Link>
+          </p>
         </Section>
 
         {/* 7 */}

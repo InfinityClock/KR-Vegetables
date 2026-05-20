@@ -20,6 +20,7 @@ import OrderSuccess from './pages/customer/OrderSuccess'
 import OrderTracking from './pages/customer/OrderTracking'
 import Orders from './pages/customer/Orders'
 import Terms from './pages/customer/Terms'
+import RefundPolicy from './pages/customer/RefundPolicy'
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout'
@@ -245,6 +246,7 @@ function AppRoutes() {
       <Route path="/track/:orderId"         element={<OrderTracking />} />
       <Route path="/orders"      element={<CustomerLayout><Orders /></CustomerLayout>} />
       <Route path="/terms"       element={<Terms />} />
+      <Route path="/refund-policy" element={<RefundPolicy />} />
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
