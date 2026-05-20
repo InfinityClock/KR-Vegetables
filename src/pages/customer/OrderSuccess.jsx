@@ -34,7 +34,7 @@ export default function OrderSuccess() {
   }, [orderId])
 
   const handleShare = () => {
-    const msg = `🌿 My order ${order?.order_number} is placed at KR Vegetables & Fruits! Delivery slot: ${order?.delivery_slot}. 🚚`
+    const msg = `🌿 My order ${order?.order_number} is placed at KR Vegetables & Fruits! Delivery window: ${order?.delivery_slot}. 🚚`
     if (navigator.share) {
       navigator.share({ title: 'Order Placed!', text: msg, url: window.location.origin })
     } else {
@@ -125,7 +125,7 @@ export default function OrderSuccess() {
           )}
           {order.delivery_slot && (
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--brand-700)', fontWeight: 600, marginBottom: 24 }}>
-              🕐 Delivery slot: {order.delivery_slot}
+              🕐 Delivery window: {order.delivery_slot}
             </p>
           )}
 

@@ -6,7 +6,6 @@ export const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
-      deliverySlot: 'Morning 7AM–10AM',
       notes: '',
 
       addItem: (product, quantity = 1) => {
@@ -53,14 +52,13 @@ export const useCartStore = create(
         })
       },
 
-      clearCart: () => set({ items: [], notes: '', deliverySlot: 'Morning 7AM–10AM' }),
+      clearCart: () => set({ items: [], notes: '' }),
 
-      setDeliverySlot: (slot) => set({ deliverySlot: slot }),
       setNotes: (notes) => set({ notes }),
     }),
     {
       name: 'kr-cart',
-      partialize: (state) => ({ items: state.items, deliverySlot: state.deliverySlot, notes: state.notes }),
+      partialize: (state) => ({ items: state.items, notes: state.notes }),
     }
   )
 )

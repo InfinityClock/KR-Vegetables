@@ -359,7 +359,7 @@ export default function OrderTracking() {
                   className="text-xs font-medium mt-1"
                   style={{ color: 'var(--brand-700)', fontFamily: 'var(--font-body)' }}
                 >
-                  🕐 Slot: {order.delivery_slot}
+                  🕐 Window: {order.delivery_slot}
                 </p>
               </div>
             )}

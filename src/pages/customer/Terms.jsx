@@ -117,10 +117,11 @@ export default function Terms() {
         {/* 3 */}
         <Section title="3. Delivery">
           <Bullet>We currently deliver within our serviceable area around Thalambur and nearby localities in Chennai.</Bullet>
-          <Bullet>Delivery slots available: Morning (7AM–10AM), Afternoon (12PM–3PM), and Evening (5PM–8PM). Please select your preferred slot at checkout.</Bullet>
+          <Bullet>We deliver in two daily windows: <strong>Morning 8AM–1PM</strong> and <strong>Afternoon 3PM–8PM</strong>.</Bullet>
+          <Bullet>Orders are automatically assigned to the next available delivery window. No slot selection is needed — we handle it for you.</Bullet>
           <Bullet>Delivery times are estimates. Occasional delays can happen due to weather, traffic, or high order volume — we'll keep you informed via WhatsApp.</Bullet>
           <Bullet>Free delivery is available on orders above the threshold shown on the website.</Bullet>
-          <Bullet>Please ensure someone is available to receive the order at your address during the selected slot.</Bullet>
+          <Bullet>Please ensure someone is available to receive the order at your address during the delivery window.</Bullet>
         </Section>
 
         {/* 4 */}

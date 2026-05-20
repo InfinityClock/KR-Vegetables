@@ -7,7 +7,7 @@ import {
   useCartTotal,
 } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
-import { DELIVERY_SLOTS, PLACEHOLDER_IMAGE } from '../../constants'
+import { PLACEHOLDER_IMAGE, getNextDeliveryWindow } from '../../constants'
 import { useSettingsStore } from '../../store/settingsStore'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
@@ -142,7 +142,8 @@ function DeliveryProgress({ subtotal, freeDeliveryAbove }) {
 // ─── Main Cart ────────────────────────────────────────────────────────────────
 export default function Cart() {
   const navigate = useNavigate()
-  const { items, deliverySlot, notes, setDeliverySlot, setNotes, clearCart } = useCartStore()
+  const { items, notes, setNotes, clearCart } = useCartStore()
+  const nextWindow = getNextDeliveryWindow()
   const subtotal    = useCartSubtotal()
   const deliveryFee = useCartDeliveryFee()
   const total       = useCartTotal()
@@ -255,43 +256,19 @@ export default function Cart() {
           {/* Free delivery progress */}
           <DeliveryProgress subtotal={subtotal} freeDeliveryAbove={free_delivery_above} />
 
-          {/* Delivery slot */}
+          {/* Delivery window */}
           <div
-            className="rounded-2xl p-4"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}
+            className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
+            style={{ background: 'var(--green-tint)', border: '1.5px solid var(--green-pale)' }}
           >
-            <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-dark)' }}>
-              Choose Delivery Slot
-            </h3>
-            <div className="flex flex-col gap-2">
-              {DELIVERY_SLOTS.map((slot) => {
-                const isSelected = deliverySlot === slot
-                return (
-                  <label
-                    key={slot}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors"
-                    style={{
-                      border: `1.5px solid ${isSelected ? 'var(--green-mid)' : 'var(--border)'}`,
-                      background: isSelected ? 'var(--green-tint)' : 'transparent',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="slot"
-                      value={slot}
-                      checked={isSelected}
-                      onChange={() => setDeliverySlot(slot)}
-                      className="accent-[#2D6A4F]"
-                    />
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: isSelected ? 'var(--green-dark)' : 'var(--text-mid)' }}
-                    >
-                      {slot}
-                    </span>
-                  </label>
-                )
-              })}
+            <Clock size={17} style={{ color: 'var(--green-mid)', flexShrink: 0 }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--green-dark)' }}>
+                Next delivery: <span style={{ color: 'var(--green-mid)' }}>{nextWindow}</span>
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                We deliver 8AM–1PM &amp; 3PM–8PM daily
+              </p>
             </div>
           </div>
 

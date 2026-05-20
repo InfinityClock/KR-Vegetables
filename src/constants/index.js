@@ -1,8 +1,21 @@
-export const DELIVERY_SLOTS = [
-  'Morning 7AM–10AM',
-  'Afternoon 12PM–3PM',
-  'Evening 5PM–8PM',
+export const DELIVERY_WINDOWS = [
+  { label: 'Morning',   time: '8AM – 1PM',  start: 8,  end: 13 },
+  { label: 'Afternoon', time: '3PM – 8PM',  start: 15, end: 20 },
 ]
+
+/**
+ * Returns the next delivery window based on current local time.
+ * Morning  08:00–13:00 → "Today, 8AM–1PM"
+ * Afternoon 15:00–20:00 → "Today, 3PM–8PM"
+ * After 20:00           → "Tomorrow, 8AM–1PM"
+ */
+export function getNextDeliveryWindow() {
+  const now = new Date()
+  const h = now.getHours()
+  if (h < 13) return 'Today, 8AM–1PM'
+  if (h < 20) return 'Today, 3PM–8PM'
+  return 'Tomorrow, 8AM–1PM'
+}
 
 export const ORDER_STATUS = {
   placed: { label: 'Order Placed', color: 'bg-blue-100 text-blue-700', step: 0 },

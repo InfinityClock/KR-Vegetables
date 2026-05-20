@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartDeliveryFee, useCartTotal } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
+import { getNextDeliveryWindow } from '../../constants'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
 
@@ -156,7 +157,8 @@ function Section({ step, title, children }) {
 export default function Checkout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { items, deliverySlot, notes, clearCart } = useCartStore()
+  const { items, notes, clearCart } = useCartStore()
+  const deliverySlot = getNextDeliveryWindow()
   const subtotal    = useCartSubtotal()
   const deliveryFee = useCartDeliveryFee()
   const total       = useCartTotal()
@@ -505,7 +507,7 @@ export default function Checkout() {
             })}
             <div style={{ height: 1, background: 'var(--border-light)', margin: '6px 0' }} />
             <div className="flex justify-between">
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Delivery Slot</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Delivery Window</span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>{deliverySlot}</span>
             </div>
             <div className="flex justify-between">
