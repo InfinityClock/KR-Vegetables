@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useProducts, useCategories } from '../../hooks/useProducts'
 import { BANNERS } from '../../data/mockData'
 import ProductCard from '../../components/ProductCard'
@@ -1016,7 +1016,20 @@ export default function Home() {
                 💬 WhatsApp Us
               </a>
             )}
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.35)', marginTop: 8 }}>
+            <Link
+              to="/terms"
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '12px',
+                color: 'rgba(255,255,255,.5)',
+                textDecoration: 'none',
+                borderBottom: '1px solid rgba(255,255,255,.2)',
+                paddingBottom: 1,
+              }}
+            >
+              Terms of Service
+            </Link>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.35)', marginTop: 4 }}>
               © {new Date().getFullYear()} KR Vegetables &amp; Fruits
             </p>
           </div>

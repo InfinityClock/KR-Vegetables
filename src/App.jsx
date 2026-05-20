@@ -19,6 +19,7 @@ import Checkout from './pages/customer/Checkout'
 import OrderSuccess from './pages/customer/OrderSuccess'
 import OrderTracking from './pages/customer/OrderTracking'
 import Orders from './pages/customer/Orders'
+import Terms from './pages/customer/Terms'
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout'
@@ -243,6 +244,7 @@ function AppRoutes() {
       <Route path="/order-success/:orderId" element={<OrderSuccess />} />
       <Route path="/track/:orderId"         element={<OrderTracking />} />
       <Route path="/orders"      element={<CustomerLayout><Orders /></CustomerLayout>} />
+      <Route path="/terms"       element={<Terms />} />
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
