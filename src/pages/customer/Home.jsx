@@ -476,10 +476,10 @@ function PromoCards({ navigate }) {
 
 // ─── Why KR Section ────────────────────────────────────────────────────────────
 const WHY_KR = [
-  { icon: Sprout,      title: 'Farm Fresh',   desc: 'Sourced daily from local farms', bg: '#e8f5e9', color: 'var(--brand-700)' },
-  { icon: Clock,       title: 'Same-Day',     desc: 'Order before 12pm, get today',   bg: '#e3f2fd', color: '#1565C0' },
-  { icon: ShieldCheck, title: 'Guaranteed',   desc: 'Full refund if not satisfied',   bg: '#f3e5f5', color: '#7B1FA2' },
-  { icon: Headphones,  title: '24/7 Support', desc: 'Always here to help you',        bg: '#fff8e6', color: 'var(--amber-700)' },
+  { icon: Sprout,      title: 'Farm Fresh',      desc: 'Sourced daily from local farms',      bg: '#e8f5e9', color: 'var(--brand-700)' },
+  { icon: Clock,       title: 'Two Daily Slots', desc: '8AM–1PM & 3PM–8PM delivery windows', bg: '#e3f2fd', color: '#1565C0' },
+  { icon: ShieldCheck, title: 'Quality Promise', desc: 'Bad item? We replace it, free',       bg: '#f3e5f5', color: '#7B1FA2' },
+  { icon: Headphones,  title: 'WhatsApp Support', desc: 'Reach us anytime on WhatsApp',       bg: '#fff8e6', color: 'var(--amber-700)' },
 ]
 
 function WhyKR() {
