@@ -16,13 +16,13 @@ import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER } from '../../constants'
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
   '🌿  Farm-fresh daily',
-  '🚚  Free delivery above ₹299',
-  '⚡  Same-day delivery',
-  '✅  100% quality guarantee',
+  '🚚  Free delivery above ₹300',
+  '🕐  Two delivery windows daily',
+  '✅  Quality checked every order',
   '🌿  Farm-fresh daily',
-  '🚚  Free delivery above ₹299',
-  '⚡  Same-day delivery',
-  '✅  100% quality guarantee',
+  '🚚  Free delivery above ₹300',
+  '🕐  Two delivery windows daily',
+  '✅  Quality checked every order',
 ]
 
 function MarqueeTicker() {
@@ -479,7 +479,7 @@ const WHY_KR = [
   { icon: Sprout,      title: 'Farm Fresh',      desc: 'Sourced daily from local farms',      bg: '#e8f5e9', color: 'var(--brand-700)' },
   { icon: Clock,       title: 'Two Daily Slots', desc: '8AM–1PM & 3PM–8PM delivery windows', bg: '#e3f2fd', color: '#1565C0' },
   { icon: ShieldCheck, title: 'Quality Promise', desc: 'Bad item? We replace it, free',       bg: '#f3e5f5', color: '#7B1FA2' },
-  { icon: Headphones,  title: 'WhatsApp Support', desc: 'Reach us anytime on WhatsApp',       bg: '#fff8e6', color: 'var(--amber-700)' },
+  { icon: Headphones,  title: 'WhatsApp Support', desc: 'Message us on WhatsApp for help',    bg: '#fff8e6', color: 'var(--amber-700)' },
 ]
 
 function WhyKR() {
@@ -595,8 +595,8 @@ function DesktopHero({ navigate }) {
             maxWidth: 440,
           }}
         >
-          Handpicked daily from local farms. Same-day delivery to your door.
-          Free on orders above ₹299.
+          Handpicked daily from local farms. Delivered to your door in two
+          windows: 8AM–1PM &amp; 3PM–8PM. Free on orders above ₹300.
         </p>
         <div className="flex items-center gap-3">
           <button

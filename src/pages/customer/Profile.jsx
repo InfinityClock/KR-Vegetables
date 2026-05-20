@@ -97,9 +97,9 @@ export default function Profile() {
         <PageTopBar title="Profile" showBack={false} />
         <EmptyState
           icon="👤"
-          title="Not logged in"
-          subtitle="Sign in to access your profile and order history"
-          action={{ label: 'Login', onClick: () => navigate('/auth') }}
+          title="Track your order"
+          subtitle="Use your order number from the confirmation screen to track your delivery"
+          action={{ label: 'Track Order', onClick: () => navigate('/orders') }}
         />
       </div>
     )

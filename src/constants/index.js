@@ -12,8 +12,9 @@ export const DELIVERY_WINDOWS = [
 export function getNextDeliveryWindow() {
   const now = new Date()
   const h = now.getHours()
-  if (h < 13) return 'Today, 8AM–1PM'
-  if (h < 20) return 'Today, 3PM–8PM'
+  // Cutoff: noon for morning slot (gives team time to prepare), 7PM for afternoon slot
+  if (h < 12) return 'Today, 8AM–1PM'
+  if (h < 19) return 'Today, 3PM–8PM'
   return 'Tomorrow, 8AM–1PM'
 }
 
@@ -30,7 +31,7 @@ export const ORDER_STATUS_MESSAGES = {
   placed: 'Your order has been placed successfully! 🎉',
   confirmed: 'Great news! Your order has been confirmed by the store.',
   packing: 'Your fresh produce is being carefully picked and packed! 📦',
-  out_for_delivery: 'Your order is on the way! 🚚 Our delivery partner is headed to you.',
+  out_for_delivery: 'Your order is on its way to you! 🚚',
   delivered: 'Delivered successfully! Thank you for shopping with KR Vegetables & Fruits. 🌱',
   cancelled: 'This order has been cancelled.',
 }

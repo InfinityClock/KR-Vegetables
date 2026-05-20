@@ -172,7 +172,7 @@ export default function OrderSuccess() {
 
       {!order && !loading && (
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 24, textAlign: 'center', maxWidth: 300 }}>
-          Your order is confirmed! We'll send updates via WhatsApp.
+          Your order is confirmed! Message us on WhatsApp if you have any questions.
         </p>
       )}
 

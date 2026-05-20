@@ -532,7 +532,7 @@ export default function Checkout() {
               onClick={() => setPaymentMethod('zoho')}
               icon={CreditCard}
               label="Pay Online"
-              subtitle="UPI, Cards, Netbanking via Zoho Pay"
+              subtitle="UPI, Cards &amp; Netbanking — secure online payment"
             />
             <RadioCard
               selected={paymentMethod === 'cod'}
@@ -569,7 +569,7 @@ export default function Checkout() {
         >
           {placing
             ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Placing Order…</>
-            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay via Zoho Pay'} — ${formatPrice(total)}`
+            : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay Online'} — ${formatPrice(total)}`
           }
         </button>
 

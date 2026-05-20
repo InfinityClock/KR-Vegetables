@@ -86,7 +86,7 @@ export default function Orders() {
         </form>
 
         <p className="text-xs text-center" style={{ color: 'var(--text-light)', maxWidth: 280 }}>
-          Your order number was shown on the confirmation screen and sent via WhatsApp after placing your order.
+          Your order number was shown on the confirmation screen. Save it to track your order here.
         </p>
       </div>
     </div>
