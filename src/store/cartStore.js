@@ -71,11 +71,11 @@ export const useCartSubtotal = () => useCartStore((s) => s.items.reduce((sum, i)
 export const useCartHandlingFee = () => {
   const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
   const { handling_charge_rate } = useSettingsStore()
-  return Math.round(sub * handling_charge_rate)
+  return Math.ceil(sub * handling_charge_rate)
 }
 
 export const useCartTotal = () => {
   const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
   const { handling_charge_rate } = useSettingsStore()
-  return sub + Math.round(sub * handling_charge_rate)
+  return sub + Math.ceil(sub * handling_charge_rate)
 }
