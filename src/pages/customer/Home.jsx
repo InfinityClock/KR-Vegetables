@@ -9,8 +9,9 @@ import WhatsAppButton from '../../components/WhatsAppButton'
 import { formatPrice, getDiscountPercent } from '../../utils/format'
 import {
   Leaf, Zap, Star, Headphones, ChevronRight, Truck,
-  ShieldCheck, Sprout, ArrowRight, Percent, Clock,
+  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin,
 } from 'lucide-react'
+import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER } from '../../constants'
 
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
@@ -936,6 +937,91 @@ export default function Home() {
 
         <div style={{ height: 8 }} />
       </div>
+
+      {/* ─── Footer ─── */}
+      <footer
+        style={{
+          background: 'var(--brand-900)',
+          borderTop: '1px solid var(--brand-800)',
+          marginTop: 8,
+        }}
+      >
+        <div
+          className="max-w-5xl mx-auto px-5 py-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6"
+        >
+          {/* Brand */}
+          <div className="flex flex-col gap-1.5">
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.2rem',
+                fontWeight: 700,
+                color: '#fff',
+                letterSpacing: '-.02em',
+              }}
+            >
+              KR Vegetables &amp; Fruits
+            </span>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,.5)', lineHeight: 1.5 }}>
+              Fresh from farm to your door, daily.
+            </p>
+          </div>
+
+          {/* Address */}
+          <div className="flex flex-col gap-1.5">
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>
+              Our Store
+            </p>
+            <a
+              href={STORE_MAPS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-start gap-2 group"
+              style={{ textDecoration: 'none' }}
+            >
+              <MapPin size={14} style={{ color: 'var(--teal-400)', flexShrink: 0, marginTop: 2 }} />
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '13px',
+                  color: 'rgba(255,255,255,.75)',
+                  lineHeight: 1.55,
+                  borderBottom: '1px dashed rgba(255,255,255,.2)',
+                  paddingBottom: 1,
+                  transition: 'color .15s',
+                }}
+              >
+                {STORE_ADDRESS}
+              </span>
+            </a>
+          </div>
+
+          {/* Contact */}
+          <div className="flex flex-col gap-1.5">
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>
+              Contact
+            </p>
+            {WHATSAPP_NUMBER && (
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '13px',
+                  color: '#4ADE80',
+                  textDecoration: 'none',
+                }}
+              >
+                💬 WhatsApp Us
+              </a>
+            )}
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.35)', marginTop: 8 }}>
+              © {new Date().getFullYear()} KR Vegetables &amp; Fruits
+            </p>
+          </div>
+        </div>
+      </footer>
 
       <WhatsAppButton />
     </div>

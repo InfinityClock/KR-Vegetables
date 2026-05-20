@@ -63,6 +63,9 @@ export const FREE_DELIVERY_THRESHOLD = 300
 
 export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
 
+export const STORE_ADDRESS = '1/37, Thalambur Main Road, Mullai Nagar, Chennai – 600130'
+export const STORE_MAPS_URL = 'https://maps.google.com/?q=1/37+Thalambur+Main+Road+Mullai+Nagar+Chennai+600130'
+
 export const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80'
 
 export const FRUIT_PLACEHOLDER = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80'
