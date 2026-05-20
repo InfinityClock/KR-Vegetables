@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const PRODUCT_SELECT = `*, categories(id, name, emoji)`;
@@ -40,6 +40,38 @@ export const useProducts = (filters = {}) => {
   }, [category_id, search, is_featured, sort, limit, tick]);
 
   return { ...state, refetch: () => setTick((t) => t + 1) };
+};
+
+/**
+ * Fetches ALL active products once and caches them for the session.
+ * Used by Shop for client-side smart search (tanglish + fuzzy).
+ */
+let _allProductsCache = null;
+let _allProductsPromise = null;
+
+export const useAllProducts = () => {
+  const [products, setProducts] = useState(_allProductsCache || []);
+  const [loading, setLoading] = useState(!_allProductsCache);
+
+  useEffect(() => {
+    if (_allProductsCache) { setProducts(_allProductsCache); setLoading(false); return; }
+
+    if (!_allProductsPromise) {
+      _allProductsPromise = supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => { _allProductsCache = data || []; return _allProductsCache; });
+    }
+
+    _allProductsPromise.then((data) => {
+      setProducts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  return { products, loading };
 };
 
 export const useProduct = (id) => {

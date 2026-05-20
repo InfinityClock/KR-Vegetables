@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, X, SlidersHorizontal, Check, ShoppingBag } from 'lucide-react'
-import { useProducts, useCategories } from '../../hooks/useProducts'
+import { useAllProducts, useCategories } from '../../hooks/useProducts'
+import { smartSearch } from '../../utils/search'
 import ProductCard from '../../components/ProductCard'
 import { SkeletonProductGrid } from '../../components/Skeleton'
 import WhatsAppButton from '../../components/WhatsAppButton'
@@ -23,12 +24,17 @@ export default function Shop() {
   const searchRef = useRef(null)
 
   const { categories } = useCategories()
-  const { products, loading } = useProducts({
-    category_id: selectedCategory || undefined,
-    search: search || undefined,
-  })
+  const { products: allProducts, loading } = useAllProducts()
 
-  const sorted = [...products].sort((a, b) => {
+  // 1. category filter
+  const byCategory = selectedCategory
+    ? allProducts.filter((p) => p.category_id === selectedCategory)
+    : allProducts
+
+  // 2. smart search (tanglish + fuzzy) — client-side
+  const searched = search.trim() ? smartSearch(byCategory, search) : byCategory
+
+  const sorted = [...searched].sort((a, b) => {
     if (sort === 'price_asc')  return (a.offer_price || a.price) - (b.offer_price || b.price)
     if (sort === 'price_desc') return (b.offer_price || b.price) - (a.offer_price || a.price)
     if (sort === 'offers') {
@@ -36,6 +42,7 @@ export default function Shop() {
       const bHas = b.offer_price ? 1 : 0
       return bHas - aHas
     }
+    // default: if a search is active, keep relevance order from smartSearch
     return 0
   })
 
@@ -98,7 +105,7 @@ export default function Shop() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search vegetables, fruits…"
+              placeholder="Search in English or Tanglish (vazhai thandu, keerai…)"
               className="flex-1 text-sm outline-none bg-transparent"
               style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-body)' }}
             />
@@ -203,8 +210,10 @@ export default function Shop() {
               >
                 No products found
               </p>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)' }}>
-                {search ? `No results for "${search}"` : 'No products in this category yet.'}
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', maxWidth: 280, margin: '0 auto' }}>
+                {search
+                  ? `No results for "${search}". Try another spelling or search in English.`
+                  : 'No products in this category yet.'}
               </p>
             </div>
             {(search || selectedCategory) && (
