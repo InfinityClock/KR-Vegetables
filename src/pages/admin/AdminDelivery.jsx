@@ -1,47 +1,86 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, Clock, Truck } from 'lucide-react'
+import { Save, Clock, Truck, Info, CheckCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { adminFetch } from '../../lib/adminApi'
 import toast from 'react-hot-toast'
 
+function SettingInput({ label, value, onChange, placeholder, type = 'text', hint, prefix }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>{label}</label>
+      <div className="relative">
+        {prefix && (
+          <span
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {prefix}
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full h-11 rounded-xl text-sm outline-none transition-all"
+          style={{
+            paddingLeft: prefix ? 28 : 16,
+            paddingRight: 16,
+            border: '1.5px solid var(--border)',
+            background: 'var(--gray-50)',
+            color: 'var(--text-dark)',
+          }}
+          onFocus={(e) => { e.target.style.borderColor = 'var(--brand-500)'; e.target.style.background = '#fff' }}
+          onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--gray-50)' }}
+        />
+      </div>
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
+    </div>
+  )
+}
+
+const WINDOWS = [
+  { label: 'Morning Window', time: '8:00 AM – 1:00 PM', icon: '🌅', note: 'Orders placed before 12 noon' },
+  { label: 'Afternoon Window', time: '3:00 PM – 8:00 PM', icon: '🌇', note: 'Orders placed before 7 PM' },
+]
+
 export default function AdminDelivery() {
-  const [slots, setSlots] = useState([])
-  const [newSlot, setNewSlot] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [settings, setSettings] = useState({ delivery_fee: '', free_delivery_above: '', min_order_amount: '' })
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     supabase
       .from('store_settings')
-      .select('value')
-      .eq('key', 'delivery_slots')
-      .single()
+      .select('*')
       .then(({ data }) => {
-        if (data) {
-          try { setSlots(JSON.parse(data.value)) } catch { setSlots([]) }
-        }
+        const map = {}
+        data?.forEach((s) => { map[s.key] = s.value })
+        setSettings((prev) => ({ ...prev, ...map }))
         setLoading(false)
       })
   }, [])
 
-  const addSlot = () => {
-    if (!newSlot.trim()) return
-    if (slots.includes(newSlot.trim())) { toast.error('Slot already exists'); return }
-    setSlots((prev) => [...prev, newSlot.trim()])
-    setNewSlot('')
-  }
+  const update = (key, val) => setSettings((prev) => ({ ...prev, [key]: val }))
 
-  const removeSlot = (slot) => setSlots((prev) => prev.filter((s) => s !== slot))
-
-  const saveSlots = async () => {
+  const saveSettings = async () => {
     setSaving(true)
-    const res = await adminFetch('/api/admin-write', {
-      method: 'POST',
-      body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key: 'delivery_slots', value: JSON.stringify(slots) } }),
-    })
+    const keys = ['delivery_fee', 'free_delivery_above', 'min_order_amount']
+    await Promise.all(
+      keys.map((key) =>
+        adminFetch('/api/admin-write', {
+          method: 'POST',
+          body: JSON.stringify({
+            table: 'store_settings',
+            action: 'upsert',
+            onConflict: 'key',
+            payload: { key, value: String(settings[key]) },
+          }),
+        })
+      )
+    )
     setSaving(false)
-    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Save failed'); return }
-    toast.success('Delivery slots saved!')
+    toast.success('Delivery settings saved!')
   }
 
   return (
@@ -55,21 +94,21 @@ export default function AdminDelivery() {
             Delivery Settings
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            Manage delivery time slots
+            Delivery windows &amp; fee configuration
           </p>
         </div>
         <button
-          onClick={saveSlots}
-          disabled={saving}
+          onClick={saveSettings}
+          disabled={saving || loading}
           className="flex items-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all"
           style={{ background: saving ? 'var(--brand-400)' : 'var(--brand-700)', boxShadow: '0 2px 8px rgba(22,101,52,.25)' }}
         >
           <Save size={15} />
-          {saving ? 'Saving…' : 'Save Slots'}
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
 
-      {/* Slots Manager */}
+      {/* Delivery windows — fixed model */}
       <div
         className="rounded-2xl p-5 space-y-4"
         style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
@@ -82,85 +121,98 @@ export default function AdminDelivery() {
             <Clock size={16} style={{ color: 'var(--brand-600)' }} />
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Delivery Slots</h2>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Delivery Windows</h2>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              {slots.length} slot{slots.length !== 1 ? 's' : ''} configured
+              Auto-assigned based on order time — no customer selection needed
             </p>
           </div>
         </div>
 
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => <div key={i} className="skeleton h-12 rounded-xl" />)}
-          </div>
-        ) : slots.length === 0 ? (
-          <div
-            className="text-center py-8 text-sm rounded-xl"
-            style={{ background: 'var(--gray-50)', color: 'var(--text-muted)' }}
-          >
-            <Truck size={28} className="mx-auto mb-2 opacity-30" />
-            No slots configured — add one below
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {slots.map((slot, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between px-4 py-3 rounded-xl"
-                style={{ background: 'var(--gray-50)', border: '1px solid var(--border-light)' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Clock size={14} style={{ color: 'var(--brand-500)', flexShrink: 0 }} />
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-dark)' }}>{slot}</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {WINDOWS.map(({ label, time, icon, note }) => (
+            <div
+              key={label}
+              className="flex items-start gap-3 rounded-xl p-4"
+              style={{ background: 'var(--brand-50)', border: '1.5px solid var(--brand-100)' }}
+            >
+              <span style={{ fontSize: 22, lineHeight: 1 }}>{icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>{label}</p>
+                  <CheckCircle size={13} style={{ color: 'var(--brand-600)', flexShrink: 0 }} />
                 </div>
-                <button
-                  onClick={() => removeSlot(slot)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-                  style={{ background: '#FEF2F2' }}
-                >
-                  <Trash2 size={13} style={{ color: '#DC2626' }} />
-                </button>
+                <p className="text-sm font-semibold" style={{ color: 'var(--brand-700)' }}>{time}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{note}</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
-        {/* Add slot input */}
-        <div className="flex gap-2">
-          <input
-            value={newSlot}
-            onChange={(e) => setNewSlot(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addSlot()}
-            placeholder="e.g. Morning 7AM – 10AM"
-            className="flex-1 h-11 px-4 rounded-xl text-sm outline-none transition-all"
-            style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-dark)' }}
-            onFocus={(e) => { e.target.style.borderColor = 'var(--brand-500)'; e.target.style.background = '#fff' }}
-            onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--gray-50)' }}
-          />
-          <button
-            onClick={addSlot}
-            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all"
-            style={{ background: 'var(--brand-700)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--brand-900)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--brand-700)' }}
-          >
-            <Plus size={18} style={{ color: '#fff' }} />
-          </button>
+        {/* How it works */}
+        <div
+          className="rounded-xl p-3 flex gap-2.5"
+          style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
+        >
+          <Info size={14} style={{ color: '#2563EB', flexShrink: 0, marginTop: 1 }} />
+          <p className="text-xs leading-relaxed" style={{ color: '#1E40AF' }}>
+            <strong>How it works:</strong> Orders before noon → Morning window (8AM–1PM).
+            Orders before 7PM → Afternoon window (3PM–8PM).
+            Orders after 7PM → next day Morning window.
+            Customers see this automatically at checkout — no selection required.
+          </p>
         </div>
       </div>
 
-      {/* Info box */}
+      {/* Delivery fee settings */}
       <div
-        className="rounded-2xl p-4"
-        style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
+        className="rounded-2xl p-5 space-y-4"
+        style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
       >
-        <p className="text-sm font-semibold mb-1" style={{ color: '#1E40AF' }}>
-          💡 How delivery slots work
-        </p>
-        <p className="text-xs leading-relaxed" style={{ color: '#1D4ED8' }}>
-          Slots appear in the customer checkout flow. Changes take effect immediately.
-          Typical slots: <strong>Morning (7–10 AM)</strong>, <strong>Afternoon (12–3 PM)</strong>, <strong>Evening (5–8 PM)</strong>.
-        </p>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'var(--brand-50)' }}
+          >
+            <Truck size={16} style={{ color: 'var(--brand-600)' }} />
+          </div>
+          <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Fee &amp; Thresholds</h2>
+        </div>
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => <div key={i} className="skeleton h-11 rounded-xl" />)}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <SettingInput
+                label="Delivery Fee (₹)"
+                type="number"
+                prefix="₹"
+                value={settings.delivery_fee || ''}
+                onChange={(v) => update('delivery_fee', v)}
+                placeholder="40"
+              />
+              <SettingInput
+                label="Free Delivery Above (₹)"
+                type="number"
+                prefix="₹"
+                value={settings.free_delivery_above || ''}
+                onChange={(v) => update('free_delivery_above', v)}
+                placeholder="300"
+              />
+            </div>
+            <SettingInput
+              label="Minimum Order Amount (₹)"
+              type="number"
+              prefix="₹"
+              value={settings.min_order_amount || ''}
+              onChange={(v) => update('min_order_amount', v)}
+              placeholder="150"
+              hint="Customers cannot place orders below this amount"
+            />
+          </>
+        )}
       </div>
     </div>
   )

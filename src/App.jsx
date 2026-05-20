@@ -182,7 +182,7 @@ function DesktopSidebar() {
           </p>
         </div>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', lineHeight: 1.55, color: 'rgba(255,255,255,.72)' }}>
-          Order above ₹299 — same-day, free.
+          Order above ₹300 for FREE delivery.
         </p>
       </div>
 

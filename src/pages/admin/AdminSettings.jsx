@@ -148,7 +148,7 @@ export default function AdminSettings() {
             type="number"
             value={settings.free_delivery_above || ''}
             onChange={(v) => updateSetting('free_delivery_above', v)}
-            placeholder="299"
+            placeholder="300"
           />
         </div>
         <SettingInput
