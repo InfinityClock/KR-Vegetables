@@ -104,7 +104,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                 <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
-                <span>Delivery</span><span>{formatPrice(order.delivery_fee)}</span>
+                <span>Handling Charge</span><span>{formatPrice(order.delivery_fee)}</span>
               </div>
               <div
                 className="flex justify-between font-bold text-base pt-2"

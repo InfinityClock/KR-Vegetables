@@ -16,11 +16,11 @@ import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER } from '../../constants'
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
   '🌿  Farm-fresh daily',
-  '🚚  Free delivery above ₹300',
+  '🚚  Free delivery on every order',
   '🕐  Two delivery windows daily',
   '✅  Quality checked every order',
   '🌿  Farm-fresh daily',
-  '🚚  Free delivery above ₹300',
+  '🚚  Free delivery on every order',
   '🕐  Two delivery windows daily',
   '✅  Quality checked every order',
 ]

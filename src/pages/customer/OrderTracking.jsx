@@ -299,8 +299,8 @@ export default function OrderTracking() {
                     <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
                   </div>
                   <div className="flex justify-between" style={{ color: 'var(--text-muted)' }}>
-                    <span>Delivery</span>
-                    <span>{order.delivery_fee === 0 ? 'FREE' : formatPrice(order.delivery_fee)}</span>
+                    <span>Handling Charge</span>
+                    <span>{formatPrice(order.delivery_fee)}</span>
                   </div>
                   <div
                     className="flex justify-between font-bold text-base"

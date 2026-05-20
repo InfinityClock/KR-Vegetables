@@ -39,7 +39,7 @@ export default async function handler(req) {
   try { body = await req.json() }
   catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: corsHeaders }) }
 
-  const { name, phone, address, items, subtotal, deliveryFee, total, deliverySlot, notes, paymentMethod } = body
+  const { name, phone, address, items, subtotal, handlingFee, total, deliverySlot, notes, paymentMethod } = body
 
   if (!name || !phone || !address || !items?.length) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
@@ -135,7 +135,7 @@ export default async function handler(req) {
         payment_status: 'pending',
         payment_method: paymentMethod || 'zoho',
         subtotal,
-        delivery_fee: deliveryFee,
+        delivery_fee: handlingFee || 0,
         discount: 0,
         total_amount: total,
         delivery_slot: deliverySlot,

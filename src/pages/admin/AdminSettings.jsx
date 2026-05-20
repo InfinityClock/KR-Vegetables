@@ -133,34 +133,6 @@ export default function AdminSettings() {
         </div>
       </SectionCard>
 
-      {/* Delivery Settings */}
-      <SectionCard title="Delivery Settings">
-        <div className="grid grid-cols-2 gap-3">
-          <SettingInput
-            label="Delivery Fee (₹)"
-            type="number"
-            value={settings.delivery_fee || ''}
-            onChange={(v) => updateSetting('delivery_fee', v)}
-            placeholder="40"
-          />
-          <SettingInput
-            label="Free Delivery Above (₹)"
-            type="number"
-            value={settings.free_delivery_above || ''}
-            onChange={(v) => updateSetting('free_delivery_above', v)}
-            placeholder="300"
-          />
-        </div>
-        <SettingInput
-          label="Minimum Order Amount (₹)"
-          type="number"
-          value={settings.min_order_amount || ''}
-          onChange={(v) => updateSetting('min_order_amount', v)}
-          placeholder="100"
-          hint="Orders below this amount cannot be placed"
-        />
-      </SectionCard>
-
       {/* Store Information */}
       <SectionCard title="Store Information">
         <SettingInput

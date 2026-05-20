@@ -4,7 +4,7 @@ import {
   Navigation, Search, CreditCard, Banknote,
   CheckCircle, Loader2,
 } from 'lucide-react'
-import { useCartStore, useCartSubtotal, useCartDeliveryFee, useCartTotal } from '../../store/cartStore'
+import { useCartStore, useCartSubtotal, useCartHandlingFee, useCartTotal } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
 import { getNextDeliveryWindow } from '../../constants'
 import { PageTopBar } from '../../components/TopBar'
@@ -158,10 +158,10 @@ export default function Checkout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { items, notes, clearCart } = useCartStore()
-  const deliverySlot = getNextDeliveryWindow()
-  const subtotal    = useCartSubtotal()
-  const deliveryFee = useCartDeliveryFee()
-  const total       = useCartTotal()
+  const deliverySlot  = getNextDeliveryWindow()
+  const subtotal      = useCartSubtotal()
+  const handlingFee   = useCartHandlingFee()
+  const total         = useCartTotal()
 
   // Show payment cancelled toast if redirected back with ?payment=cancelled
   useEffect(() => {
@@ -271,7 +271,7 @@ export default function Checkout() {
           address: { ...addr, lat: mapCoords?.lat, lng: mapCoords?.lng },
           items,
           subtotal,
-          deliveryFee,
+          handlingFee,
           total,
           deliverySlot,
           notes,
@@ -511,9 +511,15 @@ export default function Checkout() {
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>{deliverySlot}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Delivery Fee</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: deliveryFee === 0 ? 'var(--brand-600)' : 'var(--text-dark)' }}>
-                {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Handling Charge (2%)</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                {formatPrice(handlingFee)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Delivery</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--brand-600)' }}>
+                FREE
               </span>
             </div>
             <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />

@@ -45,7 +45,7 @@ const WINDOWS = [
 ]
 
 export default function AdminDelivery() {
-  const [settings, setSettings] = useState({ delivery_fee: '', free_delivery_above: '', min_order_amount: '' })
+  const [settings, setSettings] = useState({ handling_charge_rate: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -65,20 +65,15 @@ export default function AdminDelivery() {
 
   const saveSettings = async () => {
     setSaving(true)
-    const keys = ['delivery_fee', 'free_delivery_above', 'min_order_amount']
-    await Promise.all(
-      keys.map((key) =>
-        adminFetch('/api/admin-write', {
-          method: 'POST',
-          body: JSON.stringify({
-            table: 'store_settings',
-            action: 'upsert',
-            onConflict: 'key',
-            payload: { key, value: String(settings[key]) },
-          }),
-        })
-      )
-    )
+    await adminFetch('/api/admin-write', {
+      method: 'POST',
+      body: JSON.stringify({
+        table: 'store_settings',
+        action: 'upsert',
+        onConflict: 'key',
+        payload: { key: 'handling_charge_rate', value: String(settings.handling_charge_rate) },
+      }),
+    })
     setSaving(false)
     toast.success('Delivery settings saved!')
   }
@@ -163,7 +158,7 @@ export default function AdminDelivery() {
         </div>
       </div>
 
-      {/* Delivery fee settings */}
+      {/* Handling charge */}
       <div
         className="rounded-2xl p-5 space-y-4"
         style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
@@ -175,44 +170,37 @@ export default function AdminDelivery() {
           >
             <Truck size={16} style={{ color: 'var(--brand-600)' }} />
           </div>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Fee &amp; Thresholds</h2>
+          <div>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Handling Charge</h2>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Applied as a percentage of the cart subtotal. Delivery is always free.
+            </p>
+          </div>
         </div>
 
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => <div key={i} className="skeleton h-11 rounded-xl" />)}
-          </div>
+          <div className="skeleton h-11 rounded-xl" />
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <SettingInput
-                label="Delivery Fee (₹)"
-                type="number"
-                prefix="₹"
-                value={settings.delivery_fee || ''}
-                onChange={(v) => update('delivery_fee', v)}
-                placeholder="40"
-              />
-              <SettingInput
-                label="Free Delivery Above (₹)"
-                type="number"
-                prefix="₹"
-                value={settings.free_delivery_above || ''}
-                onChange={(v) => update('free_delivery_above', v)}
-                placeholder="300"
-              />
-            </div>
-            <SettingInput
-              label="Minimum Order Amount (₹)"
-              type="number"
-              prefix="₹"
-              value={settings.min_order_amount || ''}
-              onChange={(v) => update('min_order_amount', v)}
-              placeholder="150"
-              hint="Customers cannot place orders below this amount"
-            />
-          </>
+          <SettingInput
+            label="Handling Charge Rate (%)"
+            type="number"
+            value={settings.handling_charge_rate !== '' ? String(Number(settings.handling_charge_rate) * 100) : ''}
+            onChange={(v) => update('handling_charge_rate', v ? String(Number(v) / 100) : '')}
+            placeholder="2"
+            hint="Enter as a percentage, e.g. 2 for 2%. Applied to the cart subtotal at checkout."
+          />
         )}
+
+        <div
+          className="rounded-xl p-3 flex gap-2.5"
+          style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}
+        >
+          <CheckCircle size={14} style={{ color: '#16A34A', flexShrink: 0, marginTop: 1 }} />
+          <p className="text-xs leading-relaxed" style={{ color: '#15803D' }}>
+            <strong>Delivery is always free.</strong> No minimum order required.
+            The handling charge covers packaging and order processing.
+          </p>
+        </div>
       </div>
     </div>
   )

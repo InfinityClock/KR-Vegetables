@@ -67,13 +67,15 @@ export const useCartStore = create(
 export const useCartItems = () => useCartStore((s) => s.items)
 export const useCartCount = () => useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0))
 export const useCartSubtotal = () => useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
+
+export const useCartHandlingFee = () => {
+  const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
+  const { handling_charge_rate } = useSettingsStore()
+  return Math.round(sub * handling_charge_rate)
+}
+
 export const useCartTotal = () => {
   const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
-  const { delivery_fee, free_delivery_above } = useSettingsStore()
-  return sub + (sub >= free_delivery_above ? 0 : delivery_fee)
-}
-export const useCartDeliveryFee = () => {
-  const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
-  const { delivery_fee, free_delivery_above } = useSettingsStore()
-  return sub >= free_delivery_above ? 0 : delivery_fee
+  const { handling_charge_rate } = useSettingsStore()
+  return sub + Math.round(sub * handling_charge_rate)
 }

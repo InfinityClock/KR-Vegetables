@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2, ShoppingBag, Truck, Tag, Clock } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, Clock, Percent } from 'lucide-react'
 import {
   useCartStore,
   useCartSubtotal,
-  useCartDeliveryFee,
+  useCartHandlingFee,
   useCartTotal,
 } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
-import { PLACEHOLDER_IMAGE, getNextDeliveryWindow } from '../../constants'
+import { PLACEHOLDER_IMAGE, getNextDeliveryWindow, HANDLING_CHARGE_RATE } from '../../constants'
 import { useSettingsStore } from '../../store/settingsStore'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
@@ -94,62 +94,16 @@ function CartItem({ item }) {
   )
 }
 
-// ─── Delivery Progress Bar ────────────────────────────────────────────────────
-function DeliveryProgress({ subtotal, freeDeliveryAbove }) {
-  const pct = Math.min(100, (subtotal / freeDeliveryAbove) * 100)
-  const remaining = freeDeliveryAbove - subtotal
-
-  if (subtotal >= freeDeliveryAbove) {
-    return (
-      <div
-        className="flex items-center gap-2 px-4 py-3 rounded-2xl"
-        style={{ background: 'var(--green-tint)', border: '1.5px solid var(--green-pale)' }}
-      >
-        <Truck size={16} style={{ color: 'var(--green-mid)', flexShrink: 0 }} />
-        <p className="text-sm font-semibold" style={{ color: 'var(--green-dark)' }}>
-          You've unlocked FREE delivery! 🎉
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className="px-4 py-3 rounded-2xl"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Truck size={14} style={{ color: 'var(--text-muted)' }} />
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Add <span className="font-semibold" style={{ color: 'var(--green-mid)' }}>{formatPrice(remaining)}</span> for FREE delivery
-          </p>
-        </div>
-        <p className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
-          {Math.round(pct)}%
-        </p>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-        <div
-          className="h-full rounded-full transition-all duration-300"
-          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--green-light), var(--green-mid))' }}
-        />
-      </div>
-    </div>
-  )
-}
-
 // ─── Main Cart ────────────────────────────────────────────────────────────────
 export default function Cart() {
   const navigate = useNavigate()
   const { items, notes, setNotes, clearCart } = useCartStore()
-  const nextWindow = getNextDeliveryWindow()
-  const subtotal    = useCartSubtotal()
-  const deliveryFee = useCartDeliveryFee()
-  const total       = useCartTotal()
-  const { min_order_amount, free_delivery_above, store_open } = useSettingsStore()
-  const isMinOrder  = subtotal >= min_order_amount
-  const canCheckout = store_open && isMinOrder
+  const nextWindow   = getNextDeliveryWindow()
+  const subtotal     = useCartSubtotal()
+  const handlingFee  = useCartHandlingFee()
+  const total        = useCartTotal()
+  const { store_open } = useSettingsStore()
+  const chargeRate   = Math.round(HANDLING_CHARGE_RATE * 100)
 
   // Empty cart
   if (items.length === 0) {
@@ -214,7 +168,7 @@ export default function Cart() {
       {/* Desktop 2-column: items left, summary right */}
       <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:px-8 lg:items-start flex flex-col gap-4 p-4 lg:p-0 lg:pb-8">
 
-        {/* ── Left column: items + slot + notes ── */}
+        {/* ── Left column: items + window + notes ── */}
         <div className="flex flex-col gap-3">
 
           {/* Store closed banner */}
@@ -233,28 +187,10 @@ export default function Cart() {
             </div>
           )}
 
-          {/* Min order warning — shown at top so it's immediately visible */}
-          {!isMinOrder && (
-            <div
-              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl"
-              style={{ background: '#FFF7ED', border: '1.5px solid #FDDCB5' }}
-            >
-              <Tag size={15} style={{ color: '#B45309', flexShrink: 0 }} />
-              <p className="text-sm font-medium" style={{ color: '#92400E' }}>
-                Add{' '}
-                <span className="font-bold">{formatPrice(min_order_amount - subtotal)}</span>
-                {' '}more to reach the ₹{min_order_amount} minimum
-              </p>
-            </div>
-          )}
-
           {/* Items */}
           <div className="flex flex-col gap-2.5">
             {items.map((item) => <CartItem key={item.id} item={item} />)}
           </div>
-
-          {/* Free delivery progress */}
-          <DeliveryProgress subtotal={subtotal} freeDeliveryAbove={free_delivery_above} />
 
           {/* Delivery window */}
           <div
@@ -312,14 +248,16 @@ export default function Cart() {
                 </span>
                 <span style={{ color: 'var(--text-dark)' }}>{formatPrice(subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span style={{ color: 'var(--text-muted)' }}>Delivery Fee</span>
-                <span
-                  className="font-semibold"
-                  style={{ color: deliveryFee === 0 ? 'var(--green-mid)' : 'var(--text-dark)' }}
-                >
-                  {deliveryFee === 0 ? '🎉 FREE' : formatPrice(deliveryFee)}
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                  <Percent size={12} />
+                  Handling Charge ({chargeRate}%)
                 </span>
+                <span style={{ color: 'var(--text-dark)' }}>{formatPrice(handlingFee)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span style={{ color: 'var(--text-muted)' }}>Delivery</span>
+                <span className="font-semibold" style={{ color: 'var(--green-mid)' }}>FREE</span>
               </div>
               <div
                 className="flex justify-between pt-2 mt-1 font-bold text-base"
@@ -335,12 +273,11 @@ export default function Cart() {
           <button
             onClick={() => {
               if (!store_open) { toast.error('Store is currently closed'); return }
-              if (!isMinOrder) { toast.error(`Minimum order is ${formatPrice(min_order_amount)}`); return }
               navigate('/checkout')
             }}
-            disabled={!canCheckout}
+            disabled={!store_open}
             className="w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 btn-ripple"
-            style={canCheckout ? {
+            style={store_open ? {
               background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
               color: '#fff',
               boxShadow: 'var(--shadow-md)',
@@ -381,18 +318,17 @@ export default function Cart() {
           <button
             onClick={() => {
               if (!store_open) { toast.error('Store is currently closed'); return }
-              if (!isMinOrder) { toast.error(`Minimum order is ${formatPrice(min_order_amount)}`); return }
               navigate('/checkout')
             }}
-            disabled={!canCheckout}
+            disabled={!store_open}
             className="flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 btn-ripple"
-            style={canCheckout ? {
+            style={store_open ? {
               background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
               color: '#fff',
               boxShadow: 'var(--shadow-sm)',
             } : {
-              background: !store_open ? '#FEE2E2' : 'var(--bg-muted)',
-              color: !store_open ? '#DC2626' : 'var(--text-light)',
+              background: '#FEE2E2',
+              color: '#DC2626',
               cursor: 'not-allowed',
             }}
           >
