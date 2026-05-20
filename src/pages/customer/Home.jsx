@@ -939,66 +939,51 @@ export default function Home() {
       </div>
 
       {/* ─── Footer ─── */}
-      <footer
-        style={{
-          background: 'var(--brand-900)',
-          borderTop: '1px solid var(--brand-800)',
-          marginTop: 8,
-        }}
-      >
+      <footer style={{ background: 'var(--brand-900)', borderTop: '1px solid rgba(255,255,255,.07)', marginTop: 8 }}>
+
+        {/* ── Top: 3-column grid ── */}
         <div
-          className="max-w-5xl mx-auto px-5 py-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6"
+          style={{
+            maxWidth: 960,
+            margin: '0 auto',
+            padding: '40px 24px 32px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '32px 40px',
+            alignItems: 'start',
+          }}
         >
           {/* Brand */}
-          <div className="flex flex-col gap-1.5">
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.2rem',
-                fontWeight: 700,
-                color: '#fff',
-                letterSpacing: '-.02em',
-              }}
-            >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>
               KR Vegetables &amp; Fruits
             </span>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,.5)', lineHeight: 1.5 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', lineHeight: 1.6, margin: 0 }}>
               Fresh from farm to your door, daily.
             </p>
           </div>
 
-          {/* Address */}
-          <div className="flex flex-col gap-1.5">
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>
+          {/* Our Store */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.35)', margin: 0 }}>
               Our Store
             </p>
             <a
               href={STORE_MAPS_URL}
               target="_blank"
               rel="noreferrer"
-              className="flex items-start gap-2 group"
-              style={{ textDecoration: 'none' }}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 8, textDecoration: 'none' }}
             >
-              <MapPin size={14} style={{ color: 'var(--teal-400)', flexShrink: 0, marginTop: 2 }} />
-              <span
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,.75)',
-                  lineHeight: 1.55,
-                  borderBottom: '1px dashed rgba(255,255,255,.2)',
-                  paddingBottom: 1,
-                  transition: 'color .15s',
-                }}
-              >
+              <MapPin size={13} style={{ color: 'var(--teal-400)', flexShrink: 0, marginTop: 2 }} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,.7)', lineHeight: 1.6 }}>
                 {STORE_ADDRESS}
               </span>
             </a>
           </div>
 
-          {/* Contact */}
-          <div className="flex flex-col gap-1.5">
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>
+          {/* Contact & Links */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.35)', margin: 0 }}>
               Contact
             </p>
             {WHATSAPP_NUMBER && (
@@ -1006,51 +991,39 @@ export default function Home() {
                 href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  color: '#4ADE80',
-                  textDecoration: 'none',
-                }}
+                style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#4ADE80', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                💬 WhatsApp Us
+                <span style={{ fontSize: 14 }}>💬</span> WhatsApp Us
               </a>
             )}
-            <div className="flex flex-col gap-1.5">
-              <Link
-                to="/terms"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  color: 'rgba(255,255,255,.5)',
-                  textDecoration: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,.2)',
-                  paddingBottom: 1,
-                  alignSelf: 'flex-start',
-                }}
-              >
-                Terms of Service
-              </Link>
-              <Link
-                to="/refund-policy"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  color: 'rgba(255,255,255,.5)',
-                  textDecoration: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,.2)',
-                  paddingBottom: 1,
-                  alignSelf: 'flex-start',
-                }}
-              >
-                Refund &amp; Cancellation Policy
-              </Link>
-            </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.35)', marginTop: 4 }}>
-              © {new Date().getFullYear()} KR Vegetables &amp; Fruits
-            </p>
+            <Link
+              to="/terms"
+              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
+            >
+              Terms of Service
+            </Link>
+            <Link
+              to="/refund-policy"
+              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
+            >
+              Refund &amp; Cancellation Policy
+            </Link>
           </div>
         </div>
+
+        {/* ── Bottom bar: copyright ── */}
+        <div
+          style={{
+            borderTop: '1px solid rgba(255,255,255,.07)',
+            padding: '14px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.3)', margin: 0 }}>
+            © {new Date().getFullYear()} KR Vegetables &amp; Fruits. All rights reserved.
+          </p>
+        </div>
+
       </footer>
 
       <WhatsAppButton />
