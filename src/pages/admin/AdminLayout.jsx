@@ -2,20 +2,21 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingBag, Tags, Tag,
-  Truck, Settings, Menu, X, LogOut, ChevronRight,
+  Truck, Settings, Menu, X, LogOut, ChevronRight, Bell,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import logoImg from '../../assets/Logo.jpg'
 import toast from 'react-hot-toast'
 
 const navItems = [
-  { to: '/admin',            icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { to: '/admin/orders',     icon: Package,         label: 'Orders'    },
-  { to: '/admin/products',   icon: ShoppingBag,     label: 'Products'  },
-  { to: '/admin/categories', icon: Tags,            label: 'Categories'},
-  { to: '/admin/offers',     icon: Tag,             label: 'Offers'    },
-  { to: '/admin/delivery',   icon: Truck,           label: 'Delivery'  },
-  { to: '/admin/settings',   icon: Settings,        label: 'Settings'  },
+  { to: '/admin',                   icon: LayoutDashboard, label: 'Dashboard',     exact: true },
+  { to: '/admin/orders',            icon: Package,         label: 'Orders'         },
+  { to: '/admin/products',          icon: ShoppingBag,     label: 'Products'       },
+  { to: '/admin/categories',        icon: Tags,            label: 'Categories'     },
+  { to: '/admin/offers',            icon: Tag,             label: 'Offers'         },
+  { to: '/admin/delivery',          icon: Truck,           label: 'Delivery'       },
+  { to: '/admin/notifications',     icon: Bell,            label: 'Notifications'  },
+  { to: '/admin/settings',          icon: Settings,        label: 'Settings'       },
 ]
 
 function Sidebar({ open, onClose }) {
@@ -84,7 +85,7 @@ function Sidebar({ open, onClose }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.filter(({ to }) => {
-            if (userRole === 'sales') return !['/admin/offers', '/admin/settings', '/admin/delivery'].includes(to)
+            if (userRole === 'sales') return !['/admin/offers', '/admin/settings', '/admin/delivery', '/admin/notifications'].includes(to)
             return true
           }).map(({ to, icon: Icon, label, exact }) => (
             <NavLink
