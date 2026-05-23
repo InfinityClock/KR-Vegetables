@@ -9,9 +9,9 @@ import WhatsAppButton from '../../components/WhatsAppButton'
 import { formatPrice, getDiscountPercent } from '../../utils/format'
 import {
   Leaf, Zap, Star, Headphones, ChevronRight, Truck,
-  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin,
+  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone,
 } from 'lucide-react'
-import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER } from '../../constants'
+import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE } from '../../constants'
 
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
@@ -991,33 +991,54 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Contact & Links */}
+          {/* Contact Us */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.35)', margin: 0 }}>
-              Contact
+              Contact Us
             </p>
+
+            {/* Phone — displayed as plain text + clickable */}
+            <a
+              href={`tel:${STORE_PHONE.replace(/\s/g, '')}`}
+              style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 7 }}
+            >
+              <Phone size={13} style={{ color: 'var(--teal-400)', flexShrink: 0 }} />
+              {STORE_PHONE}
+            </a>
+
+            {/* WhatsApp */}
             {WHATSAPP_NUMBER && (
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#4ADE80', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: '#4ADE80', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <span style={{ fontSize: 14 }}>💬</span> WhatsApp Us
+                <span style={{ fontSize: 13 }}>💬</span> WhatsApp Us
               </a>
             )}
-            <Link
-              to="/terms"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
-            >
-              Terms of Service
-            </Link>
-            <Link
-              to="/refund-policy"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
-            >
-              Refund &amp; Cancellation Policy
-            </Link>
+
+            {/* Policy links */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+              <Link
+                to="/contact"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
+              >
+                Contact Us
+              </Link>
+              <Link
+                to="/terms"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
+              >
+                Terms of Service
+              </Link>
+              <Link
+                to="/refund-policy"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
+              >
+                Refund &amp; Cancellation Policy
+              </Link>
+            </div>
           </div>
         </div>
 

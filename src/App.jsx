@@ -21,6 +21,7 @@ import OrderTracking from './pages/customer/OrderTracking'
 import Orders from './pages/customer/Orders'
 import Terms from './pages/customer/Terms'
 import RefundPolicy from './pages/customer/RefundPolicy'
+import Contact from './pages/customer/Contact'
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout'
@@ -262,7 +263,8 @@ function AppRoutes() {
     }
   }, [])
 
-  if (!onboardingDone && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/order-success') && !location.pathname.startsWith('/track')) return <Onboarding />
+  const bypassOnboarding = ['/admin', '/order-success', '/track', '/contact', '/terms', '/refund-policy']
+  if (!onboardingDone && !bypassOnboarding.some(p => location.pathname.startsWith(p))) return <Onboarding />
 
   return (
     <Routes>
@@ -275,8 +277,9 @@ function AppRoutes() {
       <Route path="/order-success/:orderId" element={<OrderSuccess />} />
       <Route path="/track/:orderId"         element={<OrderTracking />} />
       <Route path="/orders"      element={<CustomerLayout><Orders /></CustomerLayout>} />
-      <Route path="/terms"       element={<Terms />} />
+      <Route path="/terms"         element={<Terms />} />
       <Route path="/refund-policy" element={<RefundPolicy />} />
+      <Route path="/contact"       element={<Contact />} />
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
