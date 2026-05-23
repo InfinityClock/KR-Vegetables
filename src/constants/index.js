@@ -78,8 +78,9 @@ export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '+9191762
 export const STORE_PHONE     = import.meta.env.VITE_STORE_PHONE    || '+91 91762 60992'
 
 export const STORE_NAME    = 'KR Vegetables & Fruits'
-export const STORE_ADDRESS = '1/37, Thalambur Main Road, Mullai Nagar, Chennai – 600130'
-export const STORE_MAPS_URL = 'https://maps.google.com/?q=1/37+Thalambur+Main+Road+Mullai+Nagar+Chennai+600130'
+export const STORE_ADDRESS   = '1/37, Thalambur Main Road, Mullai Nagar, Chennai – 600130'
+export const STORE_MAPS_URL  = 'https://maps.app.goo.gl/yffifPEH7er5HzDe7'
+export const STORE_MAPS_EMBED = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3889.91993473834!2d80.20940669999997!3d12.84844769999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a525a358edf2be9%3A0x15d8d72ff568432a!2sVegetables!5e0!3m2!1sen!2sin!4v1779542902168!5m2!1sen!2sin'
 
 export const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80'
 
