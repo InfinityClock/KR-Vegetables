@@ -1,0 +1,19 @@
+{
+  "name": "KR Admin",
+  "short_name": "KR Admin",
+  "description": "KR Vegetables & Fruits — Store Admin Panel",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#031a0e",
+  "theme_color": "#052e16",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.jpg",
+      "sizes": "1254x1254",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
