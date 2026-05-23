@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingBag, Tags, Tag,
@@ -155,7 +155,22 @@ function Sidebar({ open, onClose }) {
   )
 }
 
+// ─── PWA manifest swap ────────────────────────────────────────────────────────
+// When an admin opens /admin, swap the manifest to admin-manifest.json so the
+// browser offers to install "KR Admin" (starting at /admin) as a separate PWA.
+// Restores the customer manifest on unmount.
+function useAdminManifest() {
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]')
+    if (!link) return
+    const original = link.getAttribute('href')
+    link.setAttribute('href', '/admin-manifest.json')
+    return () => link.setAttribute('href', original || '/manifest.json')
+  }, [])
+}
+
 export default function AdminLayout() {
+  useAdminManifest()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 
