@@ -57,7 +57,6 @@ export default function Contact() {
               <div>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 3px' }}>Phone</p>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--brand-700)', margin: 0, letterSpacing: '-.01em' }}>{STORE_PHONE}</p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0' }}>Tap to call</p>
               </div>
             </div>
           </a>
@@ -71,7 +70,6 @@ export default function Contact() {
               <div>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 3px' }}>WhatsApp</p>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: '#16a34a', margin: 0, letterSpacing: '-.01em' }}>{STORE_PHONE}</p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0' }}>We reply fast</p>
               </div>
             </div>
           </a>
