@@ -9,9 +9,11 @@ import WhatsAppButton from '../../components/WhatsAppButton'
 import { formatPrice, getDiscountPercent } from '../../utils/format'
 import {
   Leaf, Zap, Star, Headphones, ChevronRight, Truck,
-  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone,
+  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone, RotateCcw, Plus, Check,
 } from 'lucide-react'
-import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE } from '../../constants'
+import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, PLACEHOLDER_IMAGE } from '../../constants'
+import { useRecentOrdersStore } from '../../store/recentOrdersStore'
+import { useCartStore } from '../../store/cartStore'
 
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
@@ -398,6 +400,120 @@ function DealCard({ product }) {
 }
 
 // ─── Editorial Promo Cards ─────────────────────────────────────────────────────
+// ─── Order Again ──────────────────────────────────────────────────────────────
+function OrderAgainItem({ item }) {
+  const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
+  const [added, setAdded] = useState(false)
+
+  const inCart = cartItems.some((i) => i.id === item.id)
+
+  const handleAdd = () => {
+    addItem(item)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1500)
+  }
+
+  return (
+    <div
+      style={{
+        flexShrink: 0,
+        width: 130,
+        background: 'var(--bg-card)',
+        border: '1.5px solid var(--border-light)',
+        borderRadius: 16,
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-xs)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Image */}
+      <div style={{ width: '100%', height: 90, overflow: 'hidden', flexShrink: 0, background: 'var(--warm-50)' }}>
+        <img
+          src={item.image_url || PLACEHOLDER_IMAGE}
+          alt={item.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => { e.target.src = PLACEHOLDER_IMAGE }}
+          loading="lazy"
+        />
+      </div>
+
+      {/* Info */}
+      <div style={{ padding: '8px 10px 10px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
+            color: 'var(--text-dark)', margin: 0, lineHeight: 1.3,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}
+        >
+          {item.name}
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+          {formatPrice(item.price)} / {item.unit}
+        </p>
+
+        {/* Add button */}
+        <button
+          onClick={handleAdd}
+          style={{
+            marginTop: 'auto',
+            paddingTop: 6,
+            width: '100%',
+            height: 30,
+            borderRadius: 8,
+            border: 'none',
+            background: added || inCart ? 'var(--brand-600)' : 'var(--brand-50)',
+            color: added || inCart ? '#fff' : 'var(--brand-700)',
+            fontFamily: 'var(--font-body)',
+            fontSize: '11.5px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            transition: 'background .2s, color .2s',
+          }}
+        >
+          {added || inCart
+            ? <><Check size={12} /> Added</>
+            : <><Plus size={12} /> Add</>
+          }
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function OrderAgain() {
+  const items = useRecentOrdersStore((s) => s.items)
+  if (!items.length) return null
+
+  return (
+    <div>
+      <div className="px-4 flex items-center justify-between mb-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <RotateCcw size={15} style={{ color: 'var(--brand-600)' }} />
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, color: 'var(--text-dark)', letterSpacing: '-.02em' }}>
+            Order Again
+          </span>
+        </div>
+      </div>
+      <div
+        className="px-4"
+        style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}
+      >
+        {items.map((item) => (
+          <OrderAgainItem key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Promo Cards ───────────────────────────────────────────────────────────────
 function PromoCards({ navigate }) {
   const { categories } = useCategories()
 
@@ -771,6 +887,9 @@ export default function Home() {
 
           {/* Right: main content */}
           <div className="flex flex-col gap-10 pb-10">
+            {/* Order Again — desktop */}
+            <OrderAgain />
+
             {/* Featured picks */}
             <div>
               <SectionHeader
@@ -896,6 +1015,9 @@ export default function Home() {
             onSelect={(cat) => navigate(`/shop?category=${cat.id}`)}
           />
         </div>
+
+        {/* Order Again — only visible after first order */}
+        <OrderAgain />
 
         {/* Editorial promo cards */}
         <PromoCards navigate={navigate} />

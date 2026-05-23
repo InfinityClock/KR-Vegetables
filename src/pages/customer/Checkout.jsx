@@ -5,6 +5,7 @@ import {
   CheckCircle, Loader2,
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartHandlingFee, useCartTotal } from '../../store/cartStore'
+import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { formatPrice } from '../../utils/format'
 import { getNextDeliveryWindow } from '../../constants'
 import { PageTopBar } from '../../components/TopBar'
@@ -158,6 +159,7 @@ export default function Checkout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { items, notes, clearCart } = useCartStore()
+  const addOrderedItems = useRecentOrdersStore((s) => s.addOrderedItems)
   const deliverySlot  = getNextDeliveryWindow()
   const subtotal      = useCartSubtotal()
   const handlingFee   = useCartHandlingFee()
@@ -286,6 +288,7 @@ export default function Checkout() {
       const { orderId, orderNumber, order } = orderData
 
       if (paymentMethod === 'cod') {
+        addOrderedItems(items)
         clearCart()
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
@@ -309,6 +312,7 @@ export default function Checkout() {
         if (payRes.ok && payData.paymentUrl) paymentUrl = payData.paymentUrl
       } catch {}
 
+      addOrderedItems(items)
       clearCart()
       if (paymentUrl) {
         window.location.href = paymentUrl
