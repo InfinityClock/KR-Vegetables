@@ -177,8 +177,8 @@ export default function AdminSettings() {
             className="h-11 px-4 rounded-xl flex items-center text-sm"
             style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-muted)' }}
           >
-            {import.meta.env.VITE_ZOHO_ORG_ID
-              ? `Org ${import.meta.env.VITE_ZOHO_ORG_ID} — configured`
+            {import.meta.env.VITE_ZOHO_CONFIGURED === 'true'
+              ? 'Zoho Payments — configured ✓'
               : 'Not configured — add ZOHO_PAYMENTS_API_KEY & ZOHO_ORG_ID in Vercel'
             }
           </div>

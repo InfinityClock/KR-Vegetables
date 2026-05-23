@@ -37,17 +37,47 @@ import AdminSettings from './pages/admin/AdminSettings'
 import BottomNav from './components/BottomNav'
 import Onboarding from './components/Onboarding'
 
+// ─── Auth loading screen ──────────────────────────────────────────────────────
+function AuthLoadingScreen() {
+  return (
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(150deg, #031a0e 0%, #052e16 40%, #0a4529 100%)',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,.15)',
+            borderTopColor: '#4ADE80',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'rgba(255,255,255,.45)' }}>
+          Verifying access…
+        </p>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 function AdminGuard() {
   const { userRole, loading } = useAuthStore()
-  if (loading) return null
+  if (loading) return <AuthLoadingScreen />
   if (!userRole || !['admin', 'sales'].includes(userRole)) return <Navigate to="/admin/login" replace />
   return <Outlet />
 }
 
 function AdminOnlyGuard() {
   const { userRole, loading } = useAuthStore()
-  if (loading) return null
+  if (loading) return <AuthLoadingScreen />
   if (userRole !== 'admin') return <Navigate to="/admin" replace />
   return <Outlet />
 }

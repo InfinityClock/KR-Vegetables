@@ -3,8 +3,8 @@
                      Linear, Stripe…). Clean, neutral, highly legible.
    Noto Sans Tamil — Google's professional Tamil companion. Same geometric
                      structure as Inter; seamless bilingual rendering.
+   Loaded via <link rel="preload"> in index.html to avoid render-blocking.
    ────────────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Tamil:wght@300;400;500;600;700;800&display=swap&subset=latin,tamil');
 @import "tailwindcss";
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
@@ -38,6 +38,10 @@
   --teal-200: #a8ece8;
   --teal-100: #d0f7f4;
   --teal-50:  #edfcfb;
+
+  /* ── Orange — for offer badges / accents ── */
+  --orange:      #f97316;
+  --orange-dark: #ea580c;
 
   /* ── Warm Amber — for offers / premium moments ── */
   --amber-800: #92400e;

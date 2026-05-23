@@ -12,9 +12,10 @@ export const DELIVERY_WINDOWS = [
 export function getNextDeliveryWindow() {
   const now = new Date()
   const h = now.getHours()
-  // Cutoff: noon for morning slot (gives team time to prepare), 7PM for afternoon slot
+  // Cutoff: noon for morning slot (gives team prep time)
+  // Cutoff: 6 PM for afternoon slot — orders after 6 PM can't make the 3–8 PM window
   if (h < 12) return 'Today, 8AM–1PM'
-  if (h < 19) return 'Today, 3PM–8PM'
+  if (h < 18) return 'Today, 3PM–8PM'
   return 'Tomorrow, 8AM–1PM'
 }
 

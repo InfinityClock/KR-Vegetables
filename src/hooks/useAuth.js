@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { useSettingsStore } from '../store/settingsStore'
@@ -37,21 +37,3 @@ export const useAuthInit = () => {
   }
 }
 
-export const useStoreSettings = () => {
-  const [settings, setSettings] = useState(null)
-
-  useEffect(() => {
-    supabase
-      .from('store_settings')
-      .select('key, value')
-      .then(({ data }) => {
-        if (data) {
-          const obj = {}
-          data.forEach(({ key, value }) => { obj[key] = value })
-          setSettings(obj)
-        }
-      })
-  }, [])
-
-  return settings
-}

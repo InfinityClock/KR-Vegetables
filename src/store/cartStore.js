@@ -28,6 +28,7 @@ export const useCartStore = create(
                 name: product.name,
                 unit: product.unit,
                 price: product.offer_price || product.price,
+                original_price: product.offer_price ? product.price : null,
                 image_url: product.image_url,
                 quantity,
               },

@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
-import { Plus, Search, Edit2, Trash2, Image, ToggleLeft, ToggleRight, X } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Plus, Search, Edit2, Trash2, Image, ToggleLeft, ToggleRight, X, ShoppingBag } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { adminFetch } from '../../lib/adminApi'
 import { formatPrice } from '../../utils/format'
 import { STOCK_STATUS, PLACEHOLDER_IMAGE } from '../../constants'
+import { useCategories, bustProductCache } from '../../hooks/useProducts'
 import toast from 'react-hot-toast'
 
 // ── CSS helpers ────────────────────────────────────────────────────────────────
@@ -15,20 +16,6 @@ const STOCK_OPTIONS = [
   { value: 'limited',     label: 'Limited'    },
   { value: 'out_of_stock',label: 'Out of Stock'},
 ]
-
-// ── Real Supabase categories hook (NOT mock data) ──────────────────────────────
-function useRealCategories() {
-  const [categories, setCategories] = useState([])
-  useEffect(() => {
-    supabase
-      .from('categories')
-      .select('id, name, emoji')
-      .eq('is_active', true)
-      .order('display_order')
-      .then(({ data }) => setCategories(data || []))
-  }, [])
-  return categories
-}
 
 // ── Product Modal ──────────────────────────────────────────────────────────────
 function ProductModal({ product, categories, onClose, onSaved }) {
@@ -285,11 +272,13 @@ export default function AdminProducts() {
   const [allProducts, setAllProducts]     = useState([])
   const [allLoading, setAllLoading]       = useState(true)
 
-  // ✅ Real Supabase categories (not mock data)
-  const categories = useRealCategories()
+  // Use shared categories hook
+  const { categories } = useCategories()
 
+  // Debounced fetch — 300 ms after the last keystroke
   useEffect(() => {
-    fetchProducts()
+    const timer = setTimeout(() => { fetchProducts() }, 300)
+    return () => clearTimeout(timer)
   }, [search, selectedCategory])
 
   const fetchProducts = async () => {
@@ -320,6 +309,7 @@ export default function AdminProducts() {
     try {
       await adminWrite('update', product.id, { is_active: !product.is_active })
       setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p))
+      bustProductCache()
       toast.success(product.is_active ? 'Product hidden' : 'Product visible')
     } catch (e) { toast.error(e.message) }
   }
@@ -328,6 +318,7 @@ export default function AdminProducts() {
     try {
       await adminWrite('update', product.id, { stock_status: newStatus })
       setAllProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock_status: newStatus } : p))
+      bustProductCache()
       toast.success('Stock updated')
     } catch (e) { toast.error(e.message) }
   }
@@ -337,6 +328,7 @@ export default function AdminProducts() {
     try {
       await adminWrite('delete', id)
       setAllProducts(prev => prev.filter(p => p.id !== id))
+      bustProductCache()
       toast.success('Product deleted')
     } catch (e) { toast.error(e.message) }
   }
@@ -548,6 +540,7 @@ export default function AdminProducts() {
             setAllProducts(prev =>
               editProduct ? prev.map(x => x.id === p.id ? { ...p, categories: x.categories } : x) : [p, ...prev]
             )
+            bustProductCache()
           }}
         />
       )}

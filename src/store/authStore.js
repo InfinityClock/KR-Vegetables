@@ -17,7 +17,7 @@ export const useAuthStore = create(
         const userRole =
           user?.user_metadata?.role ||
           user?.app_metadata?.role ||
-          (user?.email === import.meta.env.VITE_ADMIN_EMAIL ? 'admin' : null)
+          null
         const isAdmin = userRole === 'admin' || userRole === 'sales'
         set({ session, user, loading: false, isAdmin, userRole })
       },

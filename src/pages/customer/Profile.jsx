@@ -11,12 +11,12 @@ import toast from 'react-hot-toast'
 function AddressItem({ address, onDelete, onSetDefault }) {
   return (
     <div className="flex items-start gap-3 bg-white rounded-2xl border border-gray-100 p-3">
-      <MapPin size={18} className="text-[#2D6A4F] flex-shrink-0 mt-0.5" />
+      <MapPin size={18} className="text-[var(--brand-600)] flex-shrink-0 mt-0.5" />
       <div className="flex-1">
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-sm font-bold text-gray-900">{address.label}</span>
           {address.is_default && (
-            <span className="text-xs bg-[#2D6A4F]/10 text-[#2D6A4F] px-1.5 py-0.5 rounded-full font-medium">Default</span>
+            <span className="text-xs bg-[color:var(--brand-50)] text-[var(--brand-600)] px-1.5 py-0.5 rounded-full font-medium">Default</span>
           )}
         </div>
         <p className="text-xs text-gray-500">
@@ -121,7 +121,7 @@ export default function Profile() {
         {/* Profile card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-[#2D6A4F] rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-[var(--brand-600)] rounded-2xl flex items-center justify-center">
               <User size={28} className="text-white" />
             </div>
             <div className="flex-1">
@@ -130,13 +130,13 @@ export default function Profile() {
                   <input
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="flex-1 text-base font-bold border border-gray-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#2D6A4F]"
+                    className="flex-1 text-base font-bold border border-gray-200 rounded-xl px-3 py-1.5 outline-none focus:border-[var(--brand-600)]"
                     autoFocus
                   />
                   <button
                     onClick={handleSaveName}
                     disabled={savingName}
-                    className="px-3 py-1.5 bg-[#2D6A4F] text-white rounded-xl text-sm font-semibold"
+                    className="px-3 py-1.5 bg-[var(--brand-600)] text-white rounded-xl text-sm font-semibold"
                   >
                     {savingName ? '...' : 'Save'}
                   </button>
@@ -158,12 +158,12 @@ export default function Profile() {
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-              <MapPin size={16} className="text-[#2D6A4F]" />
+              <MapPin size={16} className="text-[var(--brand-600)]" />
               My Addresses
             </h3>
             <button
               onClick={() => navigate('/checkout')}
-              className="text-xs font-semibold text-[#2D6A4F] flex items-center gap-1"
+              className="text-xs font-semibold text-[var(--brand-600)] flex items-center gap-1"
             >
               <Plus size={14} /> Add
             </button>
@@ -193,8 +193,8 @@ export default function Profile() {
               onClick={onClick}
               className={`w-full flex items-center gap-3 px-4 py-4 text-left ${i > 0 ? 'border-t border-gray-50' : ''}`}
             >
-              <div className="w-9 h-9 rounded-xl bg-[#2D6A4F]/10 flex items-center justify-center">
-                <Icon size={18} className="text-[#2D6A4F]" />
+              <div className="w-9 h-9 rounded-xl bg-[color:var(--brand-50)] flex items-center justify-center">
+                <Icon size={18} className="text-[var(--brand-600)]" />
               </div>
               <span className="flex-1 text-sm font-medium text-gray-800">{label}</span>
               <ChevronRight size={16} className="text-gray-400" />

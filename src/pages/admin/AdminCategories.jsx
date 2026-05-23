@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, GripVertical, Tags } from 'lucide-react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Tags } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { adminFetch } from '../../lib/adminApi'
 import { SkeletonList } from '../../components/Skeleton'
@@ -217,7 +217,6 @@ export default function AdminCategories() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gray-50)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
               >
-                <GripVertical size={15} className="cursor-grab" style={{ color: 'var(--border)', flexShrink: 0 }} />
                 <span className="text-2xl" style={{ flexShrink: 0 }}>{cat.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

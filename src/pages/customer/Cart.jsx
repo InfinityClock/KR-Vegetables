@@ -15,8 +15,8 @@ import toast from 'react-hot-toast'
 // ─── Cart Item ────────────────────────────────────────────────────────────────
 function CartItem({ item }) {
   const { updateQuantity, removeItem } = useCartStore()
-  const displayPrice = item.offer_price || item.price
-  const hasOffer = item.offer_price && item.offer_price < item.price
+  const displayPrice = item.price
+  const hasOffer = item.original_price && item.original_price > item.price
 
   return (
     <div
@@ -45,7 +45,7 @@ function CartItem({ item }) {
           </span>
           {hasOffer && (
             <span className="text-xs line-through" style={{ color: 'var(--text-light)' }}>
-              {formatPrice(item.price)}
+              {formatPrice(item.original_price)}
             </span>
           )}
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>/ {item.unit}</span>
@@ -103,7 +103,8 @@ export default function Cart() {
   const handlingFee  = useCartHandlingFee()
   const total        = useCartTotal()
   const { store_open } = useSettingsStore()
-  const chargeRate   = Math.round(HANDLING_CHARGE_RATE * 100)
+  const { handling_charge_rate } = useSettingsStore()
+  const chargeRate   = Math.round((handling_charge_rate ?? HANDLING_CHARGE_RATE) * 100)
 
   // Empty cart
   if (items.length === 0) {

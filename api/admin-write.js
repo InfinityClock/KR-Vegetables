@@ -11,7 +11,7 @@
 export const config = { runtime: 'edge' }
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.APP_URL || '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ async function getRole(req, supabaseUrl, serviceKey) {
   })
   if (!res.ok) return null
   const { user_metadata, app_metadata, email } = await res.json()
-  if (user_metadata?.role === 'admin' || app_metadata?.role === 'admin' || email === process.env.VITE_ADMIN_EMAIL) return 'admin'
+  if (user_metadata?.role === 'admin' || app_metadata?.role === 'admin' || email === process.env.ADMIN_EMAIL) return 'admin'
   if (user_metadata?.role === 'sales' || app_metadata?.role === 'sales') return 'sales'
   return null
 }

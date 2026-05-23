@@ -49,6 +49,12 @@ export const useProducts = (filters = {}) => {
 let _allProductsCache = null;
 let _allProductsPromise = null;
 
+/** Call after any admin product create / update / delete so the customer shop reflects changes immediately. */
+export function bustProductCache() {
+  _allProductsCache = null;
+  _allProductsPromise = null;
+}
+
 export const useAllProducts = () => {
   const [products, setProducts] = useState(_allProductsCache || []);
   const [loading, setLoading] = useState(!_allProductsCache);

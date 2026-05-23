@@ -12,11 +12,16 @@
 
 export const config = { runtime: 'edge' }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
+function corsHeaders(req) {
+  const origin = req?.headers?.get('origin') || ''
+  const allowed = process.env.APP_URL || ''
+  const isOk = !allowed || origin === allowed || /^https?:\/\/localhost(:\d+)?$/.test(origin) || origin.endsWith('.vercel.app')
+  return {
+    'Access-Control-Allow-Origin': isOk ? (origin || allowed || '*') : allowed,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  }
 }
 
 async function verifyAdmin(req, supabaseUrl, serviceKey) {
@@ -33,13 +38,13 @@ async function verifyAdmin(req, supabaseUrl, serviceKey) {
     user_metadata?.role === 'sales' ||
     app_metadata?.role === 'admin' ||
     app_metadata?.role === 'sales' ||
-    email === process.env.VITE_ADMIN_EMAIL
+    email === process.env.ADMIN_EMAIL
   )
 }
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders(req) })
   }
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -65,8 +70,11 @@ export default async function handler(req) {
     const orderId = url.searchParams.get('orderId')
     const status  = url.searchParams.get('status') || 'all'
 
-    // Single-order lookup by id or order_number — no admin auth required
+    // Single-order lookup — requires admin auth
     if (orderId || url.searchParams.get('orderNumber')) {
+      if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      }
       const orderNumber = url.searchParams.get('orderNumber')
       const filter = orderId ? `id=eq.${orderId}` : `order_number=eq.${orderNumber}`
       const res = await fetch(

@@ -399,12 +399,22 @@ function DealCard({ product }) {
 
 // ─── Editorial Promo Cards ─────────────────────────────────────────────────────
 function PromoCards({ navigate }) {
+  const { categories } = useCategories()
+
+  // Find the first greens/herbs/leafy category dynamically by name keyword
+  const greensCat = categories.find((c) =>
+    /green|leafy|herb|keerai|vegetable/i.test(c.name)
+  )
+  const greensLink = greensCat
+    ? `/shop?category=${greensCat.id}`
+    : '/shop'
+
   const cards = [
     {
       label: 'FRESH TODAY',
       title: 'Greens & Herbs',
       subtitle: 'Harvested this morning',
-      link: '/shop?category=cat-1',
+      link: greensLink,
       accent: 'var(--brand-700)',
       bg: 'linear-gradient(135deg, #e8f5e9 0%, #f1f8f3 100%)',
       border: 'var(--brand-100)',
@@ -596,7 +606,7 @@ function DesktopHero({ navigate }) {
           }}
         >
           Handpicked daily from local farms. Delivered to your door in two
-          windows: 8AM–1PM &amp; 3PM–8PM. Free on orders above ₹300.
+          windows: 8AM–1PM &amp; 3PM–8PM. Always free delivery, no minimum order.
         </p>
         <div className="flex items-center gap-3">
           <button

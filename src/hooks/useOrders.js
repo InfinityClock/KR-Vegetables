@@ -44,7 +44,7 @@ export const useOrder = (orderId) => {
       const [orderRes, trackingRes] = await Promise.all([
         supabase
           .from('orders')
-          .select(`*, order_items(*), addresses(*)`)
+          .select(`*, order_items(*, products(id, name, image_url)), addresses(*)`)
           .eq('id', orderId)
           .single(),
         supabase

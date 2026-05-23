@@ -21,8 +21,7 @@ export default function AdminLogin() {
 
       const userMetadata = data.user?.user_metadata || {}
       const appMetadata = data.user?.app_metadata || {}
-      const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
-      const role = userMetadata.role || appMetadata.role || (data.user?.email === ADMIN_EMAIL ? 'admin' : null)
+      const role = userMetadata.role || appMetadata.role || null
 
       if (!['admin', 'sales'].includes(role)) {
         await supabase.auth.signOut()
