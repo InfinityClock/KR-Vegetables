@@ -1,8 +1,86 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, Package, ShoppingBag, Share2, Copy, Check } from 'lucide-react'
+import { CheckCircle, Package, ShoppingBag, Share2, Copy, Check, Bell, BellOff } from 'lucide-react'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { WHATSAPP_NUMBER } from '../../constants'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
+
+// ─── Notification prompt card ─────────────────────────────────────────────────
+function NotificationPrompt({ orderId }) {
+  const { isSupported, permission, isSubscribed, loading, subscribe } = usePushNotifications()
+  const [dismissed, setDismissed] = useState(false)
+  const [done, setDone]           = useState(false)
+
+  if (!isSupported || permission === 'denied' || isSubscribed || dismissed) return null
+  if (done) {
+    return (
+      <div style={{
+        width: '100%', maxWidth: 380,
+        background: '#f0fdf4', border: '1.5px solid #bbf7d0',
+        borderRadius: 14, padding: '14px 16px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        marginBottom: 12,
+      }}>
+        <CheckCircle size={18} style={{ color: '#16a34a', flexShrink: 0 }} />
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#166534', margin: 0 }}>
+          You'll be notified when your order ships!
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      width: '100%', maxWidth: 380,
+      background: 'var(--bg-card)',
+      border: '1.5px solid var(--brand-100)',
+      borderRadius: 14,
+      padding: '16px',
+      marginBottom: 12,
+      position: 'relative',
+    }}>
+      <button
+        onClick={() => setDismissed(true)}
+        style={{ position: 'absolute', top: 10, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: 18, lineHeight: 1 }}
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Bell size={16} style={{ color: 'var(--brand-600)' }} />
+        </div>
+        <div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>
+            Get delivery updates
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+            Know when your order is out for delivery
+          </p>
+        </div>
+      </div>
+      <button
+        disabled={loading}
+        onClick={async () => {
+          const result = await subscribe(orderId)
+          if (result.ok) setDone(true)
+          else if (result.reason === 'denied') setDismissed(true)
+        }}
+        style={{
+          width: '100%', height: 40,
+          background: loading ? 'var(--border)' : 'var(--brand-800)',
+          color: loading ? 'var(--text-muted)' : '#fff',
+          border: 'none', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
+          fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        }}
+      >
+        <Bell size={14} />
+        {loading ? 'Enabling…' : 'Enable Notifications'}
+      </button>
+    </div>
+  )
+}
 
 export default function OrderSuccess() {
   const { orderId }  = useParams()
@@ -175,6 +253,9 @@ export default function OrderSuccess() {
           Your order is confirmed! Message us on WhatsApp if you have any questions.
         </p>
       )}
+
+      {/* Notification prompt — shown after order details, before CTAs */}
+      {!loading && <NotificationPrompt orderId={orderId} />}
 
       {/* CTAs */}
       <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>

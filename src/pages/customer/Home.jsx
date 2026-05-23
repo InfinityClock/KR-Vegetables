@@ -9,11 +9,12 @@ import WhatsAppButton from '../../components/WhatsAppButton'
 import { formatPrice, getDiscountPercent } from '../../utils/format'
 import {
   Leaf, Zap, Star, Headphones, ChevronRight, Truck,
-  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone, RotateCcw, Plus, Check,
+  ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone, RotateCcw, Plus, Check, Bell,
 } from 'lucide-react'
 import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, PLACEHOLDER_IMAGE } from '../../constants'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { useCartStore } from '../../store/cartStore'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
 const TICKER_ITEMS = [
@@ -483,6 +484,87 @@ function OrderAgainItem({ item }) {
           }
         </button>
       </div>
+    </div>
+  )
+}
+
+// ─── Soft push-notification banner ───────────────────────────────────────────
+// Shows once per session to customers who haven't enabled notifications yet.
+// Dismissing it sets sessionStorage so it doesn't reappear this visit.
+function NotificationBanner() {
+  const { isSupported, permission, isSubscribed, loading, subscribe } = usePushNotifications()
+  const [visible, setVisible] = useState(false)
+  const [done, setDone]       = useState(false)
+
+  useEffect(() => {
+    if (!isSupported) return
+    if (isSubscribed) return
+    if (permission === 'denied') return
+    if (sessionStorage.getItem('push-banner-dismissed')) return
+    // Show after a short delay so it doesn't flash immediately on load
+    const t = setTimeout(() => setVisible(true), 3000)
+    return () => clearTimeout(t)
+  }, [isSupported, isSubscribed, permission])
+
+  if (!visible || done) return null
+
+  function dismiss() {
+    sessionStorage.setItem('push-banner-dismissed', '1')
+    setVisible(false)
+  }
+
+  return (
+    <div
+      style={{
+        margin: '0 16px 12px',
+        background: 'linear-gradient(135deg, var(--brand-800) 0%, var(--teal-800, #115e59) 100%)',
+        borderRadius: 14,
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        boxShadow: 'var(--shadow-md)',
+      }}
+    >
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Bell size={17} style={{ color: '#fff' }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#fff', margin: '0 0 1px' }}>
+          Get delivery alerts
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.7)', margin: 0 }}>
+          Know when your order ships
+        </p>
+      </div>
+      <button
+        disabled={loading}
+        onClick={async () => {
+          const result = await subscribe(null)
+          if (result.ok || result.reason === 'denied') {
+            setDone(true)
+            dismiss()
+          }
+        }}
+        style={{
+          padding: '7px 14px',
+          background: 'rgba(255,255,255,.18)',
+          border: '1px solid rgba(255,255,255,.3)',
+          borderRadius: 8,
+          fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 700,
+          color: '#fff', cursor: loading ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}
+      >
+        {loading ? '…' : 'Enable'}
+      </button>
+      <button
+        onClick={dismiss}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.5)', fontSize: 18, lineHeight: 1, padding: '0 0 0 4px', flexShrink: 0 }}
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
     </div>
   )
 }
@@ -1015,6 +1097,9 @@ export default function Home() {
             onSelect={(cat) => navigate(`/shop?category=${cat.id}`)}
           />
         </div>
+
+        {/* Soft push-notification banner */}
+        <NotificationBanner />
 
         {/* Order Again — only visible after first order */}
         <OrderAgain />

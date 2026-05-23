@@ -33,6 +33,7 @@ import AdminCategories from './pages/admin/AdminCategories'
 import AdminOffers from './pages/admin/AdminOffers'
 import AdminDelivery from './pages/admin/AdminDelivery'
 import AdminSettings from './pages/admin/AdminSettings'
+import AdminNotifications from './pages/admin/AdminNotifications'
 
 // Components
 import BottomNav from './components/BottomNav'
@@ -290,9 +291,10 @@ function AppRoutes() {
           <Route path="products"   element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route element={<AdminOnlyGuard />}>
-            <Route path="delivery"   element={<AdminDelivery />} />
-            <Route path="offers"     element={<AdminOffers />} />
-            <Route path="settings"   element={<AdminSettings />} />
+            <Route path="delivery"      element={<AdminDelivery />} />
+            <Route path="offers"        element={<AdminOffers />} />
+            <Route path="settings"      element={<AdminSettings />} />
+            <Route path="notifications" element={<AdminNotifications />} />
           </Route>
         </Route>
       </Route>

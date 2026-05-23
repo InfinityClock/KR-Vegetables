@@ -151,6 +151,32 @@ export default async function handler(req) {
         })
       }
 
+      // 3. Push notification to the customer (fire-and-forget)
+      const pushMessages = {
+        confirmed:        { title: '✅ Order Confirmed!',       body: 'We\'ve received your order and are preparing it now.' },
+        out_for_delivery: { title: '🚚 Out for Delivery!',      body: 'Your order is on its way. Get ready!' },
+        delivered:        { title: '✅ Order Delivered!',       body: 'Your order has been delivered. Enjoy your fresh produce! 🌿' },
+        cancelled:        { title: '❌ Order Cancelled',        body: 'Your order was cancelled. Contact us if you have questions.' },
+      }
+      const push = pushMessages[newStatus]
+      if (push) {
+        const baseUrl = new URL(req.url).origin
+        fetch(`${baseUrl}/api/push-send`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':    'application/json',
+            'x-internal-token': serviceKey,
+          },
+          body: JSON.stringify({
+            title:   push.title,
+            body:    push.body,
+            url:     `/track/${orderId}`,
+            orderId,
+            tag:     `order-${orderId}-${newStatus}`,
+          }),
+        }).catch(() => { /* non-critical — don't fail the status update */ })
+      }
+
       return new Response(
         JSON.stringify({ success: true, order: updated[0] ?? null }),
         { status: 200, headers: corsHeaders }
