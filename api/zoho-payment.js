@@ -5,7 +5,7 @@
  * Required Vercel env vars:
  *   ZOHO_PAYMENTS_API_KEY   — from Zoho Payments → Settings → API Keys
  *   ZOHO_ORG_ID             — from Zoho Payments → Settings → Organisation
- *   VITE_APP_URL            — e.g. https://kr-vegetables.vercel.app
+ *   APP_URL                 — e.g. https://krvegetables.in (no trailing slash)
  *
  * Zoho Payments Docs: https://www.zoho.com/payments/api/
  */
@@ -24,7 +24,7 @@ export default async function handler(req) {
 
   const apiKey  = process.env.ZOHO_PAYMENTS_API_KEY
   const orgId   = process.env.ZOHO_ORG_ID
-  const appUrl  = process.env.VITE_APP_URL || 'https://kr-vegetables.vercel.app'
+  const appUrl  = process.env.APP_URL || process.env.VITE_APP_URL || 'https://kr-vegetables.vercel.app'
 
   if (!apiKey || !orgId) {
     return new Response(
