@@ -69,10 +69,12 @@ export default async function handler(req, res) {
   // Keep payload minimal — only fields Zoho definitely accepts.
   // description is omitted entirely: Zoho validates it strictly and rejects
   // many formats; since it's optional we skip it to avoid validation errors.
-  // Absolute minimum payload — only fields Zoho guarantees to accept.
+  // description is REQUIRED by Zoho — omitting it causes a validation error.
+  // Use only safe ASCII alphanumeric text; no hyphens, special chars, or variables.
   const payload = {
-    amount:   parseFloat(parseFloat(amount).toFixed(2)),
-    currency: 'INR',
+    amount:      parseFloat(parseFloat(amount).toFixed(2)),
+    currency:    'INR',
+    description: 'KR Vegetables Order',
     configurations: {
       hosted_page_parameters: {
         success_url: `${appUrl}/order-success/${orderId}?payment=success`,
