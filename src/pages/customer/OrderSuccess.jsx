@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, Package, ShoppingBag, Share2, Copy, Check, Bell, BellOff } from 'lucide-react'
+import {
+  CheckCircle, Package, ShoppingBag, Share2, Copy, Check,
+  Bell, XCircle, Clock, RefreshCw, Banknote, AlertTriangle,
+} from 'lucide-react'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { WHATSAPP_NUMBER } from '../../constants'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { useRecentOrdersStore } from '../../store/recentOrdersStore'
+import { useCartStore } from '../../store/cartStore'
 
-// ─── Notification prompt card ─────────────────────────────────────────────────
+// ─── Notification prompt ──────────────────────────────────────────────────────
 function NotificationPrompt({ orderId }) {
   const { isSupported, permission, isSubscribed, loading, subscribe } = usePushNotifications()
   const [dismissed, setDismissed] = useState(false)
@@ -18,8 +23,7 @@ function NotificationPrompt({ orderId }) {
         width: '100%', maxWidth: 380,
         background: '#f0fdf4', border: '1.5px solid #bbf7d0',
         borderRadius: 14, padding: '14px 16px',
-        display: 'flex', alignItems: 'center', gap: 10,
-        marginBottom: 12,
+        display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
       }}>
         <CheckCircle size={18} style={{ color: '#16a34a', flexShrink: 0 }} />
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#166534', margin: 0 }}>
@@ -28,35 +32,23 @@ function NotificationPrompt({ orderId }) {
       </div>
     )
   }
-
   return (
     <div style={{
       width: '100%', maxWidth: 380,
-      background: 'var(--bg-card)',
-      border: '1.5px solid var(--brand-100)',
-      borderRadius: 14,
-      padding: '16px',
-      marginBottom: 12,
-      position: 'relative',
+      background: 'var(--bg-card)', border: '1.5px solid var(--brand-100)',
+      borderRadius: 14, padding: '16px', marginBottom: 12, position: 'relative',
     }}>
       <button
         onClick={() => setDismissed(true)}
         style={{ position: 'absolute', top: 10, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: 18, lineHeight: 1 }}
-        aria-label="Dismiss"
-      >
-        ×
-      </button>
+      >×</button>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Bell size={16} style={{ color: 'var(--brand-600)' }} />
         </div>
         <div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>
-            Get delivery updates
-          </p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-            Know when your order is out for delivery
-          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>Get delivery updates</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Know when your order is out for delivery</p>
         </div>
       </div>
       <button
@@ -75,95 +67,291 @@ function NotificationPrompt({ orderId }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}
       >
-        <Bell size={14} />
-        {loading ? 'Enabling…' : 'Enable Notifications'}
+        <Bell size={14} /> {loading ? 'Enabling…' : 'Enable Notifications'}
       </button>
     </div>
   )
 }
 
+// ─── Payment failed state ─────────────────────────────────────────────────────
+function PaymentFailed({ orderId, orderNumber, onRetry, retrying, switchingCod, onSwitchCod }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'var(--bg-base)' }}>
+
+      <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', border: '2px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <XCircle size={48} strokeWidth={1.5} style={{ color: '#dc2626' }} />
+      </div>
+
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', letterSpacing: '-.03em', marginBottom: 8, textAlign: 'center' }}>
+        Payment Failed
+      </h1>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 300, marginBottom: 8 }}>
+        Your payment could not be processed.
+      </p>
+      {orderNumber && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 'var(--radius-full)', padding: '5px 16px', marginBottom: 28 }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#991b1b' }}>{orderNumber}</span>
+        </div>
+      )}
+
+      <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+        {/* Retry online payment */}
+        <button
+          onClick={onRetry}
+          disabled={retrying}
+          style={{
+            width: '100%', height: 52,
+            background: retrying ? 'var(--border)' : 'var(--brand-800)', color: retrying ? 'var(--text-muted)' : '#fff',
+            border: 'none', borderRadius: 'var(--radius-sm)', cursor: retrying ? 'wait' : 'pointer',
+            fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <RefreshCw size={16} style={{ animation: retrying ? 'spin 1s linear infinite' : 'none' }} />
+          {retrying ? 'Creating payment link…' : 'Try Payment Again'}
+        </button>
+
+        {/* Switch to COD */}
+        <button
+          onClick={onSwitchCod}
+          disabled={switchingCod}
+          style={{
+            width: '100%', height: 48,
+            background: 'var(--bg-card)', border: '1.5px solid var(--border)',
+            borderRadius: 'var(--radius-sm)', cursor: switchingCod ? 'wait' : 'pointer',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <Banknote size={16} style={{ color: 'var(--text-muted)' }} />
+          {switchingCod ? 'Switching…' : 'Pay with Cash on Delivery instead'}
+        </button>
+
+        <a
+          href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I had a payment issue with order ${orderNumber || orderId}. Can you help?`)}`}
+          target="_blank" rel="noreferrer"
+          style={{
+            width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: 'transparent', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-sm)',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#16a34a',
+            textDecoration: 'none',
+          }}
+        >
+          💬 Get help on WhatsApp
+        </a>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+// ─── Payment pending state (bank transfer) ────────────────────────────────────
+function PaymentPending({ order, orderNumber }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'var(--bg-base)' }}>
+      <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fffbeb', border: '2px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <Clock size={48} strokeWidth={1.5} style={{ color: '#d97706' }} />
+      </div>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', letterSpacing: '-.03em', marginBottom: 8, textAlign: 'center' }}>
+        Payment Processing
+      </h1>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 320, marginBottom: 24 }}>
+        Your bank transfer is being processed. We'll confirm your order as soon as the payment clears.
+      </p>
+      {orderNumber && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--radius-full)', padding: '5px 16px', marginBottom: 28 }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#92400e' }}>{orderNumber}</span>
+        </div>
+      )}
+      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '14px 16px', maxWidth: 380, marginBottom: 24 }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+          <strong>Note:</strong> Bank transfers can take up to 24 hours. You'll receive a notification once the payment is confirmed.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main OrderSuccess page ───────────────────────────────────────────────────
 export default function OrderSuccess() {
-  const { orderId }  = useParams()
-  const navigate     = useNavigate()
-  const { state, search } = useLocation()
+  const { orderId }            = useParams()
+  const navigate               = useNavigate()
+  const { state, search }      = useLocation()
+  const addOrderedItems        = useRecentOrdersStore((s) => s.addOrderedItems)
+  const clearCart              = useCartStore((s) => s.clearCart)
 
-  // Order may come from navigation state (immediately after checkout)
-  // or we show generic success if user landed via Zoho redirect
-  const [order, setOrder] = useState(state?.order || null)
+  const [order,   setOrder]   = useState(state?.order || null)
   const [loading, setLoading] = useState(!state?.order)
-  const [copied, setCopied] = useState(false)
+  const [copied,  setCopied]  = useState(false)
 
-  const params = new URLSearchParams(search)
-  const paymentStatus = params.get('payment') // 'success' from Zoho redirect
+  // Zoho redirect params
+  const params               = new URLSearchParams(search)
+  const paymentParam         = params.get('payment')           // 'success' | 'failed' | null (cod)
+  const sessionStatus        = params.get('payment_session_status') // 'succeeded' | 'failed' | 'in_progress'
+  const paymentsSessionId    = params.get('payments_session_id')
+  const paymentId            = params.get('payment_id')        || ''
+  const paymentStatusParam   = params.get('payment_status')    || ''
+  const amountParam          = params.get('amount')            || ''
+  const signatureParam       = params.get('signature')         || ''
 
-  // When Zoho redirects back with ?payment=success, fetch the order
-  // via service key since RLS may block anonymous reads
+  // Derive actual state
+  const isOnlinePayment  = !!paymentParam
+  const isCod            = !isOnlinePayment
+  const isFailed         = paymentParam === 'failed'
+  const isPending        = paymentParam === 'success' && sessionStatus === 'in_progress'
+  const isSuccess        = isCod || (paymentParam === 'success' && sessionStatus !== 'in_progress') || (paymentParam === 'success' && !sessionStatus)
+
+  // Retry state
+  const [retrying,     setRetrying]     = useState(false)
+  const [switchingCod, setSwitchingCod] = useState(false)
+
+  // Pending order info (for retry)
+  const [pendingOrder, setPendingOrder] = useState(null)
+
+  // ── On success: commit cart → "Order Again" store ─────────────────────────
   useEffect(() => {
-    if (order || !orderId) { setLoading(false); return }
+    if (!isSuccess) return
+    try {
+      const raw = sessionStorage.getItem('kr-pending-order')
+      if (raw) {
+        const pending = JSON.parse(raw)
+        setPendingOrder(pending)
+        if (pending.items?.length) addOrderedItems(pending.items)
+        clearCart()
+        sessionStorage.removeItem('kr-pending-order')
+      }
+    } catch {}
+  }, [isSuccess])
 
-    // Fetch via the admin-orders endpoint which uses service key
+  // ── Load pending order info for retry (on failure) ────────────────────────
+  useEffect(() => {
+    if (!isFailed) return
+    try {
+      const raw = sessionStorage.getItem('kr-pending-order')
+      if (raw) setPendingOrder(JSON.parse(raw))
+    } catch {}
+  }, [isFailed])
+
+  // ── Load order details from API if not in navigation state ────────────────
+  useEffect(() => {
+    if (order || !orderId || isFailed) { setLoading(false); return }
     fetch(`/api/admin-orders?orderId=${orderId}`)
       .then((r) => r.json())
-      .then((data) => {
-        setOrder(data || null)
-      })
+      .then((d) => setOrder(d || null))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [orderId])
+  }, [orderId, isFailed])
 
+  // ── Retry online payment ──────────────────────────────────────────────────
+  const handleRetry = useCallback(async () => {
+    if (!pendingOrder) return
+    setRetrying(true)
+    try {
+      const res = await fetch('/api/zoho-payment', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId:       pendingOrder.orderId       || orderId,
+          orderNumber:   pendingOrder.orderNumber   || '',
+          amount:        pendingOrder.amount        || 0,
+          customerName:  pendingOrder.customerName  || '',
+          customerPhone: pendingOrder.customerPhone || '',
+        }),
+      })
+      const data = await res.json()
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl
+      } else {
+        alert('Could not create payment link. Please try Cash on Delivery.')
+        setRetrying(false)
+      }
+    } catch {
+      alert('Network error. Please try again.')
+      setRetrying(false)
+    }
+  }, [pendingOrder, orderId])
+
+  // ── Switch to Cash on Delivery ────────────────────────────────────────────
+  const handleSwitchCod = useCallback(async () => {
+    setSwitchingCod(true)
+    try {
+      await fetch('/api/switch-to-cod', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      // Clear the pending order from session storage
+      try {
+        const raw = sessionStorage.getItem('kr-pending-order')
+        if (raw) {
+          const pending = JSON.parse(raw)
+          if (pending.items?.length) addOrderedItems(pending.items)
+          clearCart()
+          sessionStorage.removeItem('kr-pending-order')
+        }
+      } catch {}
+      // Navigate to success page as COD
+      navigate(`/order-success/${orderId}`, { replace: true, state: { order, name: pendingOrder?.customerName } })
+    } catch {
+      alert('Could not switch to COD. Please contact us on WhatsApp.')
+      setSwitchingCod(false)
+    }
+  }, [orderId, pendingOrder, order])
+
+  // ── Share handler ─────────────────────────────────────────────────────────
   const handleShare = () => {
     const msg = `🌿 My order ${order?.order_number} is placed at KR Vegetables & Fruits! Delivery window: ${order?.delivery_slot}. 🚚`
     if (navigator.share) {
       navigator.share({ title: 'Order Placed!', text: msg, url: window.location.origin })
     } else {
-      const url = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
-      window.open(url, '_blank')
+      window.open(`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
     }
   }
 
+  // ── Render: payment failed ────────────────────────────────────────────────
+  if (isFailed) {
+    return (
+      <PaymentFailed
+        orderId={orderId}
+        orderNumber={pendingOrder?.orderNumber || order?.order_number}
+        onRetry={handleRetry}
+        retrying={retrying}
+        switchingCod={switchingCod}
+        onSwitchCod={handleSwitchCod}
+      />
+    )
+  }
+
+  // ── Render: bank transfer pending ─────────────────────────────────────────
+  if (isPending) {
+    return <PaymentPending order={order} orderNumber={order?.order_number || pendingOrder?.orderNumber} />
+  }
+
+  // ── Render: success (COD or confirmed online payment) ─────────────────────
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-6 page-enter"
       style={{ background: 'var(--bg-base)' }}
     >
       {/* Checkmark */}
-      <div
-        style={{
-          width: 88, height: 88,
-          borderRadius: '50%',
-          background: 'var(--brand-50)',
-          border: '2px solid var(--brand-100)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 20,
-        }}
-      >
+      <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--brand-50)', border: '2px solid var(--brand-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
         <CheckCircle size={48} strokeWidth={1.5} style={{ color: 'var(--brand-700)' }} />
       </div>
 
-      <h1
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '2.2rem',
-          fontWeight: 600,
-          color: 'var(--text-dark)',
-          letterSpacing: '-.03em',
-          lineHeight: 1.15,
-          textAlign: 'center',
-          marginBottom: 6,
-        }}
-      >
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 600, color: 'var(--text-dark)', letterSpacing: '-.03em', lineHeight: 1.15, textAlign: 'center', marginBottom: 6 }}>
         Order Placed!
       </h1>
 
-      {paymentStatus === 'success' && (
+      {paymentParam === 'success' && sessionStatus === 'succeeded' && (
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--brand-700)', fontWeight: 600, marginBottom: 4 }}>
           ✅ Payment confirmed
         </p>
       )}
 
-      {state?.name && (
+      {(state?.name || pendingOrder?.customerName) && (
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', marginBottom: 20 }}>
-          Thank you, {state.name}!
+          Thank you, {state?.name || pendingOrder?.customerName}!
         </p>
       )}
 
@@ -173,23 +361,9 @@ export default function OrderSuccess() {
             onClick={() => navigator.clipboard.writeText(order.order_number).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })}
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
           >
-            <div style={{
-              background: 'var(--brand-50)',
-              border: '1px solid var(--brand-100)',
-              borderRadius: 'var(--radius-full)',
-              padding: '6px 20px',
-              marginBottom: 6,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-800)', letterSpacing: '.06em' }}>
-                {order.order_number}
-              </span>
-              {copied
-                ? <Check size={12} style={{ color: 'var(--brand-700)' }} />
-                : <Copy size={12} style={{ color: 'var(--brand-800)' }} />
-              }
+            <div style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)', borderRadius: 'var(--radius-full)', padding: '6px 20px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-800)', letterSpacing: '.06em' }}>{order.order_number}</span>
+              {copied ? <Check size={12} style={{ color: 'var(--brand-700)' }} /> : <Copy size={12} style={{ color: 'var(--brand-800)' }} />}
             </div>
           </button>
           <p style={{ fontSize: '10px', color: 'var(--text-light)', marginBottom: 20, marginTop: -2 }}>
@@ -207,15 +381,7 @@ export default function OrderSuccess() {
             </p>
           )}
 
-          {/* Order details */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px',
-            marginBottom: 24,
-          }}>
+          <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: 24 }}>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
               {order.order_items?.length ?? 0} items ordered
             </p>
@@ -254,7 +420,7 @@ export default function OrderSuccess() {
         </p>
       )}
 
-      {/* Notification prompt — shown after order details, before CTAs */}
+      {/* Notification prompt */}
       {!loading && <NotificationPrompt orderId={orderId} />}
 
       {/* CTAs */}
@@ -263,48 +429,27 @@ export default function OrderSuccess() {
           <button
             onClick={() => navigate(`/track/${orderId}`)}
             className="btn-ripple flex items-center justify-center gap-2"
-            style={{
-              width: '100%', height: 52,
-              background: 'var(--brand-800)', color: '#fff',
-              borderRadius: 'var(--radius-sm)', border: 'none',
-              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700,
-              cursor: 'pointer',
-            }}
+            style={{ width: '100%', height: 52, background: 'var(--brand-800)', color: '#fff', borderRadius: 'var(--radius-sm)', border: 'none', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
           >
             <Package size={18} /> Track My Order
           </button>
         )}
-
         <button
           onClick={handleShare}
           className="flex items-center justify-center gap-2"
-          style={{
-            width: '100%', height: 44,
-            border: '1.5px solid var(--brand-800)',
-            borderRadius: 'var(--radius-sm)',
-            background: 'transparent', color: 'var(--brand-800)',
-            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          style={{ width: '100%', height: 44, border: '1.5px solid var(--brand-800)', borderRadius: 'var(--radius-sm)', background: 'transparent', color: 'var(--brand-800)', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
         >
           <Share2 size={16} /> Share on WhatsApp
         </button>
-
         <button
           onClick={() => navigate('/')}
           className="flex items-center justify-center gap-2"
-          style={{
-            width: '100%', height: 44,
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-card)', color: 'var(--text-mid)',
-            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500,
-            cursor: 'pointer',
-          }}
+          style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-mid)', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
         >
           <ShoppingBag size={16} /> Continue Shopping
         </button>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
