@@ -125,6 +125,11 @@ export default async function handler(req) {
 
     // 3. Create order
     const orderNumber = generateOrderNumber()
+    // Normalise payment method — only values in the DB enum are accepted.
+    // 'zoho' is added by migration 006; fall back to 'cod' if not yet run.
+    const safePaymentMethod = ['cod', 'zoho', 'razorpay'].includes(paymentMethod)
+      ? paymentMethod
+      : 'cod'
     const orderRes = await sb('orders', {
       method: 'POST',
       body: JSON.stringify({
@@ -133,7 +138,7 @@ export default async function handler(req) {
         address_id: finalAddressId,
         status: 'placed',
         payment_status: 'pending',
-        payment_method: paymentMethod || 'zoho',
+        payment_method: safePaymentMethod,
         subtotal,
         delivery_fee: handlingFee || 0,
         discount: 0,
@@ -144,7 +149,7 @@ export default async function handler(req) {
       }),
     })
     const orderData = await orderRes.json()
-    if (!orderRes.ok) throw new Error(orderData?.message || 'Failed to create order')
+    if (!orderRes.ok) throw new Error(orderData?.message || orderData?.details || JSON.stringify(orderData))
     const order = orderData[0]
 
     // 4. Create order items
