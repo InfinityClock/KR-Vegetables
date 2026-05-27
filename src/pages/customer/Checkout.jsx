@@ -263,6 +263,10 @@ export default function Checkout() {
 
     setPlacing(true)
 
+    // Clear any stale pending-order from a previous failed payment so it
+    // can never block this new order or trigger a false redirect.
+    try { sessionStorage.removeItem('kr-pending-order') } catch {}
+
     try {
       // 1. Create order record in DB
       const orderRes = await fetch('/api/create-order', {
