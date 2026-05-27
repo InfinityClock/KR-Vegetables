@@ -69,6 +69,7 @@ export default async function handler(req, res) {
   // Keep payload minimal — only fields Zoho definitely accepts.
   // description is omitted entirely: Zoho validates it strictly and rejects
   // many formats; since it's optional we skip it to avoid validation errors.
+  // Absolute minimum payload — only fields Zoho guarantees to accept.
   const payload = {
     amount:   parseFloat(parseFloat(amount).toFixed(2)),
     currency: 'INR',
@@ -76,12 +77,12 @@ export default async function handler(req, res) {
       hosted_page_parameters: {
         success_url: `${appUrl}/order-success/${orderId}?payment=success`,
         failure_url: `${appUrl}/order-success/${orderId}?payment=failed`,
-        ...(orderNumber && { udf1: String(orderNumber) }),
       },
     },
   }
 
   console.log('[zoho-payment] payload:', JSON.stringify(payload))
+  console.log('[zoho-payment] accountId:', accountId, 'appUrl:', appUrl)
 
   let zohoRes
   try {
