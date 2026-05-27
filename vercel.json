@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "api/zoho-payment.js": { "maxDuration": 20 },
+    "api/push-send.js":    { "maxDuration": 20 }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
