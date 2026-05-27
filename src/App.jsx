@@ -282,6 +282,8 @@ function PendingPaymentGuard() {
 }
 
 // ─── App Routes ───────────────────────────────────────────────────────────────
+// Note: pending-payment redirect (back-button from Zoho) is handled in main.jsx
+// via plain JS + pageshow event, outside React, so it works even on bfcache restores.
 function AppRoutes() {
   useAuthInit()
   const location = useLocation()

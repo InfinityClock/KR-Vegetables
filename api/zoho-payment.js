@@ -63,23 +63,28 @@ export default async function handler(req, res) {
   // ── Create payment session ────────────────────────────────────────────────
   // Docs: POST /paymentsessions?account_id={id}
   // success_url and failure_url are inside configurations.hosted_page_parameters
+  // amount must be a Number (not a string) — Zoho rejects string amounts.
+  // Keep hosted_page_parameters minimal: only required fields + name/phone.
+  // phone_country_code must use the E.164-prefix format "+91", not "IN".
   const payload = {
-    amount:      parseFloat(amount).toFixed(2),
+    amount:      parseFloat(parseFloat(amount).toFixed(2)), // number, e.g. 62
     currency:    'INR',
-    description: `KR Vegetables Order ${orderNumber}`,
+    description: `Order ${orderNumber || orderId}`,
     configurations: {
       hosted_page_parameters: {
-        name:               customerName  || 'Customer',
-        phone:              customerPhone || '',
-        phone_country_code: 'IN',
-        description:        `Order ${orderNumber} - KR Vegetables and Fruits`,
-        success_url:        `${appUrl}/order-success/${orderId}?payment=success`,
-        failure_url:        `${appUrl}/order-success/${orderId}?payment=failed`,
-        // udf1 stores orderNumber so it's echoed back in the redirect signature
-        udf1: orderNumber || '',
+        success_url: `${appUrl}/order-success/${orderId}?payment=success`,
+        failure_url: `${appUrl}/order-success/${orderId}?payment=failed`,
+        ...(customerName  && { name:  customerName }),
+        ...(customerPhone && {
+          phone:              customerPhone,
+          phone_country_code: '+91',
+        }),
+        ...(orderNumber && { udf1: orderNumber }),
       },
     },
   }
+
+  console.log('[zoho-payment] payload:', JSON.stringify(payload))
 
   let zohoRes
   try {
