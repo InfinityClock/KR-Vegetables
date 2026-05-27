@@ -4,13 +4,16 @@ import './index.css'
 import App from './App.jsx'
 
 // ─── Pending payment redirect (runs BEFORE React) ─────────────────────────────
-// When a user presses the browser Back button from Zoho's hosted payment page,
-// the browser navigates back to whatever page was in history (usually /cart).
-// React's useEffect / component lifecycle does NOT re-run on bfcache restores,
-// so we must check here — in plain JS, outside React — to catch both cases:
-//   • Full reload  : this code runs synchronously on every page load
-//   • bfcache thaw : pageshow fires with e.persisted=true
-function checkPendingPayment() {
+// Handles the case where a user presses Back from Zoho's payment page and lands
+// back on our app without completing payment.
+//
+// IMPORTANT: We only redirect in two specific cases to avoid blocking new orders:
+//   1. bfcache thaw (e.persisted=true) — the Back button restored a frozen page
+//   2. Referrer is Zoho's domain — user navigated back from Zoho
+//
+// We do NOT redirect on regular page loads / navigation within the app, because
+// a stale kr-pending-order in sessionStorage would otherwise block every visit.
+function checkPendingPayment({ fromBfcache = false } = {}) {
   try {
     const raw = sessionStorage.getItem('kr-pending-order')
     if (!raw) return
@@ -18,16 +21,21 @@ function checkPendingPayment() {
     if (!orderId) return
     const path = window.location.pathname
     if (path.startsWith('/order-success') || path.startsWith('/admin')) return
-    // User is on some other page with a pending payment → treat as abandoned
+
+    const fromZoho = document.referrer.includes('zoho')
+    // Only redirect when we know the user just came from Zoho
+    if (!fromZoho && !fromBfcache) return
+
     window.location.replace(`/order-success/${orderId}?payment=failed`)
   } catch {}
 }
 
-checkPendingPayment() // Runs on every full page load
+// Check on initial page load (handles forward navigation from Zoho)
+checkPendingPayment({ fromBfcache: false })
 
 window.addEventListener('pageshow', (e) => {
-  // Runs when browser thaws page from bfcache (Back/Forward navigation)
-  if (e.persisted) checkPendingPayment()
+  // Handles Back button bfcache restore
+  if (e.persisted) checkPendingPayment({ fromBfcache: true })
 })
 
 // ─── Service Worker registration ──────────────────────────────────────────────
