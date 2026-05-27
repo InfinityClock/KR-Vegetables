@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Minus, Plus, Trash2, ShoppingBag, Clock, Percent } from 'lucide-react'
 import {
   useCartStore,
@@ -98,6 +99,23 @@ function CartItem({ item }) {
 export default function Cart() {
   const navigate = useNavigate()
   const { items, notes, setNotes, clearCart } = useCartStore()
+
+  // ── Intercept back-navigation from Zoho payment page ─────────────────────
+  // If a Zoho payment is pending (kr-pending-order in sessionStorage) and the
+  // user lands on the cart page, they pressed Back without completing payment.
+  // Redirect them to the payment-failed screen immediately instead of showing
+  // the (now empty) cart.  Use replace() so Back from the failed screen does
+  // NOT loop back here.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('kr-pending-order')
+      if (!raw) return
+      const { orderId } = JSON.parse(raw)
+      if (orderId) {
+        window.location.replace(`/order-success/${orderId}?payment=failed`)
+      }
+    } catch {}
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const nextWindow   = getNextDeliveryWindow()
   const subtotal     = useCartSubtotal()
   const handlingFee  = useCartHandlingFee()
