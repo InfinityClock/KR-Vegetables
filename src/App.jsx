@@ -246,42 +246,9 @@ function CustomerLayout({ children }) {
   )
 }
 
-// ─── Pending Payment Guard ────────────────────────────────────────────────────
-// When a user presses the browser Back button from Zoho's payment page they
-// land on whatever page was in history (cart, home, etc.) — NOT on our
-// failure_url.  This guard fires on every route change AND on bfcache
-// restores (pageshow persisted=true) so it catches the user wherever they
-// land and immediately sends them to the payment-failed screen.
-function PendingPaymentGuard() {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
-
-  useEffect(() => {
-    const check = () => {
-      // Don't intercept when already viewing the outcome or on admin pages
-      if (pathname.startsWith('/order-success') || pathname.startsWith('/admin')) return
-      try {
-        const raw = sessionStorage.getItem('kr-pending-order')
-        if (!raw) return
-        const { orderId } = JSON.parse(raw)
-        if (!orderId) return
-        navigate(`/order-success/${orderId}?payment=failed`, { replace: true })
-      } catch {}
-    }
-
-    check()
-
-    // bfcache: browser restores the frozen page without remounting React —
-    // pageshow with persisted=true is the only reliable hook in that case.
-    const onPageShow = (e) => { if (e.persisted) check() }
-    window.addEventListener('pageshow', onPageShow)
-    return () => window.removeEventListener('pageshow', onPageShow)
-  }, [pathname]) // re-run whenever the route changes
-
-  return null
-}
-
 // ─── App Routes ───────────────────────────────────────────────────────────────
+// Note: pending-payment redirect (back-button from Zoho) is handled in main.jsx
+// via plain JS + pageshow event, outside React, so it works even on bfcache restores.
 function AppRoutes() {
   useAuthInit()
   const location = useLocation()
@@ -303,8 +270,6 @@ function AppRoutes() {
   if (!onboardingDone && !bypassOnboarding.some(p => location.pathname.startsWith(p))) return <Onboarding />
 
   return (
-    <>
-      <PendingPaymentGuard />
     <Routes>
       {/* Customer routes */}
       <Route path="/"            element={<CustomerLayout><HomeP /></CustomerLayout>} />
@@ -338,7 +303,6 @@ function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
   )
 }
 
