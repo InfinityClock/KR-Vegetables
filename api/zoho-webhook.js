@@ -90,16 +90,19 @@ export default async function handler(req) {
   }
 
   // ── Extract identifiers ────────────────────────────────────────────────────
-  // reference_id is what we set to orderNumber when creating the payment link
+  // For payment LINKS, reference_id is set to the order number.
+  // For payment SESSIONS (hosted checkout), the order number is in udf1.
   const referenceId     = eventObject.reference_id
-  // For payment_link events the Zoho payment link ID
+    || eventObject.udf1               // payment session: order number stored in udf1
+    || eventObject.custom_fields?.udf1 // alternative nesting
+  // Payment / link ID for recording
   const zohoPaymentId   = eventObject.payment_link_id
     || eventObject.payment_id
     || event.event_id
 
   if (!referenceId) {
-    // Can't match to an order without reference_id
-    console.warn('[zoho-webhook] No reference_id in event:', eventType)
+    // Can't match to an order — log full object so we can debug
+    console.warn('[zoho-webhook] No reference_id/udf1 in event:', eventType, JSON.stringify(eventObject))
     return new Response(JSON.stringify({ ok: true, skipped: 'no reference_id' }), { status: 200 })
   }
 
