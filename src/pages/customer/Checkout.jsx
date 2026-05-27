@@ -165,8 +165,21 @@ export default function Checkout() {
   const handlingFee   = useCartHandlingFee()
   const total         = useCartTotal()
 
-  // Show payment cancelled toast if redirected back with ?payment=cancelled
+  // If there's a pending Zoho order in sessionStorage it means the user went
+  // to Zoho and came back via the browser back button (not via Zoho's redirect).
+  // Treat that as a failed/abandoned payment and send them to the status page.
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('kr-pending-order')
+      if (raw) {
+        const { orderId } = JSON.parse(raw)
+        if (orderId) {
+          navigate(`/order-success/${orderId}?payment=failed`, { replace: true })
+          return
+        }
+      }
+    } catch {}
+    // Show payment cancelled toast if redirected back with ?payment=cancelled
     const params = new URLSearchParams(location.search)
     if (params.get('payment') === 'cancelled') {
       toast.error('Payment was cancelled. Try again.')
@@ -341,7 +354,10 @@ export default function Checkout() {
           })),
         }))
       } catch {}
-      window.location.href = paymentUrl
+      // Use replace so the browser back button skips Zoho and goes to cart.
+      // If the user navigates back to /checkout, the sessionStorage check above
+      // will catch the pending order and send them to the failed-payment screen.
+      window.location.replace(paymentUrl)
 
     } catch (err) {
       toast.error(err.message || 'Something went wrong. Please try again.')
