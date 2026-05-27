@@ -329,9 +329,10 @@ export default function Checkout() {
       }
       const paymentUrl = payData.paymentUrl
 
-      // Save cart items to sessionStorage so OrderSuccess can record them
-      // after payment is confirmed. Do NOT clear cart yet — if payment
-      // fails the customer may want to retry.
+      // Save cart items to sessionStorage so OrderSuccess can:
+      //   a) record items in the "order again" store
+      //   b) display order details without needing an admin-auth API call
+      // Do NOT clear cart yet — if payment fails the customer may want to retry.
       try {
         sessionStorage.setItem('kr-pending-order', JSON.stringify({
           orderId,
@@ -339,8 +340,10 @@ export default function Checkout() {
           customerName: name.trim(),
           customerPhone: phone.trim(),
           amount: total,
+          deliverySlot,           // ← needed for success page display
           items: items.map((i) => ({
             id: i.id, name: i.name, unit: i.unit,
+            quantity: i.quantity, // ← needed for success page display
             price: i.price, original_price: i.original_price ?? null,
             image_url: i.image_url ?? null,
           })),

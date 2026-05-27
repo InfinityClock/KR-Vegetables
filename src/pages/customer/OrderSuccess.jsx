@@ -182,7 +182,8 @@ export default function OrderSuccess() {
   const clearCart              = useCartStore((s) => s.clearCart)
 
   const [order,   setOrder]   = useState(state?.order || null)
-  const [loading, setLoading] = useState(!state?.order)
+  // For online payment redirects, loading=false immediately (we build from sessionStorage)
+  const [loading, setLoading] = useState(!state?.order && !new URLSearchParams(search).get('payment'))
   const [copied,  setCopied]  = useState(false)
 
   // Zoho redirect params
@@ -209,9 +210,11 @@ export default function OrderSuccess() {
   // Pending order info (for retry)
   const [pendingOrder, setPendingOrder] = useState(null)
 
-  // ── On success: commit cart → "Order Again" store ─────────────────────────
+  // ── On success: commit cart + confirm payment in DB ──────────────────────
   useEffect(() => {
     if (!isSuccess) return
+
+    // 1. Read sessionStorage and build display order from it
     try {
       const raw = sessionStorage.getItem('kr-pending-order')
       if (raw) {
@@ -220,9 +223,40 @@ export default function OrderSuccess() {
         if (pending.items?.length) addOrderedItems(pending.items)
         clearCart()
         sessionStorage.removeItem('kr-pending-order')
+
+        // Use stored data to render order details right away
+        // (avoids the admin-orders auth requirement for customer-facing pages)
+        if (!state?.order) {
+          setOrder({
+            id:             pending.orderId,
+            order_number:   pending.orderNumber,
+            total_amount:   pending.amount,
+            delivery_slot:  pending.deliverySlot,
+            payment_method: isOnlinePayment ? 'zoho' : 'cod',
+            order_items:    (pending.items || []).map((i) => ({
+              product_name: i.name,
+              quantity:     i.quantity ?? 1,
+              unit:         i.unit,
+            })),
+          })
+        }
       }
     } catch {}
-  }, [isSuccess])
+
+    // 2. If this is an online payment redirect, confirm it server-side
+    //    (primary path — don't rely solely on the webhook)
+    if (isOnlinePayment && orderId) {
+      fetch('/api/confirm-payment', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          paymentsSessionId: paymentsSessionId || undefined,
+          paymentSessionStatus: sessionStatus || 'succeeded',
+        }),
+      }).catch(() => { /* non-critical — webhook is secondary fallback */ })
+    }
+  }, [isSuccess])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load pending order info for retry (on failure) ────────────────────────
   useEffect(() => {
@@ -233,15 +267,22 @@ export default function OrderSuccess() {
     } catch {}
   }, [isFailed])
 
-  // ── Load order details from API if not in navigation state ────────────────
+  // ── Load order details from API (COD / admin navigation only) ────────────
+  // For online payment redirects we already build the order from sessionStorage above.
+  // For COD, the order is passed via React navigation state.
+  // This fetch is a fallback for admin deep-links where state/sessionStorage are absent.
   useEffect(() => {
-    if (order || !orderId || isFailed) { setLoading(false); return }
+    if (order || !orderId || isFailed || isOnlinePayment) { setLoading(false); return }
     fetch(`/api/admin-orders?orderId=${orderId}`)
-      .then((r) => r.json())
-      .then((d) => setOrder(d || null))
+      .then(async (r) => {
+        if (!r.ok) return null          // 401 / 404 — don't crash
+        const d = await r.json()
+        return d?.id ? d : null         // only use if it's a real order object
+      })
+      .then((d) => { if (d) setOrder(d) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [orderId, isFailed])
+  }, [orderId, isFailed, isOnlinePayment])
 
   // ── Retry online payment ──────────────────────────────────────────────────
   const handleRetry = useCallback(async () => {
