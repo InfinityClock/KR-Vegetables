@@ -295,48 +295,41 @@ export default function Checkout() {
       }
 
       // 2. Create Zoho hosted checkout session
-      let paymentUrl = null
-      try {
-        const payRes = await fetch('/api/zoho-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            orderNumber,
-            amount: total,
-            customerName: name.trim(),
-            customerPhone: phone.trim(),
-          }),
-        })
-        const payData = await payRes.json()
-        if (payRes.ok && payData.paymentUrl) paymentUrl = payData.paymentUrl
-      } catch {}
-
-      if (paymentUrl) {
-        // Save cart items to sessionStorage so OrderSuccess can record them
-        // after payment is confirmed. Do NOT clear cart yet — if payment
-        // fails the customer may want to retry.
-        try {
-          sessionStorage.setItem('kr-pending-order', JSON.stringify({
-            orderId,
-            orderNumber,
-            customerName: name.trim(),
-            customerPhone: phone.trim(),
-            amount: total,
-            items: items.map((i) => ({
-              id: i.id, name: i.name, unit: i.unit,
-              price: i.price, original_price: i.original_price ?? null,
-              image_url: i.image_url ?? null,
-            })),
-          }))
-        } catch {}
-        window.location.href = paymentUrl
-      } else {
-        // No payment URL — fall back to COD-style success (Zoho unavailable)
-        addOrderedItems(items)
-        clearCart()
-        navigate(`/order-success/${orderId}`, { state: { order, name } })
+      const payRes = await fetch('/api/zoho-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          orderNumber,
+          amount: total,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+        }),
+      })
+      const payData = await payRes.json()
+      if (!payRes.ok || !payData.paymentUrl) {
+        throw new Error(payData.error || 'Could not open payment gateway. Please try again.')
       }
+      const paymentUrl = payData.paymentUrl
+
+      // Save cart items to sessionStorage so OrderSuccess can record them
+      // after payment is confirmed. Do NOT clear cart yet — if payment
+      // fails the customer may want to retry.
+      try {
+        sessionStorage.setItem('kr-pending-order', JSON.stringify({
+          orderId,
+          orderNumber,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          amount: total,
+          items: items.map((i) => ({
+            id: i.id, name: i.name, unit: i.unit,
+            price: i.price, original_price: i.original_price ?? null,
+            image_url: i.image_url ?? null,
+          })),
+        }))
+      } catch {}
+      window.location.href = paymentUrl
 
     } catch (err) {
       toast.error(err.message || 'Something went wrong. Please try again.')
