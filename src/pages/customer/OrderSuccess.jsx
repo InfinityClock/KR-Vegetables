@@ -261,7 +261,7 @@ export default function OrderSuccess() {
       })
       const data = await res.json()
       if (data.paymentUrl) {
-        window.location.href = data.paymentUrl
+        window.location.replace(data.paymentUrl)
       } else {
         alert('Could not create payment link. Please try Cash on Delivery.')
         setRetrying(false)
