@@ -66,16 +66,17 @@ export default async function handler(req, res) {
   // amount must be a Number (not a string) — Zoho rejects string amounts.
   // Keep hosted_page_parameters minimal: only required fields + name/phone.
   // phone_country_code must use the E.164-prefix format "+91", not "IN".
+  // Keep payload minimal — only fields Zoho definitely accepts.
+  // description is omitted entirely: Zoho validates it strictly and rejects
+  // many formats; since it's optional we skip it to avoid validation errors.
   const payload = {
-    amount:      parseFloat(parseFloat(amount).toFixed(2)), // number, e.g. 62
-    currency:    'INR',
-    description: `Order ${orderNumber || orderId}`,
+    amount:   parseFloat(parseFloat(amount).toFixed(2)),
+    currency: 'INR',
     configurations: {
       hosted_page_parameters: {
         success_url: `${appUrl}/order-success/${orderId}?payment=success`,
         failure_url: `${appUrl}/order-success/${orderId}?payment=failed`,
-        ...(customerName && { name: customerName }),
-        ...(orderNumber && { udf1: orderNumber }),
+        ...(orderNumber && { udf1: String(orderNumber) }),
       },
     },
   }
