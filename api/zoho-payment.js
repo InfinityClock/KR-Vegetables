@@ -74,11 +74,7 @@ export default async function handler(req, res) {
       hosted_page_parameters: {
         success_url: `${appUrl}/order-success/${orderId}?payment=success`,
         failure_url: `${appUrl}/order-success/${orderId}?payment=failed`,
-        ...(customerName  && { name:  customerName }),
-        ...(customerPhone && {
-          phone:              customerPhone,
-          phone_country_code: '+91',
-        }),
+        ...(customerName && { name: customerName }),
         ...(orderNumber && { udf1: orderNumber }),
       },
     },
