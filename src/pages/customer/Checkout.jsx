@@ -287,7 +287,7 @@ export default function Checkout() {
       })
       const orderData = await orderRes.json()
       if (!orderRes.ok || !orderData.orderId) {
-        throw new Error('[Order] ' + (orderData.error || 'Failed to create order'))
+        throw new Error(orderData.error || 'Could not place order. Please try again.')
       }
 
       const { orderId, orderNumber, order } = orderData
@@ -325,7 +325,7 @@ export default function Checkout() {
         clearTimeout(payTimer)
       }
       if (!payRes.ok || !payData.paymentUrl) {
-        throw new Error('[Zoho] ' + (payData.error || JSON.stringify(payData.details || payData)))
+        throw new Error('Could not open payment gateway. Please try again or use Cash on Delivery.')
       }
       const paymentUrl = payData.paymentUrl
 
