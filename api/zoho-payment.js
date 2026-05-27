@@ -1,21 +1,24 @@
 /**
  * Vercel Node.js Serverless Function — Create a Zoho Payments hosted checkout session.
  *
- * Uses the Payment Sessions API (NOT payment links) which provides:
- *  - Separate success_url and failure_url
- *  - payment_session_status appended to redirect URL
- *  - Signature on redirect for server-side verification
- *
- * POST /api/zoho-payment
- *   body: { orderId, orderNumber, amount, customerName, customerPhone }
- *
  * Docs: https://www.zoho.com/in/payments/api/v1/payment-session/
- * Redirect: https://payments.zoho.in/hostedpages/{access_key}
  *
- * Required Vercel env vars:
- *   ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN
- *   ZOHO_ACCOUNT_ID   — Zoho Payments → Settings → Account Details
- *   APP_URL           — e.g. https://krvegetables.in
+ * POST /paymentsessions?account_id={id}
+ *
+ * Required fields (from docs):
+ *   amount       - double
+ *   currency     - "INR"
+ *   description  - string, max 500 chars (REQUIRED at top level)
+ *   configurations.hosted_page_parameters.description  - string (REQUIRED)
+ *   configurations.hosted_page_parameters.success_url  - HTTPS URL (REQUIRED)
+ *   configurations.hosted_page_parameters.failure_url  - HTTPS URL (REQUIRED)
+ *
+ * phone_country_code must be ISO country code "IN" (not "+91")
+ *
+ * Response (top-level, not nested):
+ *   code                 - 0 = success
+ *   access_key           - used to build hosted checkout URL
+ *   payments_session_id  - session identifier
  */
 
 import { getZohoToken } from './_zoho-auth.js'
@@ -44,10 +47,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' })
 
   const accountId = process.env.ZOHO_ACCOUNT_ID
-  const appUrl    = process.env.APP_URL || process.env.VITE_APP_URL || 'https://kr-vegetables.vercel.app'
+  const appUrl    = process.env.APP_URL || 'https://krvegetables.in'
 
   if (!accountId) {
-    return res.status(500).json({ error: 'ZOHO_ACCOUNT_ID is not set in Vercel environment variables.' })
+    return res.status(500).json({ error: 'ZOHO_ACCOUNT_ID env var is not set.' })
   }
 
   const { orderId, orderNumber, amount, customerName, customerPhone } = req.body ?? {}
@@ -55,37 +58,37 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'orderId and amount are required' })
   }
 
-  // ── Get OAuth access token ────────────────────────────────────────────────
+  // ── Get OAuth access token ─────────────────────────────────────────────────
   let token
   try { token = await getZohoToken() }
   catch (err) { return res.status(500).json({ error: err.message }) }
 
-  // ── Create payment session ────────────────────────────────────────────────
-  // Docs: POST /paymentsessions?account_id={id}
-  // success_url and failure_url are inside configurations.hosted_page_parameters
-  // amount must be a Number (not a string) — Zoho rejects string amounts.
-  // Keep hosted_page_parameters minimal: only required fields + name/phone.
-  // phone_country_code must use the E.164-prefix format "+91", not "IN".
-  // Keep payload minimal — only fields Zoho definitely accepts.
-  // description is omitted entirely: Zoho validates it strictly and rejects
-  // many formats; since it's optional we skip it to avoid validation errors.
-  // description is REQUIRED by Zoho — omitting it causes a validation error.
-  // Use only safe ASCII alphanumeric text; no hyphens, special chars, or variables.
+  // ── Build payload per Zoho docs ────────────────────────────────────────────
+  // Both top-level description AND hosted_page_parameters.description are
+  // required by the API. Use safe ASCII-only text — no hyphens or special chars.
+  const description = 'KR Vegetables Order'
+
   const payload = {
     amount:      parseFloat(parseFloat(amount).toFixed(2)),
     currency:    'INR',
-    description: 'KR Vegetables Order',
+    description,                    // required, max 500 chars
     configurations: {
       hosted_page_parameters: {
+        description,                // required per docs
         success_url: `${appUrl}/order-success/${orderId}?payment=success`,
         failure_url: `${appUrl}/order-success/${orderId}?payment=failed`,
+        // Optional: customer name and phone (phone_country_code must be ISO "IN")
+        ...(customerName  && { name: customerName }),
+        ...(customerPhone && { phone: customerPhone, phone_country_code: 'IN' }),
+        // Store order number in udf1 so it comes back in the redirect signature
+        ...(orderNumber   && { udf1: orderNumber }),
       },
     },
   }
 
-  console.log('[zoho-payment] payload:', JSON.stringify(payload))
-  console.log('[zoho-payment] accountId:', accountId, 'appUrl:', appUrl)
+  console.log('[zoho-payment] Request →', JSON.stringify(payload))
 
+  // ── Call Zoho API ──────────────────────────────────────────────────────────
   let zohoRes
   try {
     zohoRes = await fetch(`${BASE_URL}/paymentsessions?account_id=${accountId}`, {
@@ -101,25 +104,28 @@ export default async function handler(req, res) {
   }
 
   const zohoData = await zohoRes.json()
+  console.log('[zoho-payment] Response ←', JSON.stringify(zohoData))
 
   if (!zohoRes.ok || zohoData.code !== 0) {
-    console.error('[zoho-payment] Session creation failed:', JSON.stringify(zohoData))
     return res.status(400).json({
       error:   zohoData.message || 'Zoho payment session creation failed',
       details: zohoData,
     })
   }
 
-  // Response: { payments_session: { access_key, payments_session_id, ... } }
-  const session           = zohoData.payments_session
-  const accessKey         = session?.access_key
-  const paymentsSessionId = session?.payments_session_id
+  // ── Parse response ─────────────────────────────────────────────────────────
+  // Docs show access_key and payments_session_id as top-level fields.
+  // Some API versions may nest them under payments_session — handle both.
+  const accessKey         = zohoData.access_key          || zohoData.payments_session?.access_key
+  const paymentsSessionId = zohoData.payments_session_id || zohoData.payments_session?.payments_session_id
 
   if (!accessKey) {
-    return res.status(500).json({ error: 'Zoho returned success but no access_key', raw: zohoData })
+    return res.status(500).json({
+      error: 'Zoho returned success but no access_key',
+      raw:   zohoData,
+    })
   }
 
-  // Redirect customer to the Zoho hosted checkout page
   const paymentUrl = `https://payments.zoho.in/hostedpages/${accessKey}`
 
   return res.status(200).json({ success: true, paymentUrl, paymentsSessionId })
