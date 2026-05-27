@@ -294,19 +294,31 @@ export default function Checkout() {
         return
       }
 
-      // 2. Create Zoho hosted checkout session
-      const payRes = await fetch('/api/zoho-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          orderNumber,
-          amount: total,
-          customerName: name.trim(),
-          customerPhone: phone.trim(),
-        }),
-      })
-      const payData = await payRes.json()
+      // 2. Create Zoho hosted checkout session (15s timeout)
+      const payAbort = new AbortController()
+      const payTimer = setTimeout(() => payAbort.abort(), 15000)
+      let payRes, payData
+      try {
+        payRes  = await fetch('/api/zoho-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: payAbort.signal,
+          body: JSON.stringify({
+            orderId,
+            orderNumber,
+            amount: total,
+            customerName: name.trim(),
+            customerPhone: phone.trim(),
+          }),
+        })
+        payData = await payRes.json()
+      } catch (fetchErr) {
+        throw new Error(fetchErr.name === 'AbortError'
+          ? 'Payment gateway timed out. Please try again.'
+          : 'Could not reach payment gateway. Check your connection.')
+      } finally {
+        clearTimeout(payTimer)
+      }
       if (!payRes.ok || !payData.paymentUrl) {
         throw new Error(payData.error || 'Could not open payment gateway. Please try again.')
       }
