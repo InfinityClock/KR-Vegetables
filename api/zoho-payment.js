@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         name:               customerName  || 'Customer',
         phone:              customerPhone || '',
         phone_country_code: 'IN',
-        description:        `Order ${orderNumber} — KR Vegetables & Fruits`,
+        description:        `Order ${orderNumber} - KR Vegetables and Fruits`,
         success_url:        `${appUrl}/order-success/${orderId}?payment=success`,
         failure_url:        `${appUrl}/order-success/${orderId}?payment=failed`,
         // udf1 stores orderNumber so it's echoed back in the redirect signature
