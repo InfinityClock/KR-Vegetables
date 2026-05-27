@@ -4,26 +4,36 @@ import './index.css'
 import App from './App.jsx'
 
 // ─── Pending payment redirect (runs BEFORE React) ─────────────────────────────
-// Handles the case where a user presses Back from Zoho's payment page and lands
-// back on our app without completing payment.
+// When a Zoho payment is in progress (kr-pending-order in sessionStorage) and
+// the user navigates away from Zoho without completing payment, they land on
+// /cart (or another non-success page).  We catch that here and immediately
+// redirect to the payment-failed screen.
 //
-// IMPORTANT: We only redirect in two specific cases to avoid blocking new orders:
-//   1. bfcache thaw (e.persisted=true) — the Back button restored a frozen page
-//   2. Referrer is Zoho's domain — user navigated back from Zoho
-//
-// We do NOT redirect on regular page loads / navigation within the app, because
-// a stale kr-pending-order in sessionStorage would otherwise block every visit.
+// Rules to avoid false positives:
+//   • Never redirect if we're already on /order-success or /admin
+//   • On /cart specifically: ALWAYS redirect if kr-pending-order exists —
+//     the only way to land on /cart with a pending order is pressing Back
+//     from the payment page (or bfcache restore of that state).
+//   • On OTHER pages: only redirect if coming from Zoho (referrer check) or
+//     if the page was restored from bfcache (persisted=true).
 function checkPendingPayment({ fromBfcache = false } = {}) {
   try {
     const raw = sessionStorage.getItem('kr-pending-order')
     if (!raw) return
     const { orderId } = JSON.parse(raw)
     if (!orderId) return
+
     const path = window.location.pathname
     if (path.startsWith('/order-success') || path.startsWith('/admin')) return
 
+    // /cart is the canonical back-nav destination after Zoho redirect —
+    // if pending order exists here, we know they came back without paying.
+    if (path === '/cart' || path === '/cart/') {
+      window.location.replace(`/order-success/${orderId}?payment=failed`)
+      return
+    }
+
     const fromZoho = document.referrer.includes('zoho')
-    // Only redirect when we know the user just came from Zoho
     if (!fromZoho && !fromBfcache) return
 
     window.location.replace(`/order-success/${orderId}?payment=failed`)
@@ -34,7 +44,7 @@ function checkPendingPayment({ fromBfcache = false } = {}) {
 checkPendingPayment({ fromBfcache: false })
 
 window.addEventListener('pageshow', (e) => {
-  // Handles Back button bfcache restore
+  // Handles Back button bfcache restore on any page
   if (e.persisted) checkPendingPayment({ fromBfcache: true })
 })
 
