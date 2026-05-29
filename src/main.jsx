@@ -26,10 +26,13 @@ function checkPendingPayment({ fromBfcache = false } = {}) {
     const path = window.location.pathname
     if (path.startsWith('/order-success') || path.startsWith('/admin')) return
 
-    // /cart is the canonical back-nav destination after Zoho redirect —
-    // if pending order exists here, we know they came back without paying.
+    // /cart is the canonical back-nav destination after Zoho redirect.
+    // Only redirect when kr-payment-active is set (cleared once the failed
+    // screen is shown), so a stale kr-pending-order never blocks the cart.
     if (path === '/cart' || path === '/cart/') {
-      window.location.replace(`/order-success/${orderId}?payment=failed`)
+      if (sessionStorage.getItem('kr-payment-active')) {
+        window.location.replace(`/order-success/${orderId}?payment=failed`)
+      }
       return
     }
 

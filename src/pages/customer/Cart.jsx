@@ -101,13 +101,13 @@ export default function Cart() {
   const { items, notes, setNotes, clearCart } = useCartStore()
 
   // ── Intercept back-navigation from Zoho payment page ─────────────────────
-  // If a Zoho payment is pending (kr-pending-order in sessionStorage) and the
-  // user lands on the cart page, they pressed Back without completing payment.
-  // Redirect them to the payment-failed screen immediately instead of showing
-  // the (now empty) cart.  Use replace() so Back from the failed screen does
-  // NOT loop back here.
+  // kr-payment-active is set in Checkout.jsx just before window.location.replace
+  // to Zoho, and cleared as soon as OrderSuccess renders the payment-failed screen.
+  // Only redirect when BOTH flags are present so a stale kr-pending-order (left
+  // from a previously seen failed-payment screen) can never block the Cart.
   useEffect(() => {
     try {
+      if (!sessionStorage.getItem('kr-payment-active')) return
       const raw = sessionStorage.getItem('kr-pending-order')
       if (!raw) return
       const { orderId } = JSON.parse(raw)

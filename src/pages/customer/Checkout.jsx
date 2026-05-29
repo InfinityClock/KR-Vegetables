@@ -263,9 +263,12 @@ export default function Checkout() {
 
     setPlacing(true)
 
-    // Clear any stale pending-order from a previous failed payment so it
-    // can never block this new order or trigger a false redirect.
-    try { sessionStorage.removeItem('kr-pending-order') } catch {}
+    // Clear any stale flags from a previous failed payment so they can
+    // never block this new order or trigger a false redirect.
+    try {
+      sessionStorage.removeItem('kr-pending-order')
+      sessionStorage.removeItem('kr-payment-active')
+    } catch {}
 
     try {
       // 1. Create order record in DB
@@ -348,6 +351,10 @@ export default function Checkout() {
             image_url: i.image_url ?? null,
           })),
         }))
+        // Active-payment flag: tells Cart.jsx to redirect to payment-failed if the
+        // user navigates back without completing the payment. Cleared as soon as
+        // OrderSuccess renders the payment-failed screen.
+        sessionStorage.setItem('kr-payment-active', '1')
       } catch {}
       // Use replace so the browser back button skips Zoho and goes to cart.
       // If the user navigates back to /checkout, the sessionStorage check above

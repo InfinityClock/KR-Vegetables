@@ -262,6 +262,9 @@ export default function OrderSuccess() {
   useEffect(() => {
     if (!isFailed) return
     try {
+      // Clear the active-payment flag so Cart no longer auto-redirects here.
+      // kr-pending-order is kept so the "Retry" / "Switch to COD" buttons work.
+      sessionStorage.removeItem('kr-payment-active')
       const raw = sessionStorage.getItem('kr-pending-order')
       if (raw) setPendingOrder(JSON.parse(raw))
     } catch {}
