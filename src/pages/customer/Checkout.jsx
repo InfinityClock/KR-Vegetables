@@ -228,34 +228,63 @@ export default function Checkout() {
   }, [mapsReady])
 
   const detectLocation = () => {
-    if (!navigator.geolocation) { toast.error('Geolocation not supported'); return }
+    if (!navigator.geolocation) {
+      toast.error('Your browser does not support location detection. Please enter your address manually.')
+      return
+    }
     setDetecting(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords
-        setMapCoords({ lat, lng })
-        if (MAPS_KEY) {
-          try {
-            const res  = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}`
-            )
-            const data = await res.json()
-            if (data.results[0]) {
-              const parsed = parseComponents(data.results[0].address_components)
-              setAddr((a) => ({ ...a, ...parsed }))
-              if (searchRef.current) searchRef.current.value = data.results[0].formatted_address
-            }
-          } catch { /* silent — user can fill manually */ }
-        }
-        setDetecting(false)
-        toast.success('Location detected!')
-      },
-      () => {
-        toast.error('Could not detect location. Please enter address manually.')
-        setDetecting(false)
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
+
+    const onSuccess = async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords
+      setMapCoords({ lat, lng })
+      if (MAPS_KEY) {
+        try {
+          const res  = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}`
+          )
+          const data = await res.json()
+          if (data.results[0]) {
+            const parsed = parseComponents(data.results[0].address_components)
+            setAddr((a) => ({ ...a, ...parsed }))
+            if (searchRef.current) searchRef.current.value = data.results[0].formatted_address
+          }
+        } catch { /* silent — user can fill address fields manually */ }
+      }
+      setDetecting(false)
+      toast.success('Location detected!')
+    }
+
+    const onError = (err) => {
+      // Try once more without high-accuracy (GPS) — network-based location is
+      // faster and works better on desktop and in buildings.
+      if (err.code === err.TIMEOUT) {
+        navigator.geolocation.getCurrentPosition(onSuccess, onFinalError, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+        })
+        return
+      }
+      onFinalError(err)
+    }
+
+    const onFinalError = (err) => {
+      setDetecting(false)
+      if (err.code === err.PERMISSION_DENIED) {
+        toast.error(
+          'Location access was blocked. Please allow location in your browser settings and try again.',
+          { duration: 5000 }
+        )
+      } else if (err.code === err.POSITION_UNAVAILABLE) {
+        toast.error('Location signal unavailable. Please enter your address manually.')
+      } else {
+        toast.error('Could not detect location. Please enter your address manually.')
+      }
+    }
+
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 8000,
+    })
   }
 
   const handlePlaceOrder = async () => {
