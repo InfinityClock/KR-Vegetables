@@ -174,10 +174,13 @@ export default function Checkout() {
     }
   }, [])
 
-  // Redirect if cart empty
+  // Redirect if cart empty — but NOT while an order is being placed.
+  // Without the !placing guard, calling clearCart() inside handlePlaceOrder
+  // would set items=[] and this effect would navigate to /cart before
+  // navigate('/order-success/...') could take effect (race condition).
   useEffect(() => {
-    if (items.length === 0) navigate('/cart')
-  }, [items.length])
+    if (items.length === 0 && !placing) navigate('/cart')
+  }, [items.length, placing])
 
   // ── Customer details ─────────────────────────────────────────────────────
   const [name, setName]   = useState('')
