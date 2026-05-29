@@ -12,13 +12,27 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 }
 
-function generateOrderNumber() {
-  const now = new Date()
-  const yy  = String(now.getFullYear()).slice(2)
-  const mm  = String(now.getMonth() + 1).padStart(2, '0')
-  const dd  = String(now.getDate()).padStart(2, '0')
-  const rand = Math.floor(Math.random() * 9000) + 1000
-  return `KRV-${yy}${mm}${dd}-${rand}`
+// Returns the next sequential order number (1001, 1002, …)
+// Uses the current total order count so numbers are gapless and human-readable.
+async function getNextOrderNumber(supabaseUrl, serviceKey) {
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/orders?select=id`, {
+      headers: {
+        apikey:          serviceKey,
+        Authorization:   `Bearer ${serviceKey}`,
+        Prefer:          'count=exact',
+        'Range-Unit':    'items',
+        Range:           '0-0',
+      },
+    })
+    // Content-Range: "0-0/42"  → total = 42
+    const range = res.headers.get('content-range') || ''
+    const total = parseInt(range.split('/')[1] || '0')
+    return String(1001 + (isNaN(total) ? 0 : total))
+  } catch {
+    // Fallback: last 5 digits of current timestamp (still readable, very unlikely collision)
+    return String(Date.now()).slice(-5)
+  }
 }
 
 export default async function handler(req) {
@@ -124,7 +138,7 @@ export default async function handler(req) {
     }
 
     // 3. Create order
-    const orderNumber = generateOrderNumber()
+    const orderNumber = await getNextOrderNumber(supabaseUrl, serviceKey)
     // Normalise payment method — only values in the DB enum are accepted.
     // 'zoho' is added by migration 006; fall back to 'cod' if not yet run.
     const safePaymentMethod = ['cod', 'zoho', 'razorpay'].includes(paymentMethod)

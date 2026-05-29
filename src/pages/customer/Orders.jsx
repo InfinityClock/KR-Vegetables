@@ -55,7 +55,7 @@ export default function Orders() {
               type="text"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="e.g. KRV-260519-1234"
+              placeholder="e.g. 1001"
               className="w-full h-13 px-4 rounded-2xl text-sm outline-none"
               style={{
                 height: 52,
