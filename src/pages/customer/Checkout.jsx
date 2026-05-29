@@ -6,8 +6,9 @@ import {
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartHandlingFee, useCartTotal } from '../../store/cartStore'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { formatPrice } from '../../utils/format'
-import { getNextDeliveryWindow } from '../../constants'
+import { getNextDeliveryWindow, HANDLING_CHARGE_RATE } from '../../constants'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
 
@@ -164,6 +165,8 @@ export default function Checkout() {
   const subtotal      = useCartSubtotal()
   const handlingFee   = useCartHandlingFee()
   const total         = useCartTotal()
+  const { handling_charge_rate } = useSettingsStore()
+  const chargeRate    = Math.round((handling_charge_rate ?? HANDLING_CHARGE_RATE) * 100)
 
   // Declared early so the cart-guard useEffect below can reference it in deps
   const [paymentMethod, setPaymentMethod] = useState('zoho')
@@ -559,7 +562,7 @@ export default function Checkout() {
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>{deliverySlot}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Handling Charge (2%)</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>Handling Charge ({chargeRate}%)</span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>
                 {formatPrice(handlingFee)}
               </span>

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useSettingsStore } from './settingsStore'
+import { HANDLING_CHARGE_RATE } from '../constants'
 
 export const useCartStore = create(
   persist(
@@ -72,11 +73,11 @@ export const useCartSubtotal = () => useCartStore((s) => s.items.reduce((sum, i)
 export const useCartHandlingFee = () => {
   const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
   const { handling_charge_rate } = useSettingsStore()
-  return Math.ceil(sub * handling_charge_rate)
+  return Math.ceil(sub * (handling_charge_rate ?? HANDLING_CHARGE_RATE))
 }
 
 export const useCartTotal = () => {
   const sub = useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
   const { handling_charge_rate } = useSettingsStore()
-  return sub + Math.ceil(sub * handling_charge_rate)
+  return sub + Math.ceil(sub * (handling_charge_rate ?? HANDLING_CHARGE_RATE))
 }

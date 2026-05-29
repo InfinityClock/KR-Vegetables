@@ -4,6 +4,7 @@ import {
   CheckCircle, Package, ShoppingBag, Share2, Copy, Check,
   Bell, XCircle, Clock, RefreshCw, Banknote, AlertTriangle,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { WHATSAPP_NUMBER } from '../../constants'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
@@ -307,11 +308,11 @@ export default function OrderSuccess() {
       if (data.paymentUrl) {
         window.location.replace(data.paymentUrl)
       } else {
-        alert('Could not create payment link. Please try Cash on Delivery.')
+        toast.error('Could not create payment link. Please try Cash on Delivery.')
         setRetrying(false)
       }
     } catch {
-      alert('Network error. Please try again.')
+      toast.error('Network error. Please try again.')
       setRetrying(false)
     }
   }, [pendingOrder, orderId])
@@ -325,20 +326,36 @@ export default function OrderSuccess() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       })
-      // Clear the pending order from session storage
+      // Build order details from pendingOrder so the success page can render them
+      let builtOrder = order
+      let pendingData = null
       try {
         const raw = sessionStorage.getItem('kr-pending-order')
         if (raw) {
-          const pending = JSON.parse(raw)
-          if (pending.items?.length) addOrderedItems(pending.items)
+          pendingData = JSON.parse(raw)
+          if (!builtOrder && pendingData) {
+            builtOrder = {
+              id:             pendingData.orderId,
+              order_number:   pendingData.orderNumber,
+              total_amount:   pendingData.amount,
+              delivery_slot:  pendingData.deliverySlot,
+              payment_method: 'cod',
+              order_items: (pendingData.items || []).map((i) => ({
+                product_name: i.name,
+                quantity:     i.quantity ?? 1,
+                unit:         i.unit,
+              })),
+            }
+          }
+          if (pendingData?.items?.length) addOrderedItems(pendingData.items)
           clearCart()
           sessionStorage.removeItem('kr-pending-order')
         }
       } catch {}
-      // Navigate to success page as COD
-      navigate(`/order-success/${orderId}`, { replace: true, state: { order, name: pendingOrder?.customerName } })
+      // Navigate to success page as COD with the built order object
+      navigate(`/order-success/${orderId}`, { replace: true, state: { order: builtOrder, name: pendingData?.customerName || pendingOrder?.customerName } })
     } catch {
-      alert('Could not switch to COD. Please contact us on WhatsApp.')
+      toast.error('Could not switch to COD. Please contact us on WhatsApp.')
       setSwitchingCod(false)
     }
   }, [orderId, pendingOrder, order])
