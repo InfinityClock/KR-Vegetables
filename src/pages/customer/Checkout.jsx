@@ -165,6 +165,10 @@ export default function Checkout() {
   const handlingFee   = useCartHandlingFee()
   const total         = useCartTotal()
 
+  // Declared early so the cart-guard useEffect below can reference it in deps
+  const [paymentMethod, setPaymentMethod] = useState('zoho')
+  const [placing, setPlacing] = useState(false)
+
   // Show payment cancelled toast if redirected back with ?payment=cancelled
   // (The pending-payment redirect is handled globally by PendingPaymentGuard in App.jsx)
   useEffect(() => {
@@ -250,10 +254,6 @@ export default function Checkout() {
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }
-
-  // ── Payment ───────────────────────────────────────────────────────────────
-  const [paymentMethod, setPaymentMethod] = useState('zoho')
-  const [placing, setPlacing] = useState(false)
 
   const handlePlaceOrder = async () => {
     // Validate
