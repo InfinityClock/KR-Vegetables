@@ -16,9 +16,10 @@ export default function Orders() {
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin-orders?orderNumber=${encodeURIComponent(num)}`)
+      // Use the public track-order endpoint — admin-orders requires admin auth
+      const res = await fetch(`/api/track-order?orderNumber=${encodeURIComponent(num)}`)
       const data = await res.json()
-      if (!data?.id) {
+      if (!res.ok || !data?.id) {
         toast.error('Order not found. Check the number and try again.')
         return
       }
