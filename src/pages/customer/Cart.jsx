@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
-import { Minus, Plus, Trash2, ShoppingBag, Clock, Percent } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Minus, Plus, Trash2, ShoppingBag, Clock, Percent, Loader2 } from 'lucide-react'
 import {
   useCartStore,
   useCartSubtotal,
@@ -101,13 +101,22 @@ export default function Cart() {
   const { items, notes, setNotes, clearCart } = useCartStore()
 
   // ── Intercept back-navigation from Zoho payment page ─────────────────────
-  // kr-payment-active is set in Checkout.jsx just before window.location.replace
-  // to Zoho, and cleared as soon as OrderSuccess renders the payment-failed screen.
-  // Only redirect when BOTH flags are present so a stale kr-pending-order (left
-  // from a previously seen failed-payment screen) can never block the Cart.
-  useEffect(() => {
+  // Detect the pending-payment state synchronously on first render so we can
+  // immediately show a "Checking payment…" screen instead of a blank page.
+  // kr-payment-active is set in Checkout.jsx just before redirecting to Zoho
+  // and cleared once OrderSuccess renders the payment-failed screen.
+  const [pendingPaymentRedirect] = useState(() => {
     try {
-      if (!sessionStorage.getItem('kr-payment-active')) return
+      return !!(
+        sessionStorage.getItem('kr-payment-active') &&
+        sessionStorage.getItem('kr-pending-order')
+      )
+    } catch { return false }
+  })
+
+  useEffect(() => {
+    if (!pendingPaymentRedirect) return
+    try {
       const raw = sessionStorage.getItem('kr-pending-order')
       if (!raw) return
       const { orderId } = JSON.parse(raw)
@@ -115,7 +124,7 @@ export default function Cart() {
         window.location.replace(`/order-success/${orderId}?payment=failed`)
       }
     } catch {}
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingPaymentRedirect])
   const nextWindow   = getNextDeliveryWindow()
   const subtotal     = useCartSubtotal()
   const handlingFee  = useCartHandlingFee()
@@ -123,6 +132,28 @@ export default function Cart() {
   const { store_open } = useSettingsStore()
   const { handling_charge_rate } = useSettingsStore()
   const chargeRate   = Math.round((handling_charge_rate ?? HANDLING_CHARGE_RATE) * 100)
+
+  // Pending payment redirect — show spinner immediately instead of blank
+  if (pendingPaymentRedirect) {
+    return (
+      <div
+        style={{
+          minHeight: '100dvh',
+          background: 'var(--bg-base)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        <Loader2 size={28} style={{ color: 'var(--green-mid)', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-muted)' }}>
+          Checking payment status…
+        </p>
+      </div>
+    )
+  }
 
   // Empty cart
   if (items.length === 0) {
