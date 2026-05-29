@@ -172,10 +172,6 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState('zoho')
   const [placing, setPlacing] = useState(false)
 
-  // Declared early so the cart-guard useEffect below can reference it in deps
-  const [paymentMethod, setPaymentMethod] = useState('zoho')
-  const [placing, setPlacing] = useState(false)
-
   // Show payment cancelled toast if redirected back with ?payment=cancelled
   // (The pending-payment redirect is handled globally by PendingPaymentGuard in App.jsx)
   useEffect(() => {
