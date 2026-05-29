@@ -288,14 +288,14 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* CTA */}
+          {/* CTA — desktop only; mobile uses the sticky footer bar below */}
           <button
             onClick={() => {
               if (!store_open) { toast.error('Store is currently closed'); return }
               navigate('/checkout')
             }}
             disabled={!store_open}
-            className="w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 btn-ripple"
+            className="hidden lg:flex w-full h-14 rounded-2xl font-bold text-base items-center justify-center gap-2 btn-ripple"
             style={store_open ? {
               background: 'linear-gradient(135deg, var(--green-dark), var(--green-mid))',
               color: '#fff',

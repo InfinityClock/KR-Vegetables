@@ -53,13 +53,29 @@ export const useOrder = (orderId) => {
           .eq('order_id', orderId)
           .order('updated_at', { ascending: true }),
       ])
-      setOrder(orderRes.data)
-      setTracking(trackingRes.data || [])
+
+      if (orderRes.data) {
+        // Authenticated user — RLS allowed the read
+        setOrder(orderRes.data)
+        setTracking(trackingRes.data || [])
+      } else {
+        // Guest user or RLS blocked — fall back to the public tracking API.
+        // /api/track-order?orderId=<uuid> returns order + tracking without auth.
+        try {
+          const res = await fetch(`/api/track-order?orderId=${orderId}`)
+          if (res.ok) {
+            const data = await res.json()
+            setOrder(data)
+            setTracking(data.order_tracking || [])
+          }
+        } catch { /* leave order null — tracking page will show "not found" */ }
+      }
+
       setLoading(false)
     }
     loadOrder()
 
-    // Realtime subscription
+    // Realtime subscription (only meaningful for authenticated users with RLS access)
     const channel = supabase
       .channel(`order-${orderId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
