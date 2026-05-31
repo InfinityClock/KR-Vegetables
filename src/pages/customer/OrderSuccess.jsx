@@ -187,23 +187,28 @@ export default function OrderSuccess() {
   const [loading, setLoading] = useState(!state?.order && !new URLSearchParams(search).get('payment'))
   const [copied,  setCopied]  = useState(false)
 
-  // Zoho redirect params
-  const params               = new URLSearchParams(search)
-  const paymentParam         = params.get('payment')           // 'success' | 'failed' | null (cod)
-  const sessionStatus        = params.get('payment_session_status') // 'succeeded' | 'failed' | 'in_progress'
-  const paymentsSessionId    = params.get('payments_session_id')
-  const confirmToken         = params.get('ct')                || '' // HMAC token embedded by zoho-payment.js
-  const paymentId            = params.get('payment_id')        || ''
-  const paymentStatusParam   = params.get('payment_status')    || ''
-  const amountParam          = params.get('amount')            || ''
-  const signatureParam       = params.get('signature')         || ''
+  // Zoho redirect params — per Zoho docs (payment session hosted page redirect):
+  //   payment_session_id  — singular, the session identifier
+  //   payment_id          — the payment identifier
+  //   signature           — HMAC-SHA256 of "payment_id|payment_session_id"
+  // Our custom param:
+  //   ct                  — HMAC confirm token embedded by zoho-payment.js
+  //   payment             — 'success' | 'failed' (our own routing param)
+  const params            = new URLSearchParams(search)
+  const paymentParam      = params.get('payment')             // 'success' | 'failed' | null (cod)
+  const confirmToken      = params.get('ct')             || '' // HMAC token embedded by zoho-payment.js
+  const paymentSessionId  = params.get('payment_session_id')  || '' // Zoho: singular (docs-correct name)
+  const paymentsSessionId = paymentSessionId || params.get('payments_session_id') || '' // tolerate both spellings
+  const paymentId         = params.get('payment_id')     || ''
 
-  // Derive actual state
-  const isOnlinePayment  = !!paymentParam
-  const isCod            = !isOnlinePayment
-  const isFailed         = paymentParam === 'failed'
-  const isPending        = paymentParam === 'success' && sessionStatus === 'in_progress'
-  const isSuccess        = isCod || (paymentParam === 'success' && sessionStatus !== 'in_progress') || (paymentParam === 'success' && !sessionStatus)
+  // Derive actual state — for hosted payment sessions Zoho does not send a
+  // payment_session_status param; success/failure is determined by which URL Zoho
+  // redirected to (success_url vs failure_url), which we encode as ?payment=success|failed.
+  const isOnlinePayment = !!paymentParam
+  const isCod           = !isOnlinePayment
+  const isFailed        = paymentParam === 'failed'
+  const isPending       = false  // bank transfers use payment links, not sessions
+  const isSuccess       = isCod || paymentParam === 'success'
 
   // Retry state
   const [retrying,     setRetrying]     = useState(false)
@@ -405,7 +410,7 @@ export default function OrderSuccess() {
         Order Placed!
       </h1>
 
-      {paymentParam === 'success' && sessionStatus === 'succeeded' && (
+      {paymentParam === 'success' && (
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--brand-700)', fontWeight: 600, marginBottom: 4 }}>
           ✅ Payment confirmed
         </p>

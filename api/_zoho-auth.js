@@ -32,14 +32,20 @@ export async function getZohoToken() {
     throw new Error('ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET and ZOHO_REFRESH_TOKEN must be set in Vercel env vars')
   }
 
-  const params = new URLSearchParams({
+  // Send credentials in the POST body (application/x-www-form-urlencoded) rather
+  // than the URL query string — keeps secrets out of server access logs.
+  const body = new URLSearchParams({
     grant_type:    'refresh_token',
     client_id:     clientId,
     client_secret: clientSecret,
     refresh_token: refreshToken,
   })
 
-  const res  = await fetch(`https://accounts.zoho.in/oauth/v2/token?${params}`, { method: 'POST' })
+  const res  = await fetch('https://accounts.zoho.in/oauth/v2/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    body.toString(),
+  })
   const data = await res.json()
 
   if (!data.access_token) {

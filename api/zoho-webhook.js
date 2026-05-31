@@ -78,9 +78,19 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ ok: true, skipped: eventType }), { status: 200 })
   }
 
+  // Extract order number from the event object.
+  // payment_link.paid  → reference_id field (set when creating the payment link)
+  // payment.succeeded  → meta_data array (set in payment session creation request)
+  //                      udf1 is browser-side only and does not appear in this payload
+  const metaOrderNumber = Array.isArray(eventObject.meta_data)
+    ? (eventObject.meta_data.find((m) => m.key === 'order_number')?.value ?? null)
+    : null
+
   const referenceId = eventObject.reference_id
-    || eventObject.udf1
+    || metaOrderNumber
+    || eventObject.udf1               // kept as last resort for payment links
     || eventObject.custom_fields?.udf1
+
   const zohoPaymentId = eventObject.payment_link_id
     || eventObject.payment_id
     || event.event_id
