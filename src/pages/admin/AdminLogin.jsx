@@ -19,9 +19,11 @@ export default function AdminLogin() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
-      const userMetadata = data.user?.user_metadata || {}
+      // Only check app_metadata — it is server-only and cannot be written by the user.
+      // user_metadata is writable via supabase.auth.updateUser() and must never
+      // be used for authorization decisions.
       const appMetadata = data.user?.app_metadata || {}
-      const role = userMetadata.role || appMetadata.role || null
+      const role = appMetadata.role || null
 
       if (!['admin', 'sales'].includes(role)) {
         await supabase.auth.signOut()

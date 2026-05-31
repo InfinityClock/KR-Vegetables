@@ -5,8 +5,9 @@
  * POST /api/switch-to-cod
  *   body: { orderId }
  *
- * No admin auth required — switching to COD is a safe operation
- * (the order is already created; we're just changing the payment method).
+ * Security: the PATCH filter includes status=placed AND payment_status=pending AND
+ * payment_method=in.(zoho,razorpay) so only a freshly-placed, unpaid online order
+ * can be switched. A paid, confirmed, or COD order is never touched.
  */
 
 export const config = { runtime: 'edge' }
@@ -35,15 +36,24 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'orderId is required' }), { status: 400, headers: cors })
   }
 
+  // State guard: only switch orders that are currently placed + pending + online-payment.
+  // This prevents switching paid orders, already-confirmed orders, or COD orders.
+  const filter = [
+    `id=eq.${orderId}`,
+    'status=eq.placed',
+    'payment_status=eq.pending',
+    'payment_method=in.(zoho,razorpay)',
+  ].join('&')
+
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`,
+    `${supabaseUrl}/rest/v1/orders?${filter}`,
     {
       method: 'PATCH',
       headers: {
         'Content-Type':  'application/json',
         apikey:          serviceKey,
         Authorization:   `Bearer ${serviceKey}`,
-        Prefer:          'return=minimal',
+        Prefer:          'return=minimal,count=exact',
       },
       body: JSON.stringify({
         payment_method: 'cod',
@@ -55,6 +65,16 @@ export default async function handler(req) {
 
   if (!res.ok) {
     return new Response(JSON.stringify({ error: 'Failed to update order' }), { status: 500, headers: cors })
+  }
+
+  // If no rows were matched the order was in an ineligible state (already paid, confirmed, etc.)
+  const contentRange = res.headers.get('content-range') || ''
+  const count = parseInt(contentRange.split('/')[1] || '0', 10)
+  if (count === 0) {
+    return new Response(
+      JSON.stringify({ error: 'Order is not eligible for COD switch (already paid or confirmed)' }),
+      { status: 409, headers: cors }
+    )
   }
 
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors })

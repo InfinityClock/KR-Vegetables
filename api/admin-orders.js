@@ -15,7 +15,9 @@ export const config = { runtime: 'edge' }
 function corsHeaders(req) {
   const origin = req?.headers?.get('origin') || ''
   const allowed = process.env.APP_URL || ''
-  const isOk = !allowed || origin === allowed || /^https?:\/\/localhost(:\d+)?$/.test(origin) || origin.endsWith('.vercel.app')
+  const isOk = !allowed
+    || origin === allowed
+    || /^https?:\/\/localhost(:\d+)?$/.test(origin)
   return {
     'Access-Control-Allow-Origin': isOk ? (origin || allowed || '*') : allowed,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -32,10 +34,10 @@ async function verifyAdmin(req, supabaseUrl, serviceKey) {
     headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
   })
   if (!res.ok) return false
-  const { user_metadata, app_metadata, email } = await res.json()
+  const { app_metadata, email } = await res.json()
+  // Only check app_metadata — it is server-only and cannot be written by the user.
+  // user_metadata is user-writable and must not be used for authorization.
   return (
-    user_metadata?.role === 'admin' ||
-    user_metadata?.role === 'sales' ||
     app_metadata?.role === 'admin' ||
     app_metadata?.role === 'sales' ||
     email === process.env.ADMIN_EMAIL
@@ -43,17 +45,19 @@ async function verifyAdmin(req, supabaseUrl, serviceKey) {
 }
 
 export default async function handler(req) {
+  const cors = corsHeaders(req)
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders(req) })
+    return new Response(null, { status: 204, headers: cors })
   }
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabaseUrl = process.env.VITE_SUPABASE_URL
 
   if (!serviceKey) {
     return new Response(
       JSON.stringify({ error: 'SUPABASE_SERVICE_ROLE_KEY is not set in Vercel environment variables.' }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: cors }
     )
   }
 
@@ -73,7 +77,7 @@ export default async function handler(req) {
     // Single-order lookup — requires admin auth
     if (orderId || url.searchParams.get('orderNumber')) {
       if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors })
       }
       const orderNumber = url.searchParams.get('orderNumber')
       const filter = orderId ? `id=eq.${orderId}` : `order_number=eq.${orderNumber}`
@@ -83,12 +87,12 @@ export default async function handler(req) {
       )
       const data = await res.json()
       const order = Array.isArray(data) ? data[0] : null
-      return new Response(JSON.stringify(order ?? null), { status: order ? 200 : 404, headers: corsHeaders })
+      return new Response(JSON.stringify(order ?? null), { status: order ? 200 : 404, headers: cors })
     }
 
     // Admin order list — requires admin JWT
     if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors })
     }
 
     let ordersUrl = `${supabaseUrl}/rest/v1/orders?select=*,customers(full_name,phone),order_items(*),addresses(*)&order=placed_at.desc`
@@ -98,18 +102,18 @@ export default async function handler(req) {
 
     const res = await fetch(ordersUrl, { headers: sbHeaders })
     const data = await res.json()
-    return new Response(JSON.stringify(data), { status: res.status, headers: corsHeaders })
+    return new Response(JSON.stringify(data), { status: res.status, headers: cors })
   }
 
   // ── POST: actions (admin only) ───────────────────────────────────────────
   if (req.method === 'POST') {
     if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors })
     }
 
     let body
     try { body = await req.json() } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: cors })
     }
 
     const { action, orderId, newStatus, trackingMessage } = body
@@ -119,7 +123,7 @@ export default async function handler(req) {
       if (!orderId || !newStatus) {
         return new Response(
           JSON.stringify({ error: 'orderId and newStatus are required' }),
-          { status: 400, headers: corsHeaders }
+          { status: 400, headers: cors }
         )
       }
 
@@ -133,7 +137,7 @@ export default async function handler(req) {
       if (!updateRes.ok) {
         return new Response(
           JSON.stringify({ error: 'Order update failed', details: updated }),
-          { status: 400, headers: corsHeaders }
+          { status: 400, headers: cors }
         )
       }
 
@@ -179,12 +183,12 @@ export default async function handler(req) {
 
       return new Response(
         JSON.stringify({ success: true, order: updated[0] ?? null }),
-        { status: 200, headers: corsHeaders }
+        { status: 200, headers: cors }
       )
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: cors })
   }
 
-  return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+  return new Response('Method not allowed', { status: 405, headers: cors })
 }

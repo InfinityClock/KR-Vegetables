@@ -53,7 +53,7 @@ export default async function handler(req) {
   try { body = await req.json() }
   catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: corsHeaders }) }
 
-  const { name, phone, address, items, subtotal, handlingFee, total, deliverySlot, notes, paymentMethod } = body
+  const { name, phone, address, items, deliverySlot, notes, paymentMethod } = body
 
   if (!name || !phone || !address || !items?.length) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
@@ -137,10 +137,44 @@ export default async function handler(req) {
       finalAddressId = addrData2[0]?.id
     }
 
-    // 3. Create order
+    // 3. Validate prices server-side — never trust client-supplied amounts
+    const productIds = items.map((i) => i.id).filter(Boolean)
+    if (!productIds.length) throw new Error('No valid product IDs in order')
+
+    const priceRes = await sb(
+      `products?id=in.(${productIds.join(',')})&select=id,name,price,offer_price,is_active,stock_status`
+    )
+    const priceData = await priceRes.json()
+    if (!Array.isArray(priceData)) throw new Error('Failed to fetch product prices')
+
+    const productMap = {}
+    for (const p of priceData) {
+      if (!p.is_active) throw new Error(`"${p.name}" is no longer available`)
+      if (p.stock_status === 'out_of_stock') throw new Error(`"${p.name}" is out of stock`)
+      // offer_price=null means no offer; offer_price=0 is a valid free-item price
+      productMap[p.id] = p.offer_price !== null ? p.offer_price : p.price
+    }
+
+    // Compute authoritative subtotal from DB prices
+    let serverSubtotal = 0
+    const validatedItems = items.map((item) => {
+      const unitPrice = productMap[item.id]
+      if (unitPrice === undefined) throw new Error(`Product ${item.id} not found in catalogue`)
+      const lineTotal = unitPrice * item.quantity
+      serverSubtotal += lineTotal
+      return { ...item, unitPrice, lineTotal }
+    })
+
+    // Fetch handling charge rate from store settings
+    const settingsRes2 = await sb('store_settings?key=eq.handling_charge_rate&select=value')
+    const settingsData2 = await settingsRes2.json()
+    const handlingRate = parseFloat(settingsData2?.[0]?.value || '0.02')
+    const serverHandlingFee = Math.ceil(serverSubtotal * handlingRate)
+    const serverTotal = serverSubtotal + serverHandlingFee
+
+    // 4. Create order
     const orderNumber = await getNextOrderNumber(supabaseUrl, serviceKey)
     // Normalise payment method — only values in the DB enum are accepted.
-    // 'zoho' is added by migration 006; fall back to 'cod' if not yet run.
     const safePaymentMethod = ['cod', 'zoho', 'razorpay'].includes(paymentMethod)
       ? paymentMethod
       : 'cod'
@@ -153,10 +187,10 @@ export default async function handler(req) {
         status: 'placed',
         payment_status: 'pending',
         payment_method: safePaymentMethod,
-        subtotal,
-        delivery_fee: handlingFee || 0,
+        subtotal:      serverSubtotal,
+        delivery_fee:  serverHandlingFee,
         discount: 0,
-        total_amount: total,
+        total_amount:  serverTotal,
         delivery_slot: deliverySlot,
         notes: notes || null,
         placed_at: new Date().toISOString(),
@@ -166,19 +200,19 @@ export default async function handler(req) {
     if (!orderRes.ok) throw new Error(orderData?.message || orderData?.details || JSON.stringify(orderData))
     const order = orderData[0]
 
-    // 4. Create order items
-    const orderItems = items.map((item) => ({
+    // 5. Create order items (using server-validated prices)
+    const orderItems = validatedItems.map((item) => ({
       order_id: order.id,
       product_id: item.id || null,
       product_name: item.name,
       unit: item.unit,
       quantity: item.quantity,
-      unit_price: item.offer_price || item.price,
-      total_price: (item.offer_price || item.price) * item.quantity,
+      unit_price: item.unitPrice,
+      total_price: item.lineTotal,
     }))
     await sb('order_items', { method: 'POST', body: JSON.stringify(orderItems) })
 
-    // 5. Initial tracking entry
+    // 6. Initial tracking entry
     await sb('order_tracking', {
       method: 'POST',
       body: JSON.stringify({

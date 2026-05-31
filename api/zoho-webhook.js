@@ -4,24 +4,11 @@
  *
  * POST /api/zoho-webhook
  *
- * Register in Zoho Payments → Settings → Webhooks:
- *   URL:    https://<your-domain>/api/zoho-webhook
- *   Events: payment_link.paid, payment_link.expired, payment.succeeded, payment.failed
- *
  * Required Vercel env vars:
  *   SUPABASE_SERVICE_ROLE_KEY
  *   VITE_SUPABASE_URL
- *   ZOHO_WEBHOOK_SECRET  — Webhooks → Signing Key (optional but strongly recommended)
- *
- * Webhook payload shape (from Zoho Payments docs):
- * {
- *   event_id:     string,
- *   event_type:   "payment_link.paid" | "payment.succeeded" | ...,
- *   account_id:   string,
- *   live_mode:    boolean,
- *   event_time:   number,   // Unix timestamp
- *   event_object: { ... }   // resource-specific data
- * }
+ *   ZOHO_WEBHOOK_SECRET  — Webhooks → Signing Key (REQUIRED — requests without
+ *                          a valid signature are rejected with 401)
  */
 
 export const config = { runtime: 'edge' }
@@ -34,11 +21,17 @@ async function verifySignature(secret, payload, signature) {
     { name: 'HMAC', hash: 'SHA-256' },
     false, ['sign']
   )
-  const mac     = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+  const mac      = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
   const computed = Array.from(new Uint8Array(mac))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
-  return computed === signature
+  // Constant-time comparison to prevent timing attacks
+  if (computed.length !== signature.length) return false
+  let diff = 0
+  for (let i = 0; i < computed.length; i++) {
+    diff |= computed.charCodeAt(i) ^ signature.charCodeAt(i)
+  }
+  return diff === 0
 }
 
 export default async function handler(req) {
@@ -49,15 +42,18 @@ export default async function handler(req) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const secret      = process.env.ZOHO_WEBHOOK_SECRET
 
-  const rawBody = await req.text()
+  // Signature verification is mandatory — reject all requests when secret is not configured.
+  // Set ZOHO_WEBHOOK_SECRET in Vercel env vars from Zoho Payments → Settings → Webhooks → Signing Key.
+  if (!secret) {
+    console.error('[zoho-webhook] ZOHO_WEBHOOK_SECRET is not configured — rejecting request')
+    return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), { status: 500 })
+  }
 
-  // ── Signature verification (if secret is configured) ──────────────────────
-  if (secret) {
-    const signature = req.headers.get('X-Zoho-Signature') || ''
-    const valid = await verifySignature(secret, rawBody, signature)
-    if (!valid) {
-      return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), { status: 401 })
-    }
+  const rawBody  = await req.text()
+  const signature = req.headers.get('X-Zoho-Signature') || ''
+  const valid     = await verifySignature(secret, rawBody, signature)
+  if (!valid) {
+    return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), { status: 401 })
   }
 
   let event
@@ -67,15 +63,9 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), { status: 400 })
   }
 
-  const eventType   = event.event_type   // "payment_link.paid", "payment.succeeded", etc.
+  const eventType   = event.event_type
   const eventObject = event.event_object ?? {}
 
-  // ── Map event type to our internal payment_status ─────────────────────────
-  // Zoho event types (correct names from docs):
-  //   payment_link.paid       — customer paid via a payment link ✅
-  //   payment.succeeded       — direct payment succeeded ✅
-  //   payment_link.expired    — link expired without payment
-  //   payment.failed          — payment failed ❌
   const statusMap = {
     'payment_link.paid':    'paid',
     'payment.succeeded':    'paid',
@@ -85,23 +75,17 @@ export default async function handler(req) {
   const newPaymentStatus = statusMap[eventType]
 
   if (!newPaymentStatus) {
-    // Event we don't care about (refunds, payouts, etc.) — acknowledge and ignore
     return new Response(JSON.stringify({ ok: true, skipped: eventType }), { status: 200 })
   }
 
-  // ── Extract identifiers ────────────────────────────────────────────────────
-  // For payment LINKS, reference_id is set to the order number.
-  // For payment SESSIONS (hosted checkout), the order number is in udf1.
-  const referenceId     = eventObject.reference_id
-    || eventObject.udf1               // payment session: order number stored in udf1
-    || eventObject.custom_fields?.udf1 // alternative nesting
-  // Payment / link ID for recording
-  const zohoPaymentId   = eventObject.payment_link_id
+  const referenceId = eventObject.reference_id
+    || eventObject.udf1
+    || eventObject.custom_fields?.udf1
+  const zohoPaymentId = eventObject.payment_link_id
     || eventObject.payment_id
     || event.event_id
 
   if (!referenceId) {
-    // Can't match to an order — log full object so we can debug
     console.warn('[zoho-webhook] No reference_id/udf1 in event:', eventType, JSON.stringify(eventObject))
     return new Response(JSON.stringify({ ok: true, skipped: 'no reference_id' }), { status: 200 })
   }
@@ -113,28 +97,20 @@ export default async function handler(req) {
     Prefer:          'return=minimal',
   }
 
-  // ── Update order by order_number (which we set as reference_id) ────────────
+  // Update payment_status
   const updatePayload = { payment_status: newPaymentStatus }
   if (zohoPaymentId) updatePayload.zoho_payment_id = zohoPaymentId
 
   await fetch(
-    `${supabaseUrl}/rest/v1/orders?order_number=eq.${encodeURIComponent(referenceId)}`,
-    {
-      method: 'PATCH',
-      headers: sbHeaders,
-      body:    JSON.stringify(updatePayload),
-    }
+    `${supabaseUrl}/rest/v1/orders?order_number=eq.${encodeURIComponent(referenceId)}&payment_status=eq.pending`,
+    { method: 'PATCH', headers: sbHeaders, body: JSON.stringify(updatePayload) }
   )
 
-  // ── If paid, also update order status to 'confirmed' ──────────────────────
+  // If paid, also confirm the order in a single update
   if (newPaymentStatus === 'paid') {
     await fetch(
-      `${supabaseUrl}/rest/v1/orders?order_number=eq.${encodeURIComponent(referenceId)}`,
-      {
-        method:  'PATCH',
-        headers: sbHeaders,
-        body:    JSON.stringify({ status: 'confirmed' }),
-      }
+      `${supabaseUrl}/rest/v1/orders?order_number=eq.${encodeURIComponent(referenceId)}&status=eq.placed`,
+      { method: 'PATCH', headers: sbHeaders, body: JSON.stringify({ status: 'confirmed' }) }
     )
   }
 

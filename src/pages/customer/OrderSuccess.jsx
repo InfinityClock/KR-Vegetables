@@ -192,6 +192,7 @@ export default function OrderSuccess() {
   const paymentParam         = params.get('payment')           // 'success' | 'failed' | null (cod)
   const sessionStatus        = params.get('payment_session_status') // 'succeeded' | 'failed' | 'in_progress'
   const paymentsSessionId    = params.get('payments_session_id')
+  const confirmToken         = params.get('ct')                || '' // HMAC token embedded by zoho-payment.js
   const paymentId            = params.get('payment_id')        || ''
   const paymentStatusParam   = params.get('payment_status')    || ''
   const amountParam          = params.get('amount')            || ''
@@ -253,7 +254,7 @@ export default function OrderSuccess() {
         body: JSON.stringify({
           orderId,
           paymentsSessionId: paymentsSessionId || undefined,
-          paymentSessionStatus: sessionStatus || 'succeeded',
+          confirmToken:      confirmToken || undefined,
         }),
       }).catch(() => { /* non-critical — webhook is secondary fallback */ })
     }

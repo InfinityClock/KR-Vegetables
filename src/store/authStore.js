@@ -14,11 +14,11 @@ export const useAuthStore = create(
 
       setSession: (session) => {
         const user = session?.user ?? null
-        const userRole =
-          user?.user_metadata?.role ||
-          user?.app_metadata?.role ||
-          null
-        const isAdmin = userRole === 'admin' || userRole === 'sales'
+        // Only check app_metadata — it is server-only and cannot be written by the user.
+        // user_metadata is writable via supabase.auth.updateUser() and must never
+        // be used for authorization decisions.
+        const userRole = user?.app_metadata?.role || null
+        const isAdmin  = userRole === 'admin' || userRole === 'sales'
         set({ session, user, loading: false, isAdmin, userRole })
       },
 
