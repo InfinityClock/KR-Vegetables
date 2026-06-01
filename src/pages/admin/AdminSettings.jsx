@@ -37,6 +37,7 @@ function SectionCard({ title, children }) {
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({})
+  const [savedSettings, setSavedSettings] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -48,6 +49,7 @@ export default function AdminSettings() {
         const map = {}
         data?.forEach((s) => { map[s.key] = s.value })
         setSettings(map)
+        setSavedSettings(map)
         setLoading(false)
       })
   }, [])
@@ -60,10 +62,13 @@ export default function AdminSettings() {
       body: JSON.stringify({ table: 'store_settings', action: 'upsert', onConflict: 'key', payload: { key, value: String(value) } }),
     })
 
+  const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
+
   const saveSettings = async () => {
     setSaving(true)
     await Promise.all(Object.entries(settings).map(([key, value]) => adminUpsert(key, value)))
     setSaving(false)
+    setSavedSettings({ ...settings })
     toast.success('Settings saved!')
   }
 
@@ -96,15 +101,22 @@ export default function AdminSettings() {
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Configure your store</p>
         </div>
-        <button
-          onClick={saveSettings}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all"
-          style={{ background: saving ? 'var(--brand-400)' : 'var(--brand-700)', boxShadow: '0 2px 8px rgba(22,101,52,.25)' }}
-        >
-          <Save size={15} />
-          {saving ? 'Saving…' : 'Save All'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isDirty && !saving && (
+            <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>
+              Unsaved changes
+            </span>
+          )}
+          <button
+            onClick={saveSettings}
+            disabled={saving || !isDirty}
+            className="flex items-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all"
+            style={{ background: saving || !isDirty ? 'var(--brand-400)' : 'var(--brand-700)', boxShadow: isDirty ? '0 2px 8px rgba(22,101,52,.25)' : 'none' }}
+          >
+            <Save size={15} />
+            {saving ? 'Saving…' : 'Save All'}
+          </button>
+        </div>
       </div>
 
       {/* Store Status */}
@@ -167,7 +179,7 @@ export default function AdminSettings() {
           className="rounded-xl p-3 text-xs"
           style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
         >
-          ⚠️ Zoho Pay credentials are configured via Vercel environment variables (<code>ZOHO_PAYMENTS_API_KEY</code>, <code>ZOHO_ORG_ID</code>). Never store secret keys in the database.
+          ⚠️ Zoho Pay credentials are configured via Vercel environment variables (<code>ZOHO_ACCOUNT_ID</code>, <code>ZOHO_CLIENT_ID</code>, <code>ZOHO_CLIENT_SECRET</code>, <code>ZOHO_REFRESH_TOKEN</code>). Never store secret keys in the database.
         </div>
         <div>
           <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-mid)' }}>
@@ -179,7 +191,7 @@ export default function AdminSettings() {
           >
             {import.meta.env.VITE_ZOHO_CONFIGURED === 'true'
               ? 'Zoho Payments — configured ✓'
-              : 'Not configured — add ZOHO_PAYMENTS_API_KEY & ZOHO_ORG_ID in Vercel'
+              : 'Not configured — add ZOHO_ACCOUNT_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET & ZOHO_REFRESH_TOKEN in Vercel'
             }
           </div>
         </div>

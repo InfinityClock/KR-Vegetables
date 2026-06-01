@@ -48,7 +48,7 @@ const TEMPLATES = [
 ]
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, color = 'var(--brand-600)', bg = 'var(--brand-50)' }) {
+function StatCard({ icon: Icon, label, value, color = 'var(--brand-600)', bg = 'var(--brand-50)', loading = false }) {
   return (
     <div style={{
       background: 'var(--bg-card)',
@@ -65,9 +65,10 @@ function StatCard({ icon: Icon, label, value, color = 'var(--brand-600)', bg = '
       </div>
       <div>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>{label}</p>
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--text-dark)', margin: 0, letterSpacing: '-.02em' }}>
-          {value ?? '—'}
-        </p>
+        {loading
+          ? <div className="skeleton" style={{ width: 48, height: 28, borderRadius: 6, marginTop: 4 }} />
+          : <p style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--text-dark)', margin: 0, letterSpacing: '-.02em' }}>{value ?? '—'}</p>
+        }
       </div>
     </div>
   )
@@ -165,7 +166,8 @@ export default function AdminNotifications() {
         <StatCard
           icon={Users}
           label="Subscribers"
-          value={loadingStats ? '…' : subscriberCount}
+          value={loadingStats ? '—' : subscriberCount}
+          loading={loadingStats}
           color="var(--brand-600)"
           bg="var(--brand-50)"
         />

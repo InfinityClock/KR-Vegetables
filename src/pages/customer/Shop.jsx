@@ -122,7 +122,8 @@ export default function Shop() {
         </div>
 
         {/* Category pills + Sort */}
-        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5 overflow-x-auto scrollbar-hide">
+        <div className="scroll-fade">
+        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5 pb-0.5 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => { setSelectedCategory(''); setSearchParams({}) }}
             className={`filter-chip flex-shrink-0 ${!selectedCategory ? 'active' : ''}`}
@@ -147,6 +148,7 @@ export default function Shop() {
               {sort !== 'default' ? SORT_OPTIONS.find(o => o.value === sort)?.label : 'Sort'}
             </button>
           </div>
+        </div>
         </div>
       </div>
 

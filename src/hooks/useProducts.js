@@ -111,8 +111,17 @@ export const useProduct = (id) => {
             .eq('category_id', data.category_id)
             .eq('is_active', true)
             .neq('id', id)
-            .limit(8);
-          if (!cancelled) setRelated(rel || []);
+            .limit(12); // fetch more so we can prioritise in-stock
+          if (!cancelled) {
+            // Sort: in-stock first, limited next, out-of-stock last
+            const order = { in_stock: 0, limited: 1, out_of_stock: 2 };
+            const sorted = (rel || []).sort((a, b) =>
+              (order[a.stock_status] ?? 1) - (order[b.stock_status] ?? 1)
+            );
+            // Only show section if at least one in-stock item exists in category
+            const hasInStock = sorted.some(p => p.stock_status !== 'out_of_stock');
+            setRelated(hasInStock ? sorted.slice(0, 8) : []);
+          }
         }
       } catch (err) {
         if (!cancelled) setError(err);

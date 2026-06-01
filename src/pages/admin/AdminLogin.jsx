@@ -11,6 +11,18 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
+
+  const handleForgotPassword = async () => {
+    if (!email) { toast.error('Enter your email address first'); return }
+    setResetting(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/admin/login`,
+    })
+    setResetting(false)
+    if (error) toast.error(error.message)
+    else toast.success('Password reset email sent — check your inbox')
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -165,6 +177,18 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetting}
+                className="text-xs font-medium transition-colors"
+                style={{ color: 'var(--teal-600)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                {resetting ? 'Sending…' : 'Forgot password?'}
+              </button>
             </div>
 
             <button

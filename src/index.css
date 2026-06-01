@@ -230,8 +230,27 @@ h1, h2, h3, .serif, .display {
   display: flex;
   white-space: nowrap;
   animation: marquee 28s linear infinite;
+  /* Start fully visible — no delay */
+  animation-delay: 0s;
 }
 .marquee-track:hover { animation-play-state: paused; }
+
+/* ─── Horizontal scroll fade affordance ─────────────────────────────────── */
+/* Wrap any overflow-x-auto row in .scroll-fade to show a right-side gradient */
+.scroll-fade {
+  position: relative;
+}
+.scroll-fade::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 40px;
+  background: linear-gradient(to right, transparent, var(--bg-base, #fffdf7));
+  z-index: 1;
+}
 
 /* ─── Cart Badge ─────────────────────────────────────────────────────────── */
 .cart-badge {

@@ -350,7 +350,7 @@ export default function ProductDetail() {
           {isOutOfStock ? (
             <div
               className="rounded-2xl p-4 text-center font-semibold text-sm"
-              style={{ background: 'var(--bg-muted)', color: 'var(--text-muted)' }}
+              style={{ background: '#FEF2F2', color: '#991B1B', border: '1.5px solid #FECACA' }}
             >
               Out of Stock — Check back later
             </div>

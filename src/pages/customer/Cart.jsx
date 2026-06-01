@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Minus, Plus, Trash2, ShoppingBag, Clock, Percent, Loader2 } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, Clock, Loader2 } from 'lucide-react'
 import {
   useCartStore,
   useCartSubtotal,
@@ -183,7 +183,8 @@ export default function Cart() {
     )
   }
 
-  const itemCount = items.reduce((s, i) => s + i.quantity, 0)
+  const itemCount  = items.length  // unique product count — shown in the header
+  const totalQty   = items.reduce((s, i) => s + i.quantity, 0) // total units — used in subtotal label
 
   return (
     <div className="pb-cart page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
@@ -294,13 +295,12 @@ export default function Cart() {
             <div className="flex flex-col gap-2 text-sm">
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-muted)' }}>
-                  Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})
+                  Subtotal ({totalQty} item{totalQty !== 1 ? 's' : ''})
                 </span>
                 <span style={{ color: 'var(--text-dark)' }}>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                  <Percent size={12} />
+                <span style={{ color: 'var(--text-muted)' }}>
                   Handling Charge ({chargeRate}%)
                 </span>
                 <span style={{ color: 'var(--text-dark)' }}>{formatPrice(handlingFee)}</span>

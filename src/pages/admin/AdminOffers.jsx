@@ -263,12 +263,14 @@ export default function AdminOffers() {
                     <span className="text-xs line-through" style={{ color: 'var(--text-muted)' }}>
                       {formatPrice(product.price)}
                     </span>
-                    <span
-                      className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ background: '#FEF3C7', color: '#D97706' }}
-                    >
-                      -{discountPct}%
-                    </span>
+                    {discountPct > 0 && (
+                      <span
+                        className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: '#FEF3C7', color: '#D97706' }}
+                      >
+                        -{discountPct}%
+                      </span>
+                    )}
                     {product.offer_label && (
                       <span
                         className="text-xs px-1.5 py-0.5 rounded-full"

@@ -44,7 +44,8 @@ export default function Onboarding() {
       {/* Skip */}
       <button
         onClick={setOnboardingDone}
-        className="absolute top-12 right-6 text-white/70 text-sm font-medium"
+        className="absolute top-12 right-6 text-sm font-semibold px-4 py-1.5 rounded-full"
+        style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(4px)' }}
       >
         Skip
       </button>

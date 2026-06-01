@@ -209,6 +209,7 @@ function CategoryStrip({ categories, loading, onSelect }) {
   }
 
   return (
+    <div className="scroll-fade">
     <div className="flex gap-4 px-4 overflow-x-auto scrollbar-hide pb-1">
       {categories.map((cat, idx) => {
         const pal = CAT_PALETTES[idx % CAT_PALETTES.length]
@@ -270,6 +271,7 @@ function CategoryStrip({ categories, loading, onSelect }) {
           All
         </span>
       </button>
+    </div>
     </div>
   )
 }

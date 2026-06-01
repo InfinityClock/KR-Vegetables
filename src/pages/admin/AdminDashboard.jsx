@@ -12,11 +12,20 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart,
 } from 'recharts'
 
-function KPICard({ icon: Icon, label, value, sub, accent, loading }) {
+function KPICard({ icon: Icon, label, value, sub, accent, loading, onClick }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div
-      className="bg-white rounded-2xl p-5 flex flex-col gap-3"
-      style={{ border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
+    <Tag
+      onClick={onClick}
+      className="bg-white rounded-2xl p-5 flex flex-col gap-3 text-left w-full"
+      style={{
+        border: '1px solid var(--border-light)',
+        boxShadow: 'var(--shadow-sm)',
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'box-shadow .15s, transform .15s',
+      }}
+      onMouseEnter={onClick ? (e) => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-1px)' } : undefined}
+      onMouseLeave={onClick ? (e) => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'none' } : undefined}
     >
       <div className="flex items-start justify-between">
         <div
@@ -25,7 +34,7 @@ function KPICard({ icon: Icon, label, value, sub, accent, loading }) {
         >
           <Icon size={20} style={{ color: accent }} />
         </div>
-        <ArrowUpRight size={14} style={{ color: 'var(--text-light)', marginTop: 2 }} />
+        <ArrowUpRight size={14} style={{ color: onClick ? accent : 'var(--text-light)', marginTop: 2 }} />
       </div>
       {loading ? (
         <>
@@ -47,7 +56,7 @@ function KPICard({ icon: Icon, label, value, sub, accent, loading }) {
           </div>
         </>
       )}
-    </div>
+    </Tag>
   )
 }
 
@@ -248,6 +257,7 @@ export default function AdminDashboard() {
           value={stats?.todayOrders ?? '—'}
           accent="var(--brand-600)"
           loading={loading}
+          onClick={() => navigate('/admin/orders')}
         />
         {userRole !== 'sales' && (
           <KPICard
@@ -256,6 +266,7 @@ export default function AdminDashboard() {
             value={stats ? formatPrice(stats.todayRevenue) : '—'}
             accent="#7C3AED"
             loading={loading}
+            onClick={() => navigate('/admin/orders')}
           />
         )}
         <KPICard
@@ -265,6 +276,7 @@ export default function AdminDashboard() {
           sub={stats?.pendingOrders > 0 ? 'Needs attention' : 'All clear!'}
           accent="#D97706"
           loading={loading}
+          onClick={() => navigate('/admin/orders?status=placed')}
         />
         <KPICard
           icon={AlertTriangle}
@@ -273,6 +285,7 @@ export default function AdminDashboard() {
           sub={stats?.lowStock > 0 ? 'Update inventory' : 'Fully stocked'}
           accent="#DC2626"
           loading={loading}
+          onClick={() => navigate('/admin/products')}
         />
       </div>
 

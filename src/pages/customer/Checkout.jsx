@@ -546,7 +546,7 @@ export default function Checkout() {
                 placeholder="Landmark or area (optional)"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="City" required>
                 <input
                   style={inputStyle}
@@ -660,7 +660,10 @@ export default function Checkout() {
         </button>
 
         <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)' }}>
-          By placing this order you agree to our terms of service.
+          By placing this order you agree to our{' '}
+          <a href="/terms" style={{ color: 'var(--brand-700)', textDecoration: 'underline', fontWeight: 600 }}>
+            terms of service
+          </a>.
         </p>
       </div>
 
