@@ -99,43 +99,24 @@ export default async function handler(req) {
       customerId = custData[0]?.id
     }
 
-    // 2. Create address
+    // 2. Create address — lat/lng columns added in migration 009
     const addrRes = await sb('addresses', {
       method: 'POST',
       body: JSON.stringify({
-        customer_id: customerId,
-        label: address.label || 'Home',
+        customer_id:   customerId,
+        label:         address.label || 'Home',
         address_line1: address.line1,
         address_line2: address.line2 || null,
-        city: address.city,
-        pincode: address.pincode,
-        lat: address.lat || null,
-        lng: address.lng || null,
-        is_default: false,
+        city:          address.city,
+        pincode:       address.pincode,
+        lat:           address.lat  || null,
+        lng:           address.lng  || null,
+        is_default:    false,
       }),
     })
     const addrData = await addrRes.json()
-    // Non-fatal: address might fail if lat/lng columns don't exist yet
-    const addressId = addrData[0]?.id || null
-
-    // If address insert failed due to lat/lng columns not existing, retry without them
-    let finalAddressId = addressId
-    if (!finalAddressId) {
-      const addrRes2 = await sb('addresses', {
-        method: 'POST',
-        body: JSON.stringify({
-          customer_id: customerId,
-          label: address.label || 'Home',
-          address_line1: address.line1,
-          address_line2: address.line2 || null,
-          city: address.city,
-          pincode: address.pincode,
-          is_default: false,
-        }),
-      })
-      const addrData2 = await addrRes2.json()
-      finalAddressId = addrData2[0]?.id
-    }
+    if (!addrRes.ok) throw new Error(addrData?.message || addrData?.details || 'Failed to save address')
+    const finalAddressId = addrData[0]?.id || null
 
     // 3. Validate prices server-side — never trust client-supplied amounts
     const productIds = items.map((i) => i.id).filter(Boolean)

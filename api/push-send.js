@@ -25,10 +25,10 @@ const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@krvegetables.in
 function corsHeaders(req) {
   const origin  = req.headers.origin || ''
   const allowed = process.env.APP_URL || ''
+  // No *.vercel.app wildcard — only the configured production origin and localhost
   const isOk = !allowed
     || origin === allowed
     || /^https?:\/\/localhost(:\d+)?$/.test(origin)
-    || origin.endsWith('.vercel.app')
   return {
     'Access-Control-Allow-Origin':  isOk ? (origin || allowed || '*') : allowed,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -48,13 +48,15 @@ async function verifyAdmin(req) {
     headers: { Authorization: `Bearer ${token}`, apikey: SERVICE_KEY },
   })
   if (!res.ok) return false
-  const { user_metadata, app_metadata, email } = await res.json()
+  const { app_metadata, email } = await res.json()
+  // Only check app_metadata — it is server-only and cannot be written by users.
+  // user_metadata is user-writable via supabase.auth.updateUser() and must never
+  // be used for authorization decisions.
   return (
-    user_metadata?.role === 'admin' ||
-    user_metadata?.role === 'sales' ||
-    app_metadata?.role  === 'admin' ||
-    app_metadata?.role  === 'sales' ||
-    email === process.env.ADMIN_EMAIL
+    app_metadata?.role === 'admin' ||
+    app_metadata?.role === 'sales' ||
+    email === 'admin@krvegetables.in' ||
+    email === 'sales@krvegetables.in'
   )
 }
 

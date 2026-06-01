@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
-const PRODUCT_SELECT = `*, categories(id, name, emoji)`;
+// Explicitly list tamil_name so the smart bilingual search can score it.
+// Using `*` would also work but being explicit makes the dependency clear.
+const PRODUCT_SELECT = `*, tamil_name, categories(id, name, emoji)`;
 
 export const useProducts = (filters = {}) => {
   const { category_id, search, is_featured, sort, limit } = filters;
@@ -19,9 +21,10 @@ export const useProducts = (filters = {}) => {
           .select(PRODUCT_SELECT)
           .eq('is_active', true);
 
-        if (category_id) q = q.eq('category_id', category_id);
-        if (is_featured)  q = q.eq('is_featured', true);
-        if (search)       q = q.ilike('name', `%${search}%`);
+        if (category_id)   q = q.eq('category_id', category_id);
+        if (is_featured)   q = q.eq('is_featured', true);
+        // Search across both the English name and the Tamil name columns.
+        if (search)        q = q.or(`name.ilike.%${search}%,tamil_name.ilike.%${search}%`);
         if (sort === 'offers') q = q.not('offer_price', 'is', null);
 
         q = q.order('created_at', { ascending: false });
