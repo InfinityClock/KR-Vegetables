@@ -86,8 +86,8 @@ function PaymentFailed({ orderId, orderNumber, onRetry, retrying, switchingCod, 
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', letterSpacing: '-.03em', marginBottom: 8, textAlign: 'center' }}>
         Payment Failed
       </h1>
-      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 300, marginBottom: 8 }}>
-        Your payment could not be processed.
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 320, marginBottom: 8, lineHeight: 1.6 }}>
+        Your payment could not be processed. This can happen if the 15-minute payment session expired or the transaction was declined. Please try again.
       </p>
       {orderNumber && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 'var(--radius-full)', padding: '5px 16px', marginBottom: 28 }}>

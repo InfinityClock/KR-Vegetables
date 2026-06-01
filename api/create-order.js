@@ -53,7 +53,7 @@ export default async function handler(req) {
   try { body = await req.json() }
   catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: corsHeaders }) }
 
-  const { name, phone, address, items, deliverySlot, notes, paymentMethod } = body
+  const { name, phone, address, items, deliverySlot, notes, paymentMethod, idempotencyKey } = body
 
   if (!name || !phone || !address || !items?.length) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
@@ -72,37 +72,100 @@ export default async function handler(req) {
     })
 
   try {
-    // 0. Check store is open
-    const settingsRes = await sb("store_settings?key=eq.store_open&select=value")
-    const settingsData = await settingsRes.json()
-    const storeOpen = settingsData?.[0]?.value
-    if (storeOpen === 'false') {
+    // ── Idempotency check ────────────────────────────────────────────────────
+    // If the client sends an idempotencyKey and an order with that key already
+    // exists, return the existing order without creating a duplicate.
+    if (idempotencyKey) {
+      const existingRes  = await sb(`orders?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&select=*&limit=1`)
+      const existingData = await existingRes.json()
+      if (Array.isArray(existingData) && existingData[0]?.id) {
+        return new Response(
+          JSON.stringify({ success: true, orderId: existingData[0].id, orderNumber: existingData[0].order_number, order: existingData[0] }),
+          { status: 200, headers: corsHeaders }
+        )
+      }
+    }
+
+    const productIds = items.map((i) => i.id).filter(Boolean)
+    if (!productIds.length) throw new Error('No valid product IDs in order')
+
+    // ── Phase 1: Parallel pre-checks ────────────────────────────────────────
+    // These four calls are entirely independent and run simultaneously:
+    //   • store_open setting
+    //   • handling_charge_rate setting
+    //   • customer lookup by phone
+    //   • product price + stock validation
+    //   • next order number
+    const [
+      storeOpenRes,
+      handlingRateRes,
+      customerRes,
+      priceRes,
+      orderNumber,
+    ] = await Promise.all([
+      sb('store_settings?key=eq.store_open&select=value'),
+      sb('store_settings?key=eq.handling_charge_rate&select=value'),
+      sb(`customers?phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`),
+      sb(`products?id=in.(${productIds.join(',')})&select=id,name,price,offer_price,is_active,stock_status`),
+      getNextOrderNumber(supabaseUrl, serviceKey),
+    ])
+
+    // Evaluate store_open
+    const storeOpenData = await storeOpenRes.json()
+    if (storeOpenData?.[0]?.value === 'false') {
       return new Response(
         JSON.stringify({ error: 'Store is currently closed. Please try again later.' }),
         { status: 403, headers: corsHeaders }
       )
     }
 
-    // 1. Find or create customer by phone
+    // Evaluate handling rate
+    const handlingRateData = await handlingRateRes.json()
+    const handlingRate = parseFloat(handlingRateData?.[0]?.value || '0.02')
+
+    // Evaluate product prices & stock
+    const priceData = await priceRes.json()
+    if (!Array.isArray(priceData)) throw new Error('Failed to fetch product prices')
+
+    const productMap = {}
+    for (const p of priceData) {
+      if (!p.is_active)                   throw new Error(`"${p.name}" is no longer available`)
+      if (p.stock_status === 'out_of_stock') throw new Error(`"${p.name}" is out of stock`)
+      productMap[p.id] = p.offer_price !== null ? p.offer_price : p.price
+    }
+
+    // Compute authoritative subtotal from DB prices
+    let serverSubtotal = 0
+    const validatedItems = items.map((item) => {
+      const unitPrice = productMap[item.id]
+      if (unitPrice === undefined) throw new Error(`Product ${item.id} not found in catalogue`)
+      const lineTotal = unitPrice * item.quantity
+      serverSubtotal += lineTotal
+      return { ...item, unitPrice, lineTotal }
+    })
+    const serverHandlingFee = Math.ceil(serverSubtotal * handlingRate)
+    const serverTotal       = serverSubtotal + serverHandlingFee
+
+    // ── Phase 2: Find or create customer ────────────────────────────────────
+    const customerData = await customerRes.json()
     let customerId
-    const findRes = await sb(`customers?phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`)
-    const findData = await findRes.json()
-    if (findData?.[0]?.id) {
-      customerId = findData[0].id
+    if (customerData?.[0]?.id) {
+      customerId = customerData[0].id
     } else {
-      const custRes = await sb('customers', {
+      const custRes  = await sb('customers', {
         method: 'POST',
-        body: JSON.stringify({ id: crypto.randomUUID(), full_name: name, phone, email: null }),
+        body:   JSON.stringify({ id: crypto.randomUUID(), full_name: name, phone, email: null }),
       })
       const custData = await custRes.json()
       if (!custRes.ok) throw new Error(custData?.message || custData?.details || 'Failed to create customer')
       customerId = custData[0]?.id
     }
 
-    // 2. Create address — lat/lng columns added in migration 009
-    const addrRes = await sb('addresses', {
+    // ── Phase 3: Create address (needs customerId from Phase 2) ─────────────
+    // lat/lng columns added in migration 009
+    const addrRes  = await sb('addresses', {
       method: 'POST',
-      body: JSON.stringify({
+      body:   JSON.stringify({
         customer_id:   customerId,
         label:         address.label || 'Home',
         address_line1: address.line1,
@@ -118,43 +181,7 @@ export default async function handler(req) {
     if (!addrRes.ok) throw new Error(addrData?.message || addrData?.details || 'Failed to save address')
     const finalAddressId = addrData[0]?.id || null
 
-    // 3. Validate prices server-side — never trust client-supplied amounts
-    const productIds = items.map((i) => i.id).filter(Boolean)
-    if (!productIds.length) throw new Error('No valid product IDs in order')
-
-    const priceRes = await sb(
-      `products?id=in.(${productIds.join(',')})&select=id,name,price,offer_price,is_active,stock_status`
-    )
-    const priceData = await priceRes.json()
-    if (!Array.isArray(priceData)) throw new Error('Failed to fetch product prices')
-
-    const productMap = {}
-    for (const p of priceData) {
-      if (!p.is_active) throw new Error(`"${p.name}" is no longer available`)
-      if (p.stock_status === 'out_of_stock') throw new Error(`"${p.name}" is out of stock`)
-      // offer_price=null means no offer; offer_price=0 is a valid free-item price
-      productMap[p.id] = p.offer_price !== null ? p.offer_price : p.price
-    }
-
-    // Compute authoritative subtotal from DB prices
-    let serverSubtotal = 0
-    const validatedItems = items.map((item) => {
-      const unitPrice = productMap[item.id]
-      if (unitPrice === undefined) throw new Error(`Product ${item.id} not found in catalogue`)
-      const lineTotal = unitPrice * item.quantity
-      serverSubtotal += lineTotal
-      return { ...item, unitPrice, lineTotal }
-    })
-
-    // Fetch handling charge rate from store settings
-    const settingsRes2 = await sb('store_settings?key=eq.handling_charge_rate&select=value')
-    const settingsData2 = await settingsRes2.json()
-    const handlingRate = parseFloat(settingsData2?.[0]?.value || '0.02')
-    const serverHandlingFee = Math.ceil(serverSubtotal * handlingRate)
-    const serverTotal = serverSubtotal + serverHandlingFee
-
-    // 4. Create order
-    const orderNumber = await getNextOrderNumber(supabaseUrl, serviceKey)
+    // ── Phase 4: Create order ────────────────────────────────────────────────
     // Normalise payment method — only values in the DB enum are accepted.
     const safePaymentMethod = ['cod', 'zoho', 'razorpay'].includes(paymentMethod)
       ? paymentMethod
@@ -172,9 +199,10 @@ export default async function handler(req) {
         delivery_fee:  serverHandlingFee,
         discount: 0,
         total_amount:  serverTotal,
-        delivery_slot: deliverySlot,
-        notes: notes || null,
-        placed_at: new Date().toISOString(),
+        delivery_slot:    deliverySlot,
+        notes:            notes || null,
+        placed_at:        new Date().toISOString(),
+        idempotency_key:  idempotencyKey || null,
       }),
     })
     const orderData = await orderRes.json()

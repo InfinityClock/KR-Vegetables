@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Navigation, Search, CreditCard, Banknote,
@@ -171,6 +171,9 @@ export default function Checkout() {
   // Declared early so the cart-guard useEffect below can reference it in deps
   const [paymentMethod, setPaymentMethod] = useState('zoho')
   const [placing, setPlacing] = useState(false)
+  // Stable idempotency key for this checkout session — generated once per mount.
+  // Prevents duplicate orders on double-tap or network retry.
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
   // Show payment cancelled toast if redirected back with ?payment=cancelled
   // (The pending-payment redirect is handled globally by PendingPaymentGuard in App.jsx)
@@ -311,16 +314,14 @@ export default function Checkout() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          address: { ...addr, lat: mapCoords?.lat, lng: mapCoords?.lng },
+          name:            name.trim(),
+          phone:           phone.trim(),
+          address:         { ...addr, lat: mapCoords?.lat, lng: mapCoords?.lng },
           items,
-          subtotal,
-          handlingFee,
-          total,
           deliverySlot,
           notes,
           paymentMethod,
+          idempotencyKey,  // prevents duplicate orders on double-tap / network retry
         }),
       })
       const orderData = await orderRes.json()
@@ -658,6 +659,12 @@ export default function Checkout() {
             : `${paymentMethod === 'cod' ? 'Place Order' : 'Pay Online'} — ${formatPrice(total)}`
           }
         </button>
+
+        {paymentMethod === 'zoho' && (
+          <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
+            ⏱ You'll have <strong>15 minutes</strong> to complete payment after clicking Pay Online.
+          </p>
+        )}
 
         <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)' }}>
           By placing this order you agree to our{' '}

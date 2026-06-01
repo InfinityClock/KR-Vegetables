@@ -63,6 +63,13 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), { status: 400 })
   }
 
+  // Reject test-mode events — live_mode is false in Zoho's sandbox environment.
+  // Processing sandbox events would accidentally confirm real production orders.
+  if (event.live_mode === false) {
+    console.log('[zoho-webhook] Ignoring test-mode event:', event.event_type, event.event_id)
+    return new Response(JSON.stringify({ ok: true, skipped: 'test_mode' }), { status: 200 })
+  }
+
   const eventType   = event.event_type
   const eventObject = event.event_object ?? {}
 

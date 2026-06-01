@@ -92,27 +92,42 @@ export const useOrder = (orderId) => {
   return { order, tracking, loading }
 }
 
-export const useAdminOrders = (statusFilter = 'all') => {
-  const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+const PAGE_SIZE = 50
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true)
+export const useAdminOrders = (statusFilter = 'all') => {
+  const [orders,   setOrders]   = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error,    setError]    = useState(null)
+  const [hasMore,  setHasMore]  = useState(false)
+  // cursor = placed_at of the last loaded order (for keyset pagination)
+  const [cursor,   setCursor]   = useState(null)
+
+  const fetchPage = useCallback(async (afterCursor = null, append = false) => {
+    if (append) setLoadingMore(true)
+    else        setLoading(true)
 
     let query = supabase
       .from('orders')
-      .select(`*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode)`)
+      .select('*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode)')
       .order('placed_at', { ascending: false })
-      .limit(200)
+      .limit(PAGE_SIZE)
 
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
+    // Keyset pagination: fetch orders placed before the cursor timestamp
+    if (afterCursor) query = query.lt('placed_at', afterCursor)
 
     const { data: ordersData, error: err } = await query
-    if (err) { setError(err.message); setLoading(false); return }
+    if (err) {
+      setError(err.message)
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
 
     const rows = ordersData || []
 
+    // Fetch order items for this page
     if (rows.length > 0) {
       const orderIds = rows.map((o) => o.id)
       const { data: itemsData } = await supabase
@@ -128,20 +143,36 @@ export const useAdminOrders = (statusFilter = 'all') => {
       rows.forEach((o) => { o.order_items = byOrder[o.id] || [] })
     }
 
-    setOrders(rows)
+    setOrders((prev) => append ? [...prev, ...rows] : rows)
+    setHasMore(rows.length === PAGE_SIZE)
+    setCursor(rows.length > 0 ? rows[rows.length - 1].placed_at : null)
     setLoading(false)
+    setLoadingMore(false)
   }, [statusFilter])
 
-  useEffect(() => { fetchOrders() }, [fetchOrders])
+  // Reset and reload whenever filter changes
+  useEffect(() => {
+    setCursor(null)
+    fetchPage(null, false)
+  }, [fetchPage])
 
-  // Realtime — re-subscribes whenever fetchOrders identity changes (i.e. statusFilter changes)
+  const loadMore = useCallback(() => {
+    if (cursor && !loadingMore) fetchPage(cursor, true)
+  }, [cursor, loadingMore, fetchPage])
+
+  const refetch = useCallback(() => {
+    setCursor(null)
+    fetchPage(null, false)
+  }, [fetchPage])
+
+  // Realtime — single stable channel; refetches current first page on any change
   useEffect(() => {
     const channel = supabase
-      .channel('admin-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .channel('admin-orders-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, refetch)
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [fetchOrders])
+  }, [refetch])
 
-  return { orders, loading, error, refetch: fetchOrders }
+  return { orders, loading, loadingMore, hasMore, error, refetch, loadMore }
 }

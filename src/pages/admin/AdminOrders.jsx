@@ -185,7 +185,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
 export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
-  const { orders, loading, refetch } = useAdminOrders(statusFilter)
+  const { orders, loading, loadingMore, hasMore, refetch, loadMore } = useAdminOrders(statusFilter)
   const { userRole } = useAuthStore()
 
   const updateOrderStatus = async (orderId, newStatus) => {
@@ -403,6 +403,25 @@ export default function AdminOrders() {
               </div>
             ))}
           </div>
+
+          {/* Load More */}
+          {hasMore && (
+            <div className="flex justify-center pt-4 pb-2">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-6 h-10 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: loadingMore ? 'var(--gray-100)' : 'var(--brand-50)',
+                  color: loadingMore ? 'var(--text-muted)' : 'var(--brand-700)',
+                  border: '1.5px solid var(--brand-100)',
+                  cursor: loadingMore ? 'wait' : 'pointer',
+                }}
+              >
+                {loadingMore ? 'Loading…' : 'Load more orders'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

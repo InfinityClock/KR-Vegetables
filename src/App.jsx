@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Home, ShoppingBag, ShoppingCart, Package, Leaf, Truck } from 'lucide-react'
 import logoImg from './assets/Logo.jpg'
 
@@ -10,7 +10,10 @@ import { useAuthStore } from './store/authStore'
 import { useUiStore } from './store/uiStore'
 import { useCartCount } from './store/cartStore'
 
-// Customer pages
+// Error boundary — catches render-time errors and shows a recovery UI
+import ErrorBoundary from './components/ErrorBoundary'
+
+// Customer pages — statically imported (must be fast on first visit)
 import HomeP from './pages/customer/Home'
 import Shop from './pages/customer/Shop'
 import ProductDetail from './pages/customer/ProductDetail'
@@ -23,17 +26,18 @@ import Terms from './pages/customer/Terms'
 import RefundPolicy from './pages/customer/RefundPolicy'
 import Contact from './pages/customer/Contact'
 
-// Admin pages
-import AdminLayout from './pages/admin/AdminLayout'
-import AdminLogin from './pages/admin/AdminLogin'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminOrders from './pages/admin/AdminOrders'
-import AdminProducts from './pages/admin/AdminProducts'
-import AdminCategories from './pages/admin/AdminCategories'
-import AdminOffers from './pages/admin/AdminOffers'
-import AdminDelivery from './pages/admin/AdminDelivery'
-import AdminSettings from './pages/admin/AdminSettings'
-import AdminNotifications from './pages/admin/AdminNotifications'
+// Admin pages — lazy-loaded so their code only downloads when an admin navigates to /admin.
+// This removes ~350KB of admin+recharts code from the customer bundle.
+const AdminLayout       = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminLogin        = lazy(() => import('./pages/admin/AdminLogin'))
+const AdminDashboard    = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminOrders       = lazy(() => import('./pages/admin/AdminOrders'))
+const AdminProducts     = lazy(() => import('./pages/admin/AdminProducts'))
+const AdminCategories   = lazy(() => import('./pages/admin/AdminCategories'))
+const AdminOffers       = lazy(() => import('./pages/admin/AdminOffers'))
+const AdminDelivery     = lazy(() => import('./pages/admin/AdminDelivery'))
+const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'))
 
 // Components
 import BottomNav from './components/BottomNav'
@@ -284,10 +288,22 @@ function AppRoutes() {
       <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/contact"       element={<Contact />} />
 
-      {/* Admin routes */}
-      <Route path="/admin/login" element={<AdminLogin />} />
+      {/* Admin routes — wrapped in Suspense so the lazy chunks load gracefully,
+          and in an admin-specific ErrorBoundary so admin crashes don't affect
+          the customer store */}
+      <Route path="/admin/login" element={
+        <Suspense fallback={<AuthLoadingScreen />}>
+          <AdminLogin />
+        </Suspense>
+      } />
       <Route element={<AdminGuard />}>
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin" element={
+          <ErrorBoundary admin>
+            <Suspense fallback={<AuthLoadingScreen />}>
+              <AdminLayout />
+            </Suspense>
+          </ErrorBoundary>
+        }>
           <Route index             element={<AdminDashboard />} />
           <Route path="orders"     element={<AdminOrders />} />
           <Route path="products"   element={<AdminProducts />} />
@@ -308,6 +324,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <AppRoutes />
       <Toaster
@@ -328,5 +345,6 @@ export default function App() {
         }}
       />
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
