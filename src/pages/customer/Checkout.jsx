@@ -175,26 +175,15 @@ export default function Checkout() {
   // Prevents duplicate orders on double-tap or network retry.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
-  // Show payment cancelled toast if redirected back with ?payment=cancelled
-  // (The pending-payment redirect is handled globally by PendingPaymentGuard in App.jsx)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    if (params.get('payment') === 'cancelled') {
-      toast.error('Payment was cancelled. Try again.')
-    }
-  }, [])
-
-  // Redirect if cart empty — but NOT while an order is being placed.
-  // Without the !placing guard, calling clearCart() inside handlePlaceOrder
-  // would set items=[] and this effect would navigate to /cart before
-  // navigate('/order-success/...') could take effect (race condition).
-  useEffect(() => {
-    if (items.length === 0 && !placing) navigate('/cart')
-  }, [items.length, placing])
-
-  // ── Customer details ─────────────────────────────────────────────────────
-  const [name, setName]   = useState('')
-  const [phone, setPhone] = useState('')
+  // ── Customer details — restored from draft if available ──────────────────
+  // kr-checkout-draft is saved just before the Zoho redirect so that if the
+  // customer presses Back, their form is pre-filled when checkout re-renders.
+  const [name,  setName]  = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}').name  || '' } catch { return '' }
+  })
+  const [phone, setPhone] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}').phone || '' } catch { return '' }
+  })
 
   // ── Location ─────────────────────────────────────────────────────────────
   const searchRef    = useRef(null)
@@ -202,7 +191,12 @@ export default function Checkout() {
   const [mapsReady,  setMapsReady]  = useState(false)
   const [detecting,  setDetecting]  = useState(false)
   const [mapCoords,  setMapCoords]  = useState(null) // { lat, lng }
-  const [addr, setAddr] = useState({ line1: '', line2: '', city: '', pincode: '', label: 'Home' })
+  const [addr, setAddr] = useState(() => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
+      return draft.addr || { line1: '', line2: '', city: '', pincode: '', label: 'Home' }
+    } catch { return { line1: '', line2: '', city: '', pincode: '', label: 'Home' } }
+  })
 
   // Load Google Maps API
   useEffect(() => {
@@ -229,6 +223,63 @@ export default function Checkout() {
       if (searchRef.current) searchRef.current.value = place.formatted_address
     })
   }, [mapsReady])
+
+  // ── Guard #1: in-progress payment detected on mount ──────────────────────
+  // If kr-payment-active is set when Checkout renders, the customer returned
+  // here after a payment attempt (pressed Back from Zoho). Redirect immediately
+  // to the payment-failed screen rather than showing an empty/frozen form.
+  // main.jsx covers the /cart landing; this guard covers /checkout directly.
+  useEffect(() => {
+    try {
+      const active = sessionStorage.getItem('kr-payment-active')
+      const raw    = sessionStorage.getItem('kr-pending-order')
+      if (active && raw) {
+        const { orderId } = JSON.parse(raw)
+        if (orderId) {
+          window.location.replace(`/order-success/${orderId}?payment=failed`)
+          return
+        }
+      }
+    } catch {}
+
+    // Handle ?payment=cancelled in the URL (Zoho explicit cancel callback)
+    const params = new URLSearchParams(location.search)
+    if (params.get('payment') === 'cancelled') {
+      toast.error('Payment was cancelled. Try again.')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Guard #2: bfcache page restore (iOS Safari / Chrome mobile) ──────────
+  // When the browser restores Checkout from the back-forward cache, React
+  // state is snapshot-restored — placing stays `true` and the form looks
+  // frozen/blank. The pageshow event fires without React remounting, so
+  // we use it to:
+  //   a) unlock the form by resetting placing=false
+  //   b) re-run the pending-payment check for this path
+  useEffect(() => {
+    const handlePageShow = (e) => {
+      if (!e.persisted) return         // normal (non-bfcache) loads handled by Guard #1
+
+      setPlacing(false)                // unfreeze any locked spinner state
+
+      try {
+        const active = sessionStorage.getItem('kr-payment-active')
+        const raw    = sessionStorage.getItem('kr-pending-order')
+        if (active && raw) {
+          const { orderId } = JSON.parse(raw)
+          if (orderId) window.location.replace(`/order-success/${orderId}?payment=failed`)
+        }
+      } catch {}
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
+  // ── Redirect if cart is empty (but not while placing an order) ────────────
+  useEffect(() => {
+    if (items.length === 0 && !placing) navigate('/cart')
+  }, [items.length, placing])
 
   const detectLocation = () => {
     if (!navigator.geolocation) {
@@ -303,9 +354,18 @@ export default function Checkout() {
 
     // Clear any stale flags from a previous failed payment so they can
     // never block this new order or trigger a false redirect.
+    // Also clear the checkout draft (it was from a previous session if present).
     try {
       sessionStorage.removeItem('kr-pending-order')
       sessionStorage.removeItem('kr-payment-active')
+      sessionStorage.removeItem('kr-checkout-draft')
+    } catch {}
+
+    // Save form data as a draft so it can be restored if the customer presses
+    // Back from the payment page — their name, phone, and address will be
+    // pre-filled when they return to checkout.
+    try {
+      sessionStorage.setItem('kr-checkout-draft', JSON.stringify({ name: name.trim(), phone: phone.trim(), addr }))
     } catch {}
 
     try {
@@ -357,6 +417,8 @@ export default function Checkout() {
 
         addOrderedItems(items)
         clearCart()
+        // COD order fully completed — clear the checkout draft
+        try { sessionStorage.removeItem('kr-checkout-draft') } catch {}
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
       }
@@ -410,14 +472,17 @@ export default function Checkout() {
             image_url: i.image_url ?? null,
           })),
         }))
-        // Active-payment flag: tells Cart.jsx to redirect to payment-failed if the
-        // user navigates back without completing the payment. Cleared as soon as
-        // OrderSuccess renders the payment-failed screen.
+        // Active-payment flag: tells Cart.jsx and Checkout.jsx to redirect to
+        // payment-failed if the user navigates back without completing payment.
+        // Cleared as soon as OrderSuccess renders the payment-failed screen.
         sessionStorage.setItem('kr-payment-active', '1')
+        // Draft no longer needed once the Zoho redirect fires — kr-pending-order
+        // carries all the data OrderSuccess needs.
+        sessionStorage.removeItem('kr-checkout-draft')
       } catch {}
-      // Use replace so the browser back button skips Zoho and goes to cart.
-      // If the user navigates back to /checkout, the sessionStorage check above
-      // will catch the pending order and send them to the failed-payment screen.
+      // Use replace so the browser back button skips Zoho and goes to /cart.
+      // Guard #1 and Guard #2 in this file plus main.jsx intercept the back
+      // navigation at /cart and /checkout and redirect to the failed screen.
       window.location.replace(paymentUrl)
 
     } catch (err) {
@@ -439,6 +504,9 @@ export default function Checkout() {
         toast.error(msg)
       }
       setPlacing(false)
+      // On any error, also remove the draft so the customer gets a fresh form
+      // on the next checkout visit (stale draft shouldn't persist past a failure)
+      try { sessionStorage.removeItem('kr-checkout-draft') } catch {}
     }
   }
 

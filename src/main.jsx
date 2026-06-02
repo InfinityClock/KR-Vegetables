@@ -26,16 +26,21 @@ function checkPendingPayment({ fromBfcache = false } = {}) {
     const path = window.location.pathname
     if (path.startsWith('/order-success') || path.startsWith('/admin')) return
 
-    // /cart is the canonical back-nav destination after Zoho redirect.
+    // /cart and /checkout are the two pages the browser can return to after
+    // pressing Back from the Zoho payment page. Both are checked explicitly
+    // so we never rely on document.referrer (unreliable on mobile / Safari)
+    // or fromBfcache alone.
     // Only redirect when kr-payment-active is set (cleared once the failed
-    // screen is shown), so a stale kr-pending-order never blocks the cart.
-    if (path === '/cart' || path === '/cart/') {
+    // screen is shown) so a stale kr-pending-order never blocks navigation.
+    if (path === '/cart' || path === '/cart/' ||
+        path === '/checkout' || path === '/checkout/') {
       if (sessionStorage.getItem('kr-payment-active')) {
         window.location.replace(`/order-success/${orderId}?payment=failed`)
       }
       return
     }
 
+    // For any other page: fall back to referrer / bfcache signals
     const fromZoho = document.referrer.includes('zoho')
     if (!fromZoho && !fromBfcache) return
 
