@@ -176,3 +176,122 @@ export const useAdminOrders = (statusFilter = 'all') => {
 
   return { orders, loading, loadingMore, hasMore, error, refetch, loadMore }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// useCustomerOrders — phone-based guest order history
+//
+// Since customers have no Supabase auth accounts, phone is their identity.
+// A 30-minute sessionStorage cache prevents re-fetching on every navigation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SESSION_KEY = 'kr-order-history'
+const SESSION_TTL = 30 * 60 * 1000  // 30 minutes
+
+function getCachedSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (Date.now() - data.fetchedAt > SESSION_TTL) {
+      sessionStorage.removeItem(SESSION_KEY)
+      return null
+    }
+    return data
+  } catch { return null }
+}
+
+function setCachedSession(phone, customerName, orders, hasMore, total) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      phone, customerName, orders, hasMore, total,
+      fetchedAt: Date.now(),
+    }))
+  } catch {}
+}
+
+export function clearOrderHistorySession() {
+  try { sessionStorage.removeItem(SESSION_KEY) } catch {}
+}
+
+export function useCustomerOrders() {
+  const cached = getCachedSession()
+
+  const [phone,        setPhone]        = useState(cached?.phone        || '')
+  const [customerName, setCustomerName] = useState(cached?.customerName || null)
+  const [orders,       setOrders]       = useState(cached?.orders       || [])
+  const [hasMore,      setHasMore]      = useState(cached?.hasMore      || false)
+  const [total,        setTotal]        = useState(cached?.total        || 0)
+  const [loading,      setLoading]      = useState(false)
+  const [loadingMore,  setLoadingMore]  = useState(false)
+  const [error,        setError]        = useState(null)
+  const [verified,     setVerified]     = useState(!!cached)
+
+  const fetchOrders = useCallback(async (phoneNum, cursor = null, append = false) => {
+    if (append) setLoadingMore(true)
+    else        setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/customer-orders', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ phone: phoneNum, cursor }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Could not load orders.')
+        return
+      }
+
+      const next = append ? [...orders, ...(data.orders || [])] : (data.orders || [])
+      setOrders(next)
+      setHasMore(data.hasMore || false)
+      setTotal(data.total  ?? total)
+      setCustomerName(data.customerName || null)
+      setVerified(true)
+
+      // Cache the first page so the user doesn't re-enter their phone
+      // on every navigation within the 30-minute window.
+      if (!append) {
+        setCachedSession(phoneNum, data.customerName, data.orders, data.hasMore, data.total)
+      } else {
+        setCachedSession(phoneNum, customerName, next, data.hasMore, data.total)
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [orders, total, customerName])
+
+  const lookup = useCallback((phoneNum) => {
+    const digits = phoneNum.replace(/\D/g, '').slice(-10)
+    setPhone(digits)
+    fetchOrders(digits)
+  }, [fetchOrders])
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || loadingMore || !orders.length) return
+    const cursor = orders[orders.length - 1]?.placed_at
+    fetchOrders(phone, cursor, true)
+  }, [orders, hasMore, loadingMore, phone, fetchOrders])
+
+  const reset = useCallback(() => {
+    clearOrderHistorySession()
+    setPhone('')
+    setCustomerName(null)
+    setOrders([])
+    setHasMore(false)
+    setTotal(0)
+    setVerified(false)
+    setError(null)
+  }, [])
+
+  return {
+    phone, customerName, orders, hasMore, total,
+    loading, loadingMore, error, verified,
+    lookup, loadMore, reset,
+  }
+}
