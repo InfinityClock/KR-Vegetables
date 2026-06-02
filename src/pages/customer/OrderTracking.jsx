@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MessageCircle, ArrowLeft, Package, Copy, RefreshCw } from 'lucide-react'
@@ -86,6 +87,11 @@ export default function OrderTracking() {
   const { orderId } = useParams()
   const navigate = useNavigate()
   const { order, tracking, loading } = useOrder(orderId)
+
+  useSeo({
+    title: order ? `Order ${order.order_number}` : 'Order Tracking',
+    description: 'Track your KR Vegetables & Fruits order status in real-time.',
+  })
   const addItem = useCartStore((s) => s.addItem)
   const [copied, setCopied] = useState(false)
 

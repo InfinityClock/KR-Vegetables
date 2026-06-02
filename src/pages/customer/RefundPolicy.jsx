@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Leaf, MessageCircle, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react'
 
@@ -45,6 +46,7 @@ function Bullet({ children }) {
 }
 
 export default function RefundPolicy() {
+  useSeo({ title: 'Refund & Cancellation Policy', description: 'Learn about KR Vegetables & Fruits refund, cancellation and quality guarantee policy.' })
   const navigate = useNavigate()
 
   return (

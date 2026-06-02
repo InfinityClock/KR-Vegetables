@@ -159,7 +159,7 @@ function Section({ step, title, children }) {
 export default function Checkout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { items, notes, clearCart } = useCartStore()
+  const { items, notes, clearCart, refreshPrices } = useCartStore()
   const addOrderedItems = useRecentOrdersStore((s) => s.addOrderedItems)
   const deliverySlot  = getNextDeliveryWindow()
   const subtotal      = useCartSubtotal()
@@ -398,7 +398,23 @@ export default function Checkout() {
       window.location.replace(paymentUrl)
 
     } catch (err) {
-      toast.error(err.message || 'Something went wrong. Please try again.')
+      const msg = err.message || 'Something went wrong. Please try again.'
+
+      // If the error mentions a specific product, prices may have changed.
+      // Silently refresh cart prices so the customer sees the correct total
+      // before they try again — no manual page reload needed.
+      const priceRelated = /no longer available|out of stock|not found in catalogue/i.test(msg)
+      if (priceRelated) {
+        const changed = await refreshPrices().catch(() => [])
+        if (changed.length) {
+          const names = changed.map(c => `${c.name}: ₹${c.oldPrice} → ₹${c.newPrice}`).join(', ')
+          toast.error(`Some prices changed: ${names}. Please review your cart and try again.`, { duration: 6000 })
+        } else {
+          toast.error(msg)
+        }
+      } else {
+        toast.error(msg)
+      }
       setPlacing(false)
     }
   }
@@ -424,6 +440,8 @@ export default function Checkout() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Priya Sharma"
+                maxLength={100}
+                autoComplete="name"
               />
             </Field>
             <Field label="Phone Number" required>
@@ -537,6 +555,8 @@ export default function Checkout() {
                 value={addr.line1}
                 onChange={(e) => setAddr((a) => ({ ...a, line1: e.target.value }))}
                 placeholder="e.g. 12, Rose Street"
+                maxLength={200}
+                autoComplete="address-line1"
               />
             </Field>
             <Field label="Area / Landmark">
@@ -545,6 +565,8 @@ export default function Checkout() {
                 value={addr.line2}
                 onChange={(e) => setAddr((a) => ({ ...a, line2: e.target.value }))}
                 placeholder="Landmark or area (optional)"
+                maxLength={200}
+                autoComplete="address-line2"
               />
             </Field>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -554,6 +576,8 @@ export default function Checkout() {
                   value={addr.city}
                   onChange={(e) => setAddr((a) => ({ ...a, city: e.target.value }))}
                   placeholder="City"
+                  maxLength={100}
+                  autoComplete="address-level2"
                 />
               </Field>
               <Field label="Pincode" required>

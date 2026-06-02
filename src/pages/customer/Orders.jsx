@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Package } from 'lucide-react'
@@ -5,6 +6,7 @@ import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
 
 export default function Orders() {
+  useSeo({ title: 'Track Order', description: 'Track your KR Vegetables & Fruits order in real-time.' })
   const navigate = useNavigate()
   const [orderNumber, setOrderNumber] = useState('')
   const [loading, setLoading] = useState(false)

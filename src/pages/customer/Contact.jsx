@@ -1,8 +1,13 @@
+import { useSeo } from '../../hooks/useSeo'
 import { Link } from 'react-router-dom'
 import { Phone, MessageCircle, MapPin, Clock, ArrowLeft, Leaf } from 'lucide-react'
 import { STORE_ADDRESS, STORE_MAPS_URL, STORE_MAPS_EMBED, STORE_PHONE, WHATSAPP_NUMBER, STORE_NAME } from '../../constants'
 
 export default function Contact() {
+  useSeo({
+    title: 'Contact Us',
+    description: 'Get in touch with KR Vegetables & Fruits. Call or WhatsApp us at +91 91762 60992. Located at Thalambur, Chennai.',
+  })
   return (
     <div style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
 

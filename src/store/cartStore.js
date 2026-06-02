@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { supabase } from '../lib/supabase'
 import { useSettingsStore } from './settingsStore'
 import { HANDLING_CHARGE_RATE } from '../constants'
 
@@ -57,6 +58,37 @@ export const useCartStore = create(
       clearCart: () => set({ items: [], notes: '' }),
 
       setNotes: (notes) => set({ notes }),
+
+      /**
+       * Refreshes all cart item prices from the database.
+       * Called after a checkout error to ensure the customer sees current prices
+       * before retrying. Returns an array of items whose price changed.
+       */
+      refreshPrices: async () => {
+        const { items } = get()
+        if (!items.length) return []
+        const ids = items.map((i) => i.id).filter(Boolean)
+        const { data } = await supabase
+          .from('products')
+          .select('id, price, offer_price, is_active, stock_status')
+          .in('id', ids)
+        if (!data) return []
+
+        const changed = []
+        const updated = items.map((item) => {
+          const fresh = data.find((p) => p.id === item.id)
+          if (!fresh) return item
+          const currentPrice = fresh.offer_price !== null ? fresh.offer_price : fresh.price
+          if (currentPrice !== item.price) {
+            changed.push({ name: item.name, oldPrice: item.price, newPrice: currentPrice })
+            return { ...item, price: currentPrice }
+          }
+          return item
+        })
+
+        if (changed.length) set({ items: updated })
+        return changed
+      },
     }),
     {
       name: 'kr-cart',

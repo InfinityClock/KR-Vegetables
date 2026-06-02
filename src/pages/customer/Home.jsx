@@ -1,4 +1,6 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../../lib/supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { useProducts, useCategories } from '../../hooks/useProducts'
 import { BANNERS } from '../../data/mockData'
@@ -65,11 +67,22 @@ function HeroCarousel() {
   const navigate = useNavigate()
   const [current, setCurrent] = useState(0)
   const timerRef = useRef(null)
+  const [dbBanners, setDbBanners] = useState([])
+
+  // Load active banners from DB; fall back to static BANNERS if none configured
+  useEffect(() => {
+    supabase.from('offers_banner').select('*').eq('is_active', true).order('created_at', { ascending: false })
+      .then(({ data }) => { if (data?.length) setDbBanners(data) })
+  }, [])
+
+  const activeBanners = dbBanners.length > 0
+    ? dbBanners.map((b) => ({ ...b, gradient: b.bg_color, cta: 'Shop Now →', ctaPath: '/shop', emoji: '🥦🥕🍅' }))
+    : BANNERS
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % BANNERS.length), 4800)
+    timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % activeBanners.length), 4800)
     return () => clearInterval(timerRef.current)
-  }, [])
+  }, [activeBanners.length])
 
   return (
     <div
@@ -77,7 +90,7 @@ function HeroCarousel() {
       style={{ height: 272 }}
       onClick={() => navigate('/shop')}
     >
-      {BANNERS.map((banner, i) => (
+      {activeBanners.map((banner, i) => (
         <div
           key={banner.id}
           className="absolute inset-0"
@@ -160,7 +173,7 @@ function HeroCarousel() {
 
       {/* Dots */}
       <div className="absolute bottom-4 right-5 flex gap-1.5 items-center z-20">
-        {BANNERS.map((_, i) => (
+        {activeBanners.map((_, i) => (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); setCurrent(i) }}
@@ -856,6 +869,11 @@ function DesktopHero({ navigate }) {
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function Home() {
+  useSeo({
+    title: 'KR Vegetables & Fruits — Fresh Daily from Local Farms',
+    description: 'Order fresh vegetables and fruits online in Chennai. Farm-fresh produce delivered to your door daily. Two delivery windows — 8AM–1PM & 3PM–8PM.',
+    noSuffix: true,
+  })
   const navigate = useNavigate()
 
   const { categories, loading: catLoading } = useCategories()

@@ -150,6 +150,156 @@ function OfferModal({ product, onClose, onSaved }) {
   )
 }
 
+// ─── Banners CRUD panel ────────────────────────────────────────────────────────
+const PRESET_COLORS = [
+  { label: 'Green',  value: 'linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#52B788 100%)' },
+  { label: 'Orange', value: 'linear-gradient(135deg,#E76F51 0%,#F4A261 60%,#F9C74F 100%)' },
+  { label: 'Blue',   value: 'linear-gradient(135deg,#1A5276 0%,#2E86C1 60%,#5DADE2 100%)' },
+  { label: 'Purple', value: 'linear-gradient(135deg,#4A235A 0%,#7D3C98 60%,#A569BD 100%)' },
+]
+
+function BannersPanel({ banners, setBanners }) {
+  const [form, setForm] = useState({ title: '', subtitle: '', bg_color: PRESET_COLORS[0].value, is_active: true })
+  const [editId, setEditId] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const resetForm = () => { setForm({ title: '', subtitle: '', bg_color: PRESET_COLORS[0].value, is_active: true }); setEditId(null) }
+
+  const saveBanner = async () => {
+    if (!form.title.trim()) { toast.error('Title is required'); return }
+    setSaving(true)
+    const payload = { title: form.title.trim(), subtitle: form.subtitle.trim() || null, bg_color: form.bg_color, is_active: form.is_active }
+    const res = await adminFetch('/api/admin-write', {
+      method: 'POST',
+      body: JSON.stringify({ table: 'offers_banner', action: editId ? 'update' : 'create', id: editId || undefined, payload }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { toast.error(data.error || 'Save failed'); return }
+    toast.success(editId ? 'Banner updated' : 'Banner created')
+    setBanners((prev) => editId ? prev.map((b) => b.id === editId ? data : b) : [data, ...prev])
+    resetForm()
+  }
+
+  const deleteBanner = async (id) => {
+    if (!confirm('Delete this banner?')) return
+    const res = await adminFetch('/api/admin-write', {
+      method: 'POST',
+      body: JSON.stringify({ table: 'offers_banner', action: 'delete', id }),
+    })
+    if (!res.ok) { toast.error('Delete failed'); return }
+    setBanners((prev) => prev.filter((b) => b.id !== id))
+    toast.success('Banner deleted')
+  }
+
+  const toggleActive = async (banner) => {
+    const res = await adminFetch('/api/admin-write', {
+      method: 'POST',
+      body: JSON.stringify({ table: 'offers_banner', action: 'update', id: banner.id, payload: { is_active: !banner.is_active } }),
+    })
+    if (!res.ok) { toast.error('Update failed'); return }
+    setBanners((prev) => prev.map((b) => b.id === banner.id ? { ...b, is_active: !b.is_active } : b))
+  }
+
+  const startEdit = (banner) => {
+    setForm({ title: banner.title, subtitle: banner.subtitle || '', bg_color: banner.bg_color, is_active: banner.is_active })
+    setEditId(banner.id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const inputStyle = { width: '100%', height: 40, padding: '0 12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--gray-50)', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-dark)', outline: 'none' }
+
+  return (
+    <div className="space-y-4">
+      {/* Form */}
+      <div className="rounded-2xl p-5 space-y-3" style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+        <h3 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>{editId ? 'Edit Banner' : 'Add New Banner'}</h3>
+
+        <div>
+          <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-mid)' }}>Title *</label>
+          <input style={inputStyle} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Farm Fresh" maxLength={60} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-mid)' }}>Subtitle</label>
+          <input style={inputStyle} value={form.subtitle} onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="e.g. Delivered to your door daily" maxLength={100} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-mid)' }}>Background Colour</label>
+          <div className="flex gap-2 flex-wrap">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setForm((f) => ({ ...f, bg_color: c.value }))}
+                style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: c.value,
+                  border: form.bg_color === c.value ? '3px solid var(--brand-700)' : '2px solid transparent',
+                  cursor: 'pointer',
+                  boxShadow: form.bg_color === c.value ? '0 0 0 2px #fff, 0 0 0 4px var(--brand-700)' : 'none',
+                }}
+                title={c.label}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="rounded-xl p-4 text-white" style={{ background: form.bg_color, minHeight: 72 }}>
+          <p className="font-bold text-base">{form.title || 'Banner Title'}</p>
+          {form.subtitle && <p style={{ fontSize: 12, opacity: .8, marginTop: 2 }}>{form.subtitle}</p>}
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={saveBanner}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 h-9 rounded-xl text-sm font-semibold text-white"
+            style={{ background: saving ? 'var(--brand-400)' : 'var(--brand-700)', border: 'none', cursor: saving ? 'wait' : 'pointer' }}
+          >
+            {saving ? 'Saving…' : editId ? 'Update Banner' : '+ Add Banner'}
+          </button>
+          {editId && (
+            <button onClick={resetForm} className="px-4 h-9 rounded-xl text-sm font-medium" style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer', color: 'var(--text-mid)' }}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* List */}
+      {banners.length === 0 ? (
+        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--gray-50)', border: '1px dashed var(--border)' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No banners yet. Add one above — it will appear in the home page hero carousel.</p>
+        </div>
+      ) : banners.map((banner) => (
+        <div key={banner.id} className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', opacity: banner.is_active ? 1 : 0.55 }}>
+          <div className="p-4 text-white relative" style={{ background: banner.bg_color }}>
+            <p className="font-bold">{banner.title}</p>
+            {banner.subtitle && <p style={{ fontSize: 12, opacity: .8, marginTop: 2 }}>{banner.subtitle}</p>}
+            {!banner.is_active && (
+              <span style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,.4)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, letterSpacing: '.06em' }}>
+                HIDDEN
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: '#fff', borderTop: '1px solid var(--border-light)' }}>
+            <button onClick={() => toggleActive(banner)} className="text-xs font-semibold px-3 h-7 rounded-lg" style={{ background: banner.is_active ? '#dcfce7' : 'var(--gray-100)', color: banner.is_active ? '#16a34a' : 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+              {banner.is_active ? 'Visible' : 'Hidden'}
+            </button>
+            <div className="flex-1" />
+            <button onClick={() => startEdit(banner)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--brand-50)', border: 'none', cursor: 'pointer' }}>
+              <Edit2 size={14} style={{ color: 'var(--brand-700)' }} />
+            </button>
+            <button onClick={() => deleteBanner(banner.id)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#fef2f2', border: 'none', cursor: 'pointer' }}>
+              <Trash2 size={14} style={{ color: '#dc2626' }} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function AdminOffers() {
   const [products, setProducts] = useState([])
   const [banners, setBanners] = useState([])
@@ -347,32 +497,7 @@ export default function AdminOffers() {
 
       {/* Banners */}
       {tab === 'banners' && (
-        <div className="space-y-3">
-          {banners.length === 0 ? (
-            <div
-              className="rounded-2xl p-5 text-center text-sm"
-              style={{ background: 'var(--gray-50)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-            >
-              No banners configured
-            </div>
-          ) : banners.map((banner) => (
-            <div
-              key={banner.id}
-              className="rounded-2xl p-5 text-white relative overflow-hidden"
-              style={{ background: banner.bg_color }}
-            >
-              <h3 className="font-bold text-lg">{banner.title}</h3>
-              <p className="text-white/80 text-sm mt-0.5">{banner.subtitle}</p>
-            </div>
-          ))}
-          <div
-            className="rounded-xl p-4 text-sm"
-            style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#92400E' }}
-          >
-            <p className="font-semibold mb-0.5">💡 Tip</p>
-            <p className="text-xs">Manage banner content directly in the Supabase dashboard under the <code>offers_banner</code> table.</p>
-          </div>
-        </div>
+        <BannersPanel banners={banners} setBanners={setBanners} />
       )}
 
       {selectedProduct && (

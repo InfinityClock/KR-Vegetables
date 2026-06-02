@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Minus, Plus, Trash2, ShoppingBag, Clock, Loader2 } from 'lucide-react'
@@ -97,8 +98,9 @@ function CartItem({ item }) {
 
 // ─── Main Cart ────────────────────────────────────────────────────────────────
 export default function Cart() {
+  useSeo({ title: 'My Cart' })
   const navigate = useNavigate()
-  const { items, notes, setNotes, clearCart } = useCartStore()
+  const { items, notes, setNotes, clearCart, refreshPrices } = useCartStore()
 
   // ── Intercept back-navigation from Zoho payment page ─────────────────────
   // Detect the pending-payment state synchronously on first render so we can
@@ -183,8 +185,9 @@ export default function Cart() {
     )
   }
 
-  const itemCount  = items.length  // unique product count — shown in the header
-  const totalQty   = items.reduce((s, i) => s + i.quantity, 0) // total units — used in subtotal label
+  // Use total quantity throughout — matches the cart badge on the bottom nav,
+  // which also shows total units (useCartCount). Consistent across the app.
+  const itemCount  = items.reduce((s, i) => s + i.quantity, 0)
 
   return (
     <div className="pb-cart page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
@@ -269,9 +272,10 @@ export default function Cart() {
             </h3>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value.slice(0, 500))}
               placeholder="Any special instructions? (e.g. cut vegetables, extra fresh, etc.)"
               rows={3}
+              maxLength={500}
               className="w-full text-sm outline-none resize-none rounded-xl p-3"
               style={{
                 color: 'var(--text-dark)',
@@ -279,6 +283,11 @@ export default function Cart() {
                 border: '1px solid var(--border)',
               }}
             />
+            {notes.length > 450 && (
+              <p style={{ fontSize: 11, color: notes.length >= 500 ? '#dc2626' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>
+                {notes.length}/500
+              </p>
+            )}
           </div>
         </div>
 
@@ -295,7 +304,7 @@ export default function Cart() {
             <div className="flex flex-col gap-2 text-sm">
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-muted)' }}>
-                  Subtotal ({totalQty} item{totalQty !== 1 ? 's' : ''})
+                  Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})
                 </span>
                 <span style={{ color: 'var(--text-dark)' }}>{formatPrice(subtotal)}</span>
               </div>

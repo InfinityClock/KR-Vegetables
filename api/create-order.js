@@ -59,6 +59,12 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
   }
 
+  // Server-side length limits — defence in depth beyond the UI maxLength attributes
+  if (name.length > 100)             return new Response(JSON.stringify({ error: 'Name is too long (max 100 characters)' }),          { status: 400, headers: corsHeaders })
+  if ((notes || '').length > 500)    return new Response(JSON.stringify({ error: 'Notes are too long (max 500 characters)' }),         { status: 400, headers: corsHeaders })
+  if ((address.line1 || '').length > 200) return new Response(JSON.stringify({ error: 'Address line 1 is too long (max 200 characters)' }), { status: 400, headers: corsHeaders })
+  if ((address.city || '').length > 100)  return new Response(JSON.stringify({ error: 'City name is too long (max 100 characters)' }),       { status: 400, headers: corsHeaders })
+
   const sb = (path, opts = {}) =>
     fetch(`${supabaseUrl}/rest/v1/${path}`, {
       ...opts,

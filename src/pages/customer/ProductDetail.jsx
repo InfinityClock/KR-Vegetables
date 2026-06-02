@@ -6,6 +6,7 @@ import { useCartStore } from '../../store/cartStore'
 import { formatPrice, getDiscountPercent } from '../../utils/format'
 import { PLACEHOLDER_IMAGE } from '../../constants'
 import ProductCard from '../../components/ProductCard'
+import { useSeo } from '../../hooks/useSeo'
 import toast from 'react-hot-toast'
 
 // ─── Loading Skeleton ─────────────────────────────────────────────────────────
@@ -38,6 +39,14 @@ export default function ProductDetail() {
   const { product, related, loading } = useProduct(id)
   const { items, addItem, updateQuantity } = useCartStore()
   const [localQty, setLocalQty] = useState(1)
+
+  useSeo({
+    title: product ? `${product.name}${product.tamil_name ? ` (${product.tamil_name})` : ''}` : 'Product',
+    description: product
+      ? `${product.description || `Buy fresh ${product.name} online`}. ₹${product.offer_price || product.price} per ${product.unit}. Daily fresh delivery in Chennai.`
+      : undefined,
+    image: product?.image_url || undefined,
+  })
 
   if (loading) return <DetailSkeleton />
 

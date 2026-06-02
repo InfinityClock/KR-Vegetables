@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Leaf } from 'lucide-react'
 import { STORE_ADDRESS } from '../../constants'
@@ -40,6 +41,7 @@ function Bullet({ children }) {
 }
 
 export default function Terms() {
+  useSeo({ title: 'Terms of Service', description: 'Terms and conditions for using KR Vegetables & Fruits grocery delivery service.' })
   const navigate = useNavigate()
 
   return (

@@ -1,3 +1,4 @@
+import { useSeo } from '../../hooks/useSeo'
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, X, SlidersHorizontal, Check, ShoppingBag } from 'lucide-react'
@@ -16,6 +17,10 @@ const SORT_OPTIONS = [
 ]
 
 export default function Shop() {
+  useSeo({
+    title: 'Shop Fresh Vegetables & Fruits',
+    description: 'Browse 100+ fresh vegetables, fruits and herbs. Daily stock, farm-fresh quality. Order online for same-day delivery in Chennai.',
+  })
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
