@@ -22,70 +22,99 @@ function CartItem({ item }) {
 
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl p-3"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-xs)' }}
+      className="flex items-start gap-3"
+      style={{
+        background: 'var(--bg-card)',
+        borderRadius: 16,
+        padding: '12px 14px',
+        border: '1px solid var(--border-light)',
+        boxShadow: '0 1px 6px rgba(28,26,23,.05)',
+        transition: 'box-shadow .2s',
+      }}
     >
-      {/* Image */}
-      <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden" style={{ background: 'var(--green-tint)' }}>
+      {/* Image — slightly larger, rounded */}
+      <div
+        style={{
+          flexShrink: 0, width: 72, height: 72, borderRadius: 12,
+          overflow: 'hidden', background: '#f5f2ec',
+        }}
+      >
         <img
           src={item.image_url || PLACEHOLDER_IMAGE}
           alt={item.name}
-          className="w-full h-full object-cover"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => { e.target.src = PLACEHOLDER_IMAGE }}
           loading="lazy"
         />
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold line-clamp-2 leading-tight mb-0.5" style={{ color: 'var(--text-dark)' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600,
+          color: 'var(--text-dark)', lineHeight: 1.3, marginBottom: 2,
+          overflow: 'hidden', display: '-webkit-box',
+          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        }}>
           {item.name}
         </p>
-        <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-sm font-bold" style={{ color: 'var(--green-dark)' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 10 }}>
+          <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--brand-700)' }}>
             {formatPrice(displayPrice)}
           </span>
           {hasOffer && (
-            <span className="text-xs line-through" style={{ color: 'var(--text-light)' }}>
+            <span style={{ fontSize: '11px', textDecoration: 'line-through', color: 'var(--text-light)' }}>
               {formatPrice(item.original_price)}
             </span>
           )}
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>/ {item.unit}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>/ {item.unit}</span>
         </div>
 
-        {/* Qty + total */}
-        <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-2 p-1 rounded-xl"
-            style={{ background: 'var(--bg-muted)' }}
-          >
+        {/* Qty controls + line total */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Qty stepper */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 0,
+            background: 'var(--brand-800)', borderRadius: 10, overflow: 'hidden',
+          }}>
             <button
               onClick={() => updateQuantity(item.id, item.quantity - 1)}
-              className="qty-btn"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-dark)' }}
+              style={{
+                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', color: 'rgba(255,255,255,.8)', cursor: 'pointer',
+              }}
             >
-              <Minus size={13} />
+              <Minus size={12} strokeWidth={2.5} />
             </button>
-            <span className="w-5 text-center text-sm font-bold" style={{ color: 'var(--text-dark)' }}>
+            <span style={{
+              color: '#fff', fontWeight: 700, fontSize: '13px',
+              fontFamily: 'var(--font-body)', minWidth: 20, textAlign: 'center',
+            }}>
               {item.quantity}
             </span>
             <button
               onClick={() => updateQuantity(item.id, item.quantity + 1)}
-              className="qty-btn text-white"
-              style={{ background: 'var(--green-mid)' }}
+              style={{
+                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', color: 'rgba(255,255,255,.8)', cursor: 'pointer',
+              }}
             >
-              <Plus size={13} />
+              <Plus size={12} strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-dark)' }}>
               {formatPrice(displayPrice * item.quantity)}
             </span>
             <button
-              onClick={() => { removeItem(item.id); toast.success('Removed from cart') }}
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+              onClick={() => { removeItem(item.id); toast.success('Removed') }}
+              style={{
+                width: 30, height: 30, borderRadius: 8,
+                background: '#FEF2F2', border: '1px solid #FECACA',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
             >
               <Trash2 size={13} style={{ color: '#DC2626' }} />
             </button>

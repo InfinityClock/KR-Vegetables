@@ -62,6 +62,52 @@ function MarqueeTicker() {
   )
 }
 
+// ─── Delivery Promise Strip ─────────────────────────────────────────────────────
+// Quick-commerce urgency bar — shows delivery windows + free delivery.
+// Appears just below the hero on mobile, and below the heading on desktop.
+function DeliveryPromise() {
+  const promises = [
+    { icon: '🚚', text: 'Free delivery always' },
+    { icon: '⏰', text: '8AM–1PM & 3PM–8PM' },
+    { icon: '🌿', text: 'Farm fresh daily' },
+    { icon: '✅', text: 'Quality guaranteed' },
+  ]
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 0,
+        overflowX: 'auto',
+        background: 'var(--brand-50)',
+        borderTop: '1px solid var(--brand-100)',
+        borderBottom: '1px solid var(--brand-100)',
+        scrollbarWidth: 'none',
+      }}
+    >
+      {promises.map((p, i) => (
+        <div
+          key={i}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '9px 16px',
+            flexShrink: 0,
+            borderRight: i < promises.length - 1 ? '1px solid var(--brand-100)' : 'none',
+          }}
+        >
+          <span style={{ fontSize: 14 }}>{p.icon}</span>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: '11.5px',
+            fontWeight: 600, color: 'var(--brand-800)',
+            whiteSpace: 'nowrap',
+          }}>
+            {p.text}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── Hero Carousel ─────────────────────────────────────────────────────────────
 function HeroCarousel() {
   const navigate = useNavigate()
@@ -977,6 +1023,11 @@ export default function Home() {
         <MarqueeTicker />
       </div>
 
+      {/* Delivery promise strip — desktop only (mobile gets it after hero) */}
+      <div className="hidden lg:block">
+        <DeliveryPromise />
+      </div>
+
       {/* Desktop greeting */}
       <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-6">
         <div>
@@ -1190,38 +1241,48 @@ export default function Home() {
       </div>
 
       {/* ─── Mobile layout ─── */}
-      <div className="lg:hidden flex flex-col gap-7 pt-2 pb-2">
+      <div className="lg:hidden flex flex-col gap-0 pt-0 pb-2">
         {/* Hero Carousel — full bleed */}
         <HeroCarousel />
 
-        {/* Quick Categories — simplified 4-tile layout */}
-        <div>
+        {/* Delivery promise — quick-commerce urgency strip */}
+        <DeliveryPromise />
+
+        {/* Quick Categories */}
+        <div style={{ padding: '20px 0 4px' }}>
           <SectionHeader title="Shop by Category" onSeeAll={() => navigate('/shop')} />
           <QuickCategories loading={catLoading} />
         </div>
 
-        {/* Soft push-notification banner */}
-        <NotificationBanner />
-
-        {/* Order Again — only visible after first order */}
-        <OrderAgain />
-
-        {/* Editorial promo cards */}
-        <PromoCards navigate={navigate} />
-
-        {/* Featured picks */}
-        <div>
+        {/* ── Featured products grid — immediately visible ── */}
+        {/* This mirrors Zepto: products visible without heavy scrolling */}
+        <div style={{ padding: '20px 0 4px' }}>
           <SectionHeader
             title="Today's Fresh Picks"
             subtitle="Harvested this morning"
             onSeeAll={() => navigate('/shop')}
           />
-          <ProductRow products={featuredProducts} loading={featuredLoading} />
+          <div className="px-4">
+            {featuredLoading ? (
+              <SkeletonProductGrid count={6} />
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {featuredProducts.slice(0, 6).map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Order Again — only visible after first order */}
+        <div style={{ padding: '4px 0' }}>
+          <OrderAgain />
         </div>
 
         {/* Deals row */}
         {dealProducts.length > 0 && (
-          <div>
+          <div style={{ padding: '16px 0 4px' }}>
             <SectionHeader
               title="Deals & Offers"
               onSeeAll={() => navigate('/shop?sort=offers')}
@@ -1234,22 +1295,31 @@ export default function Home() {
           </div>
         )}
 
+        {/* Notification banner */}
+        <div style={{ padding: '8px 0' }}>
+          <NotificationBanner />
+        </div>
+
         {/* Best sellers grid */}
-        {!allLoading && allProducts.length > 0 && (
-          <div>
-            <SectionHeader title="Best Sellers" onSeeAll={() => navigate('/shop')} />
-            <div className="px-4 grid grid-cols-2 gap-3">
-              {allProducts.slice(0, 6).map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </div>
-        )}
-        {allLoading && (
+        <div style={{ padding: '16px 0 4px' }}>
+          <SectionHeader title="Best Sellers" onSeeAll={() => navigate('/shop')} />
           <div className="px-4">
-            <SkeletonProductGrid count={6} />
+            {allLoading ? (
+              <SkeletonProductGrid count={6} />
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {allProducts.slice(0, 6).map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Editorial promo cards */}
+        <div style={{ padding: '16px 0' }}>
+          <PromoCards navigate={navigate} />
+        </div>
 
         {/* Why KR */}
         <WhyKR />

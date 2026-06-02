@@ -444,34 +444,32 @@ export default function AdminOrders() {
                       {formatDateTime(order.placed_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      {/* Quick actions: one-tap next-status button + details */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Next status — most common action, no modal needed */}
+                        {order.status !== 'delivered' && order.status !== 'cancelled' && (() => {
+                          const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]
+                          if (!nextStatus) return null
+                          return (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, nextStatus) }}
+                              className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold transition-all"
+                              style={{ background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              title={`Mark as ${ORDER_STATUS[nextStatus]?.label}`}
+                            >
+                              ✓ {ORDER_STATUS[nextStatus]?.label}
+                            </button>
+                          )
+                        })()}
+                        {/* Details button */}
                         <button
                           onClick={() => setSelectedOrder(order)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                          style={{ background: 'var(--brand-50)' }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }}
                           title="View Details"
                         >
-                          <Eye size={14} style={{ color: 'var(--brand-600)' }} />
+                          <Eye size={13} style={{ color: 'var(--text-mid)' }} />
                         </button>
-                        {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                          <select
-                            value=""
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                            className="text-xs rounded-lg px-2 py-1.5 outline-none transition-colors"
-                            style={{
-                              border: '1.5px solid var(--border)',
-                              background: '#fff',
-                              color: 'var(--text-mid)',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <option value="">Update ▾</option>
-                            {STATUS_FLOW.slice(STATUS_FLOW.indexOf(order.status) + 1).map((s) => (
-                              <option key={s} value={s}>{ORDER_STATUS[s]?.label}</option>
-                            ))}
-                            {userRole !== 'sales' && <option value="cancelled">Cancel</option>}
-                          </select>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -500,17 +498,32 @@ export default function AdminOrders() {
                   <OrderStatusBadge status={order.status} />
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  {userRole !== 'sales' && (
-                    <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
-                      {formatPrice(order.total_amount)}
+                  <div className="flex items-center gap-3">
+                    {userRole !== 'sales' && (
+                      <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
+                        {formatPrice(order.total_amount)}
+                      </span>
+                    )}
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {order.order_items?.length > 0
+                        ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
+                        : '—'}
+                      {' '}· <span className="uppercase">{order.payment_method}</span>
                     </span>
-                  )}
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {order.order_items?.length > 0
-                      ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
-                      : '—'}
-                    {' '}· <span className="uppercase">{order.payment_method}</span>
-                  </span>
+                  </div>
+                  {/* Quick next-status button on mobile */}
+                  {order.status !== 'delivered' && order.status !== 'cancelled' && (() => {
+                    const next = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]
+                    return next ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, next) }}
+                        className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold"
+                        style={{ background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        ✓ {ORDER_STATUS[next]?.label}
+                      </button>
+                    ) : null
+                  })()}
                 </div>
               </div>
             ))}
