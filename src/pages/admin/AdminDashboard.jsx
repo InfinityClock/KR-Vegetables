@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { OrderStatusBadge } from '../../components/OrderStatusBadge'
 import {
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart,
   BarChart, Bar, Cell,
 } from 'recharts'
 
