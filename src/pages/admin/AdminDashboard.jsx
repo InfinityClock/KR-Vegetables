@@ -9,7 +9,8 @@ import { supabase } from '../../lib/supabase'
 import { formatPrice, formatDateTime } from '../../utils/format'
 import { OrderStatusBadge } from '../../components/OrderStatusBadge'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart,
+  BarChart, Bar, Cell,
 } from 'recharts'
 
 function KPICard({ icon: Icon, label, value, sub, accent, loading, onClick }) {
@@ -81,11 +82,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { userRole } = useAuthStore()
-  const [stats, setStats] = useState(null)
+  const [stats,       setStats]       = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
-  const [chartData, setChartData] = useState([])
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [chartData,   setChartData]   = useState([])
+  const [hourlyData,  setHourlyData]  = useState([])
+  const [dowData,     setDowData]     = useState([])
+  const [error,       setError]       = useState(null)
+  const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
     loadDashboard()
@@ -170,6 +173,42 @@ export default function AdminDashboard() {
       })
 
       setChartData(days.map((d) => ({ label: d.label, revenue: chartMap[d.label] })))
+
+      // ── Hourly order distribution (last 30 days) ──────────────────────────
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const hourlyRes = await supabase
+        .from('orders')
+        .select('placed_at')
+        .gte('placed_at', thirtyDaysAgo.toISOString())
+
+      const hourlyMap = Array.from({ length: 24 }, (_, h) => ({ hour: h, orders: 0 }))
+      ;(hourlyRes.data || []).forEach((o) => {
+        const h = new Date(o.placed_at).getHours()
+        hourlyMap[h].orders++
+      })
+      // Only show meaningful hours (6 AM – 10 PM)
+      setHourlyData(
+        hourlyMap
+          .filter(h => h.hour >= 6 && h.hour <= 22)
+          .map(h => ({
+            label: h.hour === 12 ? '12p' : h.hour > 12 ? `${h.hour - 12}p` : `${h.hour}a`,
+            orders: h.orders,
+            peak: h.orders === Math.max(...hourlyMap.map(x => x.orders)),
+          }))
+      )
+
+      // ── Day-of-week order distribution (last 30 days) ────────────────────
+      const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const dowMap = Array.from({ length: 7 }, (_, d) => ({ day: d, orders: 0 }))
+      ;(hourlyRes.data || []).forEach((o) => {
+        const d = new Date(o.placed_at).getDay()
+        dowMap[d].orders++
+      })
+      setDowData(dowMap.map(d => ({
+        label: DOW_LABELS[d.day],
+        orders: d.orders,
+      })))
     } catch (err) {
       console.error('Dashboard exception:', err)
       setError(err.message)
@@ -385,6 +424,71 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* ── Hourly + Day-of-Week Charts ── */}
+      {(hourlyData.length > 0 || dowData.length > 0) && (
+        <div className={`grid gap-4 ${userRole !== 'sales' ? 'lg:grid-cols-2' : ''}`}>
+
+          {/* Hourly distribution */}
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
+          >
+            <div className="mb-4">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Orders by Hour</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days — when customers order most</p>
+            </div>
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart data={hourlyData} margin={{ top: 2, right: 4, bottom: 0, left: -28 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(27,62,44,.05)' }}
+                  content={({ active, payload, label }) => active && payload?.length ? (
+                    <div style={{ background: 'var(--brand-900)', color: '#fff', borderRadius: 10, padding: '6px 12px', fontSize: 12 }}>
+                      <p className="font-bold">{payload[0].value} orders</p>
+                      <p style={{ opacity: .7, fontSize: 11 }}>{label}</p>
+                    </div>
+                  ) : null}
+                />
+                <Bar dataKey="orders" radius={[4, 4, 0, 0]}>
+                  {hourlyData.map((entry, i) => (
+                    <Cell key={i} fill={entry.peak ? 'var(--brand-600)' : 'var(--brand-200)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Day of week distribution */}
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
+          >
+            <div className="mb-4">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Orders by Day of Week</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days — busiest days</p>
+            </div>
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart data={dowData} margin={{ top: 2, right: 4, bottom: 0, left: -28 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(27,62,44,.05)' }}
+                  content={({ active, payload, label }) => active && payload?.length ? (
+                    <div style={{ background: 'var(--brand-900)', color: '#fff', borderRadius: 10, padding: '6px 12px', fontSize: 12 }}>
+                      <p className="font-bold">{payload[0].value} orders</p>
+                      <p style={{ opacity: .7, fontSize: 11 }}>{label}</p>
+                    </div>
+                  ) : null}
+                />
+                <Bar dataKey="orders" fill="var(--teal-500)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+        </div>
+      )}
 
       {/* Recent Orders */}
       <div

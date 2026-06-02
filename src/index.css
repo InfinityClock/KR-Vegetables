@@ -601,3 +601,76 @@ input[type=number]::-webkit-outer-spin-button {
   box-shadow: 0 6px 18px rgba(27,62,44,.14);
 }
 .cat-circle:active { transform: scale(.92); }
+
+/* ─── Add-to-Cart Pulse Animation ───────────────────────────────────────── */
+@keyframes cartPulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.18); }
+  65%  { transform: scale(0.93); }
+  100% { transform: scale(1); }
+}
+.cart-add-pulse {
+  animation: cartPulse 0.32s cubic-bezier(.22,1,.36,1);
+}
+
+/* ─── Quick Commerce Urgency Strip ──────────────────────────────────────── */
+.delivery-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: linear-gradient(90deg, var(--brand-800), var(--teal-700));
+  color: rgba(255,255,255,.9);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+
+/* ─── Premium Product Card ───────────────────────────────────────────────── */
+/* Tighter card feel: shrinks the image, aligns price + add on one row */
+.product-card-v2 {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 8px rgba(28,26,23,.07), 0 0 0 1px rgba(28,26,23,.04);
+  overflow: hidden;
+  transition: box-shadow .22s ease, transform .2s cubic-bezier(.22,1,.36,1);
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.product-card-v2:hover {
+  box-shadow: 0 8px 28px rgba(28,26,23,.13), 0 0 0 1px rgba(27,62,44,.08);
+  transform: translateY(-3px);
+}
+.product-card-v2:active { transform: scale(.97); }
+
+/* ─── Freshness Badge ────────────────────────────────────────────────────── */
+.badge-fresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  color: var(--brand-700);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ─── Premium Section Headers ────────────────────────────────────────────── */
+.section-eyebrow {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--brand-600);
+}
+
+/* ─── Scrollbar Hide ─────────────────────────────────────────────────────── */
+.scrollbar-hide { scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
