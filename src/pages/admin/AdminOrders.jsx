@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, X, Package } from 'lucide-react'
+import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
 import { formatDateTime, formatPrice } from '../../utils/format'
@@ -11,80 +11,197 @@ import toast from 'react-hot-toast'
 
 const STATUS_FLOW = ['placed', 'confirmed', 'packing', 'out_for_delivery', 'delivered']
 
+// ── Small helper: copy text to clipboard ─────────────────────────────────────
+function CopyBtn({ text }) {
+  const [done, setDone] = useState(false)
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1500) }) }}
+      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 4, color: done ? 'var(--brand-600)' : 'var(--text-light)', fontSize: 11 }}
+      title="Copy"
+    >
+      {done ? '✓' : <Copy size={12} />}
+    </button>
+  )
+}
+
 function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
   if (!order) return null
 
+  const phone   = order.customers?.phone
+  const addr    = order.addresses
+  const isCod   = order.payment_method === 'cod'
+
+  // Build a Google Maps URL — use coordinates if available, else address string
+  const mapsUrl = addr
+    ? (addr.lat && addr.lng
+        ? `https://www.google.com/maps?q=${addr.lat},${addr.lng}`
+        : `https://www.google.com/maps/search/${encodeURIComponent(
+            [addr.address_line1, addr.address_line2, addr.city, addr.pincode].filter(Boolean).join(', ')
+          )}`)
+    : null
+
+  const fullAddress = addr
+    ? [addr.address_line1, addr.address_line2, addr.city, addr.pincode].filter(Boolean).join(', ')
+    : null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,23,42,.55)', backdropFilter: 'blur(4px)' }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: 'rgba(15,23,42,.6)', backdropFilter: 'blur(4px)' }}>
       <div
-        className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl"
+        className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
         style={{ background: '#fff', boxShadow: 'var(--shadow-xl)' }}
       >
+        {/* ── Sticky header ── */}
         <div
-          className="sticky top-0 bg-white px-6 py-4 flex items-center justify-between rounded-t-3xl"
+          className="sticky top-0 bg-white px-5 py-4 flex items-center justify-between rounded-t-3xl"
           style={{ borderBottom: '1px solid var(--border-light)', zIndex: 1 }}
         >
-          <div>
-            <h3 className="font-bold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
-              {order.order_number}
-            </h3>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</p>
+          <div className="flex items-center gap-2.5">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
+                  {order.order_number}
+                </h3>
+                {/* Payment method badge — COD vs Online — always visible */}
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={isCod
+                    ? { background: '#FEF3C7', color: '#92400E' }
+                    : { background: '#DCFCE7', color: '#166534' }
+                  }
+                >
+                  {isCod ? <Banknote size={10} /> : <CreditCard size={10} />}
+                  {isCod ? 'COD' : 'Paid Online'}
+                </span>
+                {userRole !== 'sales' && <PaymentStatusBadge status={order.payment_status} />}
+              </div>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-            style={{ background: 'var(--gray-100)' }}
-          >
+          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }}>
             <X size={16} style={{ color: 'var(--text-mid)' }} />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
-          {/* Customer */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Customer</p>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>{order.customers?.full_name || 'N/A'}</p>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{order.customers?.phone}</p>
+        <div className="p-5 space-y-4">
+
+          {/* ── DELIVERY SECTION — #1 priority, largest visual weight ── */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ border: '2px solid var(--brand-200)', background: 'var(--brand-50)' }}
+          >
+            {/* Customer name + phone */}
+            <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--brand-100)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--brand-600)' }}>
+                🚚 Delivery To
+              </p>
+              <p className="font-bold text-base" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
+                {order.customers?.full_name || 'Customer'}
+              </p>
+              {phone && (
+                <div className="flex items-center gap-2 mt-2">
+                  <a
+                    href={`tel:${phone}`}
+                    className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg text-sm font-semibold"
+                    style={{ background: 'var(--brand-700)', color: '#fff', textDecoration: 'none' }}
+                  >
+                    <Phone size={13} /> {phone}
+                  </a>
+                  <a
+                    href={`https://wa.me/${phone.replace(/\D/g, '')}`}
+                    target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg text-sm font-semibold"
+                    style={{ background: '#25D366', color: '#fff', textDecoration: 'none' }}
+                  >
+                    <MessageCircle size={13} /> WhatsApp
+                  </a>
+                  <CopyBtn text={phone} />
+                </div>
+              )}
+            </div>
+
+            {/* Full address */}
+            {addr && (
+              <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--brand-100)' }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    <MapPin size={15} style={{ color: 'var(--brand-600)', flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>
+                        {addr.address_line1}
+                      </p>
+                      {addr.address_line2 && (
+                        <p className="text-sm" style={{ color: 'var(--text-mid)' }}>{addr.address_line2}</p>
+                      )}
+                      <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
+                        {addr.city}{addr.pincode ? ` — ${addr.pincode}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <CopyBtn text={fullAddress} />
+                </div>
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2.5 px-3 h-8 rounded-lg text-xs font-semibold"
+                    style={{ background: '#EFF6FF', color: '#1D4ED8', textDecoration: 'none', border: '1px solid #BFDBFE' }}
+                  >
+                    <Navigation size={12} /> Open in Google Maps
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Delivery slot */}
+            <div className="px-4 py-3 flex items-center gap-2">
+              <Clock size={14} style={{ color: 'var(--brand-600)' }} />
+              <span className="text-sm font-semibold" style={{ color: 'var(--brand-800)' }}>
+                {order.delivery_slot || 'No slot specified'}
+              </span>
+            </div>
           </div>
 
-          {/* Address */}
-          {order.addresses && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Delivery Address</p>
-              <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
-                {order.addresses.address_line1}
-                {order.addresses.address_line2 && `, ${order.addresses.address_line2}`}<br />
-                {order.addresses.city} — {order.addresses.pincode}
-              </p>
-              <p className="text-xs mt-1 font-medium" style={{ color: 'var(--brand-600)' }}>
-                🕐 {order.delivery_slot}
-              </p>
+          {/* ── Customer notes — highlighted warning if present ── */}
+          {order.notes && (
+            <div className="rounded-xl p-3.5 flex gap-3" style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+              <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <p className="text-xs font-bold mb-1" style={{ color: '#92400E' }}>Customer Note</p>
+                <p className="text-sm font-medium" style={{ color: '#78350F', lineHeight: 1.5 }}>{order.notes}</p>
+              </div>
             </div>
           )}
 
-          {/* Items */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
-              Order Items
+          {/* ── Order Items ── */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-light)' }}>
+            <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--border-light)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                Order Items
+              </p>
               {order.order_items?.length > 0 && (
-                <span className="ml-1 font-normal normal-case" style={{ color: 'var(--text-light)' }}>
-                  ({order.order_items.length})
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--brand-100)', color: 'var(--brand-700)' }}>
+                  {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}
                 </span>
               )}
-            </p>
+            </div>
             {order.order_items?.length > 0 ? (
-              <div className="space-y-1.5">
-                {order.order_items.map((item) => (
+              <div>
+                {order.order_items.map((item, idx) => (
                   <div
-                    key={item.id}
-                    className="flex justify-between text-sm py-2"
-                    style={{ borderBottom: '1px solid var(--border-light)' }}
+                    key={item.id || idx}
+                    className="flex justify-between items-center px-4 py-2.5 text-sm"
+                    style={{ borderBottom: idx < order.order_items.length - 1 ? '1px solid var(--border-light)' : 'none' }}
                   >
-                    <span style={{ color: 'var(--text-mid)' }}>
+                    <span style={{ color: 'var(--text-dark)', fontWeight: 500 }}>
                       {item.product_name}
-                      <span className="ml-1" style={{ color: 'var(--text-muted)' }}>× {item.quantity} {item.unit}</span>
+                      <span className="ml-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                        × {item.quantity} {item.unit}
+                      </span>
                     </span>
-                    {userRole !== 'sales' && (
+                    {userRole !== 'sales' && item.total_price != null && (
                       <span className="font-semibold" style={{ color: 'var(--brand-700)' }}>
                         {formatPrice(item.total_price)}
                       </span>
@@ -93,49 +210,28 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>No item details available.</p>
+              <p className="px-4 py-3 text-sm italic" style={{ color: 'var(--text-muted)' }}>No item details available.</p>
             )}
           </div>
 
-          {/* Totals */}
+          {/* ── Totals ── */}
           {userRole !== 'sales' && (
-            <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--gray-50)' }}>
+            <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--gray-50)', border: '1px solid var(--border-light)' }}>
               <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
                 <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm" style={{ color: 'var(--text-muted)' }}>
                 <span>Handling Charge</span><span>{formatPrice(order.delivery_fee)}</span>
               </div>
-              <div
-                className="flex justify-between font-bold text-base pt-2"
-                style={{ borderTop: '1px solid var(--border)', color: 'var(--text-dark)' }}
-              >
+              <div className="flex justify-between font-bold text-base pt-2"
+                style={{ borderTop: '1px solid var(--border)', color: 'var(--text-dark)' }}>
                 <span>Total</span>
                 <span style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>
               </div>
             </div>
           )}
 
-          {/* Payment */}
-          {userRole !== 'sales' && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Payment:</span>
-              <PaymentStatusBadge status={order.payment_status} />
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {order.payment_method === 'cod' ? '(Cash on Delivery)' : '(Online)'}
-              </span>
-            </div>
-          )}
-
-          {/* Notes */}
-          {order.notes && (
-            <div className="rounded-xl p-3" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#92400E' }}>Customer Note:</p>
-              <p className="text-sm" style={{ color: '#78350F' }}>{order.notes}</p>
-            </div>
-          )}
-
-          {/* Update Status */}
+          {/* ── Update Status ── */}
           {order.status !== 'cancelled' && order.status !== 'delivered' && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Update Status</p>
@@ -145,19 +241,9 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                     key={s}
                     onClick={() => { onStatusChange(order.id, s); onClose() }}
                     className="h-10 rounded-xl text-xs font-semibold transition-all"
-                    style={{
-                      border: '1.5px solid var(--brand-300)',
-                      color: 'var(--brand-700)',
-                      background: 'var(--brand-50)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--brand-700)'
-                      e.currentTarget.style.color = '#fff'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--brand-50)'
-                      e.currentTarget.style.color = 'var(--brand-700)'
-                    }}
+                    style={{ border: '1.5px solid var(--brand-300)', color: 'var(--brand-700)', background: 'var(--brand-50)', cursor: 'pointer' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--brand-700)'; e.currentTarget.style.color = '#fff' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--brand-50)'; e.currentTarget.style.color = 'var(--brand-700)' }}
                   >
                     Mark as {ORDER_STATUS[s]?.label}
                   </button>
@@ -166,7 +252,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                   <button
                     onClick={() => { onStatusChange(order.id, 'cancelled'); onClose() }}
                     className="h-10 rounded-xl text-xs font-semibold transition-all"
-                    style={{ border: '1.5px solid #FCA5A5', color: '#DC2626', background: '#FEF2F2' }}
+                    style={{ border: '1.5px solid #FCA5A5', color: '#DC2626', background: '#FEF2F2', cursor: 'pointer' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#DC2626'; e.currentTarget.style.color = '#fff' }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626' }}
                   >

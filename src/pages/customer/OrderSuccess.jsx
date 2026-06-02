@@ -221,7 +221,10 @@ export default function OrderSuccess() {
   useEffect(() => {
     if (!isSuccess) return
 
-    // 1. Read sessionStorage and build display order from it
+    // 1. Read sessionStorage and build display order from it.
+    //    sessionStorage is written by Checkout.jsx for BOTH COD and online payment.
+    //    It is the authoritative source for order_items because the API response
+    //    shape has historically not included items on all paths.
     try {
       const raw = sessionStorage.getItem('kr-pending-order')
       if (raw) {
@@ -231,22 +234,36 @@ export default function OrderSuccess() {
         clearCart()
         sessionStorage.removeItem('kr-pending-order')
 
-        // Use stored data to render order details right away
-        // (avoids the admin-orders auth requirement for customer-facing pages)
-        if (!state?.order) {
-          setOrder({
-            id:             pending.orderId,
-            order_number:   pending.orderNumber,
-            total_amount:   pending.amount,
-            delivery_slot:  pending.deliverySlot,
-            payment_method: isOnlinePayment ? 'zoho' : 'cod',
-            order_items:    (pending.items || []).map((i) => ({
-              product_name: i.name,
-              quantity:     i.quantity ?? 1,
-              unit:         i.unit,
-            })),
-          })
-        }
+        // Map cart items to the order_items display shape.
+        // We ALWAYS build from sessionStorage — regardless of whether state.order
+        // exists — because the navigation state may be the bare orders row (no items).
+        const itemsFromStorage = (pending.items || []).map((i) => ({
+          product_name: i.name,
+          quantity:     i.quantity ?? 1,
+          unit:         i.unit,
+          unit_price:   i.price ?? null,
+          total_price:  i.price != null ? i.price * (i.quantity ?? 1) : null,
+        }))
+
+        // Merge: use whatever fields the API gave us (order_number, total, etc.)
+        // but always substitute order_items from the reliable sessionStorage data.
+        setOrder({
+          id:             pending.orderId,
+          order_number:   pending.orderNumber,
+          total_amount:   pending.amount,
+          delivery_slot:  pending.deliverySlot,
+          payment_method: isOnlinePayment ? 'zoho' : 'cod',
+          // Spread API fields on top (keeps placed_at, status, etc. if present)
+          ...(state?.order || {}),
+          // order_items always come from sessionStorage — never from bare API row
+          order_items: itemsFromStorage.length > 0
+            ? itemsFromStorage
+            : (state?.order?.order_items || []),
+        })
+      } else if (state?.order) {
+        // No sessionStorage (e.g. page visited directly, or storage cleared).
+        // Fall back to whatever the API returned — may include items from fix #1A.
+        setOrder(state.order)
       }
     } catch {}
 

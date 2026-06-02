@@ -238,8 +238,22 @@ export default async function handler(req) {
       }),
     })
 
+    // Return the order WITH its items so the success page can display them
+    // without needing an authenticated admin API call.
+    // We already have validatedItems in memory — no extra DB round-trip needed.
+    const orderWithItems = {
+      ...order,
+      order_items: validatedItems.map((item) => ({
+        product_name: item.name,
+        unit:         item.unit,
+        quantity:     item.quantity,
+        unit_price:   item.unitPrice,
+        total_price:  item.lineTotal,
+      })),
+    }
+
     return new Response(
-      JSON.stringify({ success: true, orderId: order.id, orderNumber, order }),
+      JSON.stringify({ success: true, orderId: order.id, orderNumber, order: orderWithItems }),
       { status: 200, headers: corsHeaders }
     )
   } catch (err) {

@@ -332,6 +332,29 @@ export default function Checkout() {
       const { orderId, orderNumber, order } = orderData
 
       if (paymentMethod === 'cod') {
+        // Save pending order to sessionStorage BEFORE clearing the cart.
+        // OrderSuccess.jsx reads this to display item details reliably,
+        // as the API response shape may not include order_items on all paths.
+        try {
+          sessionStorage.setItem('kr-pending-order', JSON.stringify({
+            orderId,
+            orderNumber,
+            customerName:  name.trim(),
+            customerPhone: phone.trim(),
+            amount:        total,
+            deliverySlot,
+            items: items.map((i) => ({
+              id:             i.id,
+              name:           i.name,
+              unit:           i.unit,
+              quantity:       i.quantity,
+              price:          i.price,
+              original_price: i.original_price ?? null,
+              image_url:      i.image_url ?? null,
+            })),
+          }))
+        } catch { /* sessionStorage unavailable — API response is the fallback */ }
+
         addOrderedItems(items)
         clearCart()
         navigate(`/order-success/${orderId}`, { state: { order, name } })
