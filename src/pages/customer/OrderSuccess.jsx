@@ -260,10 +260,23 @@ export default function OrderSuccess() {
             ? itemsFromStorage
             : (state?.order?.order_items || []),
         })
-      } else if (state?.order) {
-        // No sessionStorage (e.g. page visited directly, or storage cleared).
-        // Fall back to whatever the API returned — may include items from fix #1A.
-        setOrder(state.order)
+      } else {
+        // ── Switch-to-COD bridge ────────────────────────────────────────────
+        // When the customer switches from a failed online payment to COD, the
+        // component stays MOUNTED (same orderId) — React Router only updates
+        // useLocation(). The isSuccess useEffect's closure of `state` is stale
+        // (captured when the failed-payment page first rendered, where state=null).
+        // handleSwitchCod writes the built order to kr-cod-switch-order so it
+        // can be read here without relying on the stale closure.
+        const switchedRaw = sessionStorage.getItem('kr-cod-switch-order')
+        if (switchedRaw) {
+          const switched = JSON.parse(switchedRaw)
+          setOrder(switched)
+          sessionStorage.removeItem('kr-cod-switch-order')
+        } else if (state?.order) {
+          // Genuine fresh navigation with state (e.g. direct COD checkout).
+          setOrder(state.order)
+        }
       }
     } catch {}
 
@@ -344,41 +357,75 @@ export default function OrderSuccess() {
   const handleSwitchCod = useCallback(async () => {
     setSwitchingCod(true)
     try {
-      await fetch('/api/switch-to-cod', {
+      // Fix B: check the API response — the security guard returns 409 if
+      // the order was already paid or confirmed.
+      const switchRes  = await fetch('/api/switch-to-cod', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
+        body:    JSON.stringify({ orderId }),
       })
-      // Build order details from pendingOrder so the success page can render them
-      let builtOrder = order
-      let pendingData = null
+      const switchData = await switchRes.json()
+      if (!switchRes.ok) {
+        throw new Error(switchData.error || 'Could not switch to Cash on Delivery.')
+      }
+
+      // Build the order display object from sessionStorage (kr-pending-order)
+      // which was set when the original Zoho payment was created in Checkout.jsx.
+      let builtOrder  = null
+      let customerName = pendingOrder?.customerName || ''
       try {
         const raw = sessionStorage.getItem('kr-pending-order')
         if (raw) {
-          pendingData = JSON.parse(raw)
-          if (!builtOrder && pendingData) {
-            builtOrder = {
-              id:             pendingData.orderId,
-              order_number:   pendingData.orderNumber,
-              total_amount:   pendingData.amount,
-              delivery_slot:  pendingData.deliverySlot,
-              payment_method: 'cod',
-              order_items: (pendingData.items || []).map((i) => ({
-                product_name: i.name,
-                quantity:     i.quantity ?? 1,
-                unit:         i.unit,
-              })),
-            }
+          const pendingData = JSON.parse(raw)
+          customerName = pendingData.customerName || customerName
+
+          builtOrder = {
+            id:             pendingData.orderId,
+            order_number:   pendingData.orderNumber,
+            total_amount:   pendingData.amount,
+            delivery_slot:  pendingData.deliverySlot,
+            payment_method: 'cod',
+            payment_status: 'pending',
+            status:         'confirmed',
+            order_items: (pendingData.items || []).map((i) => ({
+              product_name: i.name,
+              quantity:     i.quantity ?? 1,
+              unit:         i.unit,
+              unit_price:   i.price ?? null,
+              total_price:  i.price != null ? i.price * (i.quantity ?? 1) : null,
+            })),
           }
-          if (pendingData?.items?.length) addOrderedItems(pendingData.items)
+
+          if (pendingData.items?.length) addOrderedItems(pendingData.items)
           clearCart()
           sessionStorage.removeItem('kr-pending-order')
         }
       } catch {}
-      // Navigate to success page as COD with the built order object
-      navigate(`/order-success/${orderId}`, { replace: true, state: { order: builtOrder, name: pendingData?.customerName || pendingOrder?.customerName } })
-    } catch {
-      toast.error('Could not switch to COD. Please contact us on WhatsApp.')
+
+      if (!builtOrder) {
+        // Fallback: no sessionStorage available — use what we already have in state
+        builtOrder = order ? { ...order, payment_method: 'cod' } : null
+      }
+
+      // Fix A: write builtOrder to a sessionStorage bridge key BEFORE navigating.
+      // The isSuccess useEffect captures `state` in a stale closure (from when
+      // the failed-payment page first mounted, where state=null).  kr-cod-switch-order
+      // bypasses that stale closure — the effect reads it at call time, not at
+      // registration time.
+      if (builtOrder) {
+        try { sessionStorage.setItem('kr-cod-switch-order', JSON.stringify(builtOrder)) } catch {}
+      }
+
+      // Fix C: also call setOrder directly — since the component stays mounted,
+      // this sets the state synchronously before the navigate fires. Belt-and-suspenders.
+      if (builtOrder) setOrder(builtOrder)
+
+      navigate(`/order-success/${orderId}`, {
+        replace: true,
+        state:   { order: builtOrder, name: customerName },
+      })
+    } catch (err) {
+      toast.error(err.message || 'Could not switch to COD. Please contact us on WhatsApp.')
       setSwitchingCod(false)
     }
   }, [orderId, pendingOrder, order])
