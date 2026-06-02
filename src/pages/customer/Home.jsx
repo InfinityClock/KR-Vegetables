@@ -13,7 +13,7 @@ import {
   Leaf, Zap, Star, Headphones, ChevronRight, Truck,
   ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone, RotateCcw, Plus, Check, Bell,
 } from 'lucide-react'
-import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, PLACEHOLDER_IMAGE } from '../../constants'
+import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, ADMIN_EMAIL, PLACEHOLDER_IMAGE } from '../../constants'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { useCartStore } from '../../store/cartStore'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
@@ -1196,7 +1196,11 @@ export default function Home() {
               KR Vegetables &amp; Fruits
             </span>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', lineHeight: 1.6, margin: 0 }}>
-              Fresh from farm to your door, daily.
+              Farm-fresh vegetables and fruits delivered daily to your door in Chennai. Two convenient delivery windows — morning and afternoon, every day.
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.35)', lineHeight: 1.5, margin: 0 }}>
+              GSTIN: Pending registration<br />
+              Chennai, Tamil Nadu, India
             </p>
           </div>
 
@@ -1245,26 +1249,31 @@ export default function Home() {
               </a>
             )}
 
+            {/* Email */}
+            <a
+              href={`mailto:${ADMIN_EMAIL}`}
+              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.55)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <span style={{ fontSize: 13 }}>✉️</span> {ADMIN_EMAIL}
+            </a>
+
             {/* Policy links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
-              <Link
-                to="/contact"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
-              >
-                Contact Us
-              </Link>
-              <Link
-                to="/terms"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
-              >
-                Terms of Service
-              </Link>
-              <Link
-                to="/refund-policy"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}
-              >
-                Refund &amp; Cancellation Policy
-              </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+              {[
+                { to: '/contact',         label: 'Contact Us' },
+                { to: '/terms',           label: 'Terms of Service' },
+                { to: '/refund-policy',   label: 'Refund & Cancellation Policy' },
+                { to: '/shipping-policy', label: 'Shipping & Delivery Policy' },
+                { to: '/privacy-policy',  label: 'Privacy Policy' },
+              ].map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.45)', textDecoration: 'none' }}
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

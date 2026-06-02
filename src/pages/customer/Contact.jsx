@@ -1,7 +1,7 @@
 import { useSeo } from '../../hooks/useSeo'
 import { Link } from 'react-router-dom'
-import { Phone, MessageCircle, MapPin, Clock, ArrowLeft, Leaf } from 'lucide-react'
-import { STORE_ADDRESS, STORE_MAPS_URL, STORE_MAPS_EMBED, STORE_PHONE, WHATSAPP_NUMBER, STORE_NAME } from '../../constants'
+import { Phone, MessageCircle, MapPin, Clock, ArrowLeft, Leaf, Mail } from 'lucide-react'
+import { STORE_ADDRESS, STORE_MAPS_URL, STORE_MAPS_EMBED, STORE_PHONE, WHATSAPP_NUMBER, STORE_NAME, ADMIN_EMAIL, SALES_EMAIL } from '../../constants'
 
 export default function Contact() {
   useSeo({
@@ -80,6 +80,41 @@ export default function Contact() {
           </a>
         </div>
 
+        {/* ── Email cards ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
+          {/* Support email */}
+          <a href={`mailto:${ADMIN_EMAIL}`} style={{ textDecoration: 'none' }}>
+            <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-light)', borderRadius: 16, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)', height: '100%' }}>
+              <div style={{ width: 46, height: 46, borderRadius: 13, flexShrink: 0, background: 'var(--brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={20} style={{ color: 'var(--brand-600)' }} />
+              </div>
+              <div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 3px' }}>Customer Support</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--brand-700)', margin: 0 }}>{ADMIN_EMAIL}</p>
+              </div>
+            </div>
+          </a>
+          {/* Orders / Sales email */}
+          <a href={`mailto:${SALES_EMAIL}`} style={{ textDecoration: 'none' }}>
+            <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-light)', borderRadius: 16, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)', height: '100%' }}>
+              <div style={{ width: 46, height: 46, borderRadius: 13, flexShrink: 0, background: 'var(--teal-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={20} style={{ color: 'var(--teal-600)' }} />
+              </div>
+              <div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 3px' }}>Bulk & Orders</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--teal-700)', margin: 0 }}>{SALES_EMAIL}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
         {/* ── Business Address card ── */}
         <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-light)', borderRadius: 16, padding: '18px 20px', display: 'flex', alignItems: 'flex-start', gap: 14, boxShadow: 'var(--shadow-sm)', marginBottom: 16 }}>
           <div style={{ width: 46, height: 46, borderRadius: 13, flexShrink: 0, background: 'var(--teal-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -151,8 +186,10 @@ export default function Contact() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
-              { to: '/terms',         label: 'Terms of Service' },
-              { to: '/refund-policy', label: 'Refund & Cancellation Policy' },
+              { to: '/terms',           label: 'Terms of Service' },
+              { to: '/refund-policy',   label: 'Refund & Cancellation Policy' },
+              { to: '/shipping-policy', label: 'Shipping & Delivery Policy' },
+              { to: '/privacy-policy',  label: 'Privacy Policy' },
             ].map(({ to, label }) => (
               <Link key={to} to={to} style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--brand-600)', textDecoration: 'none', fontWeight: 500 }}>
                 {label} →

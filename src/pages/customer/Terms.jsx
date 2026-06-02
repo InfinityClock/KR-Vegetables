@@ -1,7 +1,7 @@
 import { useSeo } from '../../hooks/useSeo'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Leaf } from 'lucide-react'
-import { STORE_ADDRESS } from '../../constants'
+import { STORE_ADDRESS, WHATSAPP_NUMBER, ADMIN_EMAIL } from '../../constants'
 
 const LAST_UPDATED = 'May 2026'
 
@@ -106,24 +106,30 @@ export default function Terms() {
           </p>
           <p>📍 {STORE_ADDRESS}</p>
           <p>📱 +91 9176260992 (WhatsApp preferred)</p>
+          <p>✉️ <a href={`mailto:${ADMIN_EMAIL}`} style={{ color: 'var(--brand-600)', fontWeight: 600 }}>{ADMIN_EMAIL}</a></p>
         </Section>
 
         {/* 2 */}
         <Section title="2. Placing an Order">
-          <Bullet>You can place orders through our website without creating an account.</Bullet>
-          <Bullet>Orders are accepted based on product availability. We will notify you via WhatsApp if any item in your order is unavailable.</Bullet>
-          <Bullet>A minimum order amount applies (displayed at checkout). This helps us keep delivery costs sustainable.</Bullet>
-          <Bullet>You'll receive your order number on the confirmation screen. Please save it to track your delivery.</Bullet>
+          <Bullet>You can place orders through our website without creating an account — no registration needed.</Bullet>
+          <Bullet>There is no minimum order amount. Order as little or as much as you need.</Bullet>
+          <Bullet>Orders are accepted based on product availability. We will notify you via WhatsApp if any item in your order is unavailable and adjust your total accordingly.</Bullet>
+          <Bullet>You'll receive your order number on the confirmation screen. Save it to track your delivery at any time.</Bullet>
         </Section>
 
         {/* 3 */}
         <Section title="3. Delivery">
           <Bullet>We currently deliver within our serviceable area around Thalambur and nearby localities in Chennai.</Bullet>
-          <Bullet>We deliver in two daily windows: <strong>Morning 8AM–1PM</strong> and <strong>Afternoon 3PM–8PM</strong>.</Bullet>
-          <Bullet>Orders are automatically assigned to the next available delivery window. No slot selection is needed — we handle it for you.</Bullet>
-          <Bullet>Delivery times are estimates. Occasional delays can happen due to weather, traffic, or high order volume — we'll keep you informed via WhatsApp.</Bullet>
-          <Bullet>Free delivery is available on orders above the threshold shown on the website.</Bullet>
-          <Bullet>Please ensure someone is available to receive the order at your address during the delivery window.</Bullet>
+          <Bullet>We deliver in two daily windows: <strong>Morning 8:00 AM – 1:00 PM</strong> and <strong>Afternoon 3:00 PM – 8:00 PM</strong>.</Bullet>
+          <Bullet>Orders are automatically assigned to the next available window based on order time. No slot selection is required.</Bullet>
+          <Bullet><strong>Delivery is always free</strong> — no minimum order, no delivery fee, on every order.</Bullet>
+          <Bullet>Delivery times are estimates. Occasional delays may occur due to weather, traffic, or high volume. We'll keep you updated via WhatsApp.</Bullet>
+          <Bullet>Please ensure someone is available to receive your order during the delivery window.</Bullet>
+          <p style={{ marginTop: 4 }}>
+            <Link to="/shipping-policy" style={{ color: 'var(--brand-600)', fontWeight: 600, textDecoration: 'none', borderBottom: '1px solid var(--brand-200)' }}>
+              Read our full Shipping Policy →
+            </Link>
+          </p>
         </Section>
 
         {/* 4 */}
@@ -178,23 +184,25 @@ export default function Terms() {
         {/* 10 */}
         <Section title="10. Contact Us">
           <p>
-            Have a question or concern? We're always happy to help. The easiest way to reach us
-            is via WhatsApp:
+            Have a question or concern? We're always happy to help.
           </p>
-          <a
-            href="https://wa.me/919176260992"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 self-start px-4 py-2.5 rounded-full font-semibold text-sm"
-            style={{
-              background: '#25D366',
-              color: '#fff',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-body)',
-            }}
-          >
-            💬 Chat on WhatsApp
-          </a>
+          <div className="flex flex-col gap-3 mt-1">
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 self-start px-4 py-2.5 rounded-full font-semibold text-sm"
+              style={{ background: '#25D366', color: '#fff', textDecoration: 'none', fontFamily: 'var(--font-body)' }}
+            >
+              💬 Chat on WhatsApp
+            </a>
+            <a
+              href={`mailto:${ADMIN_EMAIL}`}
+              style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', color: 'var(--brand-600)', fontWeight: 600 }}
+            >
+              ✉️ {ADMIN_EMAIL}
+            </a>
+          </div>
         </Section>
 
         {/* Footer note */}

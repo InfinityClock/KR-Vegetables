@@ -24,6 +24,8 @@ import OrderTracking from './pages/customer/OrderTracking'
 import Orders from './pages/customer/Orders'
 import Terms from './pages/customer/Terms'
 import RefundPolicy from './pages/customer/RefundPolicy'
+import ShippingPolicy from './pages/customer/ShippingPolicy'
+import PrivacyPolicy from './pages/customer/PrivacyPolicy'
 import Contact from './pages/customer/Contact'
 
 // Admin pages — lazy-loaded so their code only downloads when an admin navigates to /admin.
@@ -284,9 +286,11 @@ function AppRoutes() {
       <Route path="/order-success/:orderId" element={<OrderSuccess />} />
       <Route path="/track/:orderId"         element={<OrderTracking />} />
       <Route path="/orders"      element={<CustomerLayout><Orders /></CustomerLayout>} />
-      <Route path="/terms"         element={<Terms />} />
-      <Route path="/refund-policy" element={<RefundPolicy />} />
-      <Route path="/contact"       element={<Contact />} />
+      <Route path="/terms"            element={<Terms />} />
+      <Route path="/refund-policy"   element={<RefundPolicy />} />
+      <Route path="/shipping-policy" element={<ShippingPolicy />} />
+      <Route path="/privacy-policy"  element={<PrivacyPolicy />} />
+      <Route path="/contact"         element={<Contact />} />
 
       {/* Admin routes — wrapped in Suspense so the lazy chunks load gracefully,
           and in an admin-specific ErrorBoundary so admin crashes don't affect

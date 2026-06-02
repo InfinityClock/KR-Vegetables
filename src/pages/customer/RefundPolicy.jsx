@@ -1,6 +1,7 @@
 import { useSeo } from '../../hooks/useSeo'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Leaf, MessageCircle, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Leaf, MessageCircle, RefreshCw, ShieldCheck, AlertCircle, Mail } from 'lucide-react'
+import { WHATSAPP_NUMBER, ADMIN_EMAIL } from '../../constants'
 
 const LAST_UPDATED = 'May 2026'
 
@@ -178,18 +179,20 @@ export default function RefundPolicy() {
             If something isn't right, reach out — we'll always do our best to help.
           </p>
           <a
-            href="https://wa.me/919176260992?text=Hi!%20I%20have%20an%20issue%20with%20my%20recent%20order."
+            href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent('Hi! I have an issue with my recent order.')}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 self-start px-5 py-2.5 rounded-full font-semibold text-sm btn-ripple"
-            style={{
-              background: '#25D366',
-              color: '#fff',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-body)',
-            }}
+            style={{ background: '#25D366', color: '#fff', textDecoration: 'none', fontFamily: 'var(--font-body)' }}
           >
             💬 Chat on WhatsApp
+          </a>
+          <a
+            href={`mailto:${ADMIN_EMAIL}?subject=Order%20Issue`}
+            className="inline-flex items-center gap-2 self-start"
+            style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', color: '#15803D', fontWeight: 600, textDecoration: 'none' }}
+          >
+            <Mail size={14} /> {ADMIN_EMAIL}
           </a>
         </div>
 
