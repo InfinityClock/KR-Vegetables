@@ -1,8 +1,15 @@
 {
   "functions": {
-    "api/zoho-payment.js": { "maxDuration": 20 },
-    "api/push-send.js":    { "maxDuration": 20 }
+    "api/zoho-payment.js":  { "maxDuration": 20 },
+    "api/push-send.js":     { "maxDuration": 20 },
+    "api/expire-offers.js": { "maxDuration": 10 }
   },
+  "crons": [
+    {
+      "path":     "/api/expire-offers",
+      "schedule": "0 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

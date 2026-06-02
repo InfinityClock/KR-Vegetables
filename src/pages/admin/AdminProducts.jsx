@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Plus, Search, Edit2, Trash2, Image, ToggleLeft, ToggleRight, X, ShoppingBag } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Image, ToggleLeft, ToggleRight, X, ShoppingBag, GripVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { adminFetch } from '../../lib/adminApi'
 import { formatPrice } from '../../utils/format'
@@ -286,14 +286,66 @@ export default function AdminProducts() {
     let q = supabase
       .from('products')
       .select('*, categories(name, emoji)')
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false })
-    if (search)           q = q.ilike('name', `%${search}%`)
+    if (search)           q = q.or(`name.ilike.%${search}%,tamil_name.ilike.%${search}%`)
     if (selectedCategory) q = q.eq('category_id', selectedCategory)
     const { data, error } = await q
     if (error) toast.error('Failed to load products: ' + error.message)
     setAllProducts(data || [])
     setAllLoading(false)
   }
+
+  // ── Drag-to-reorder state ──────────────────────────────────────────────────
+  const dragIdx  = useRef(null)
+  const [dragOverIdx, setDragOverIdx] = useState(null)
+
+  const handleDragStart = (e, idx) => {
+    dragIdx.current = idx
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e, idx) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (idx !== dragOverIdx) setDragOverIdx(idx)
+  }
+
+  const handleDrop = async (e, dropIdx) => {
+    e.preventDefault()
+    const fromIdx = dragIdx.current
+    if (fromIdx === null || fromIdx === dropIdx) { setDragOverIdx(null); return }
+
+    // Re-order the local list
+    const reordered = [...allProducts]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(dropIdx, 0, moved)
+
+    // Assign new sort_order values (1-based, gapless)
+    const updated = reordered.map((p, i) => ({ ...p, sort_order: i + 1 }))
+    setAllProducts(updated)
+    dragIdx.current = null
+    setDragOverIdx(null)
+
+    // Persist to DB — fire all updates in parallel
+    try {
+      await Promise.all(
+        updated.map((p) =>
+          adminFetch('/api/admin-write', {
+            method: 'POST',
+            body: JSON.stringify({ table: 'products', action: 'update', id: p.id, payload: { sort_order: p.sort_order } }),
+          })
+        )
+      )
+      bustProductCache()
+      toast.success('Product order saved')
+    } catch {
+      toast.error('Failed to save order')
+      fetchProducts() // revert to server state
+    }
+  }
+
+  const handleDragEnd = () => { dragIdx.current = null; setDragOverIdx(null) }
 
   const adminWrite = async (action, id, payload) => {
     const res = await adminFetch('/api/admin-write', {
@@ -364,7 +416,14 @@ export default function AdminProducts() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
             Products
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{allProducts.length} total</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {allProducts.length} total
+            {!search && !selectedCategory && (
+              <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+                · drag <GripVertical size={10} style={{ display: 'inline', verticalAlign: 'middle' }} /> to reorder
+              </span>
+            )}
+          </p>
         </div>
         <button
           onClick={() => { setEditProduct(null); setShowModal(true) }}
@@ -426,6 +485,10 @@ export default function AdminProducts() {
             <table className="w-full text-sm">
               <thead style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--border-light)' }}>
                 <tr>
+                  {/* drag handle header — only show when no search/filter active */}
+                  {!search && !selectedCategory && (
+                    <th className="px-2 py-3 w-8" title="Drag to reorder" />
+                  )}
                   {['Product', 'Category', 'Price', 'Offer', 'Stock', 'Visible', 'Actions'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
                       {h}
@@ -437,12 +500,28 @@ export default function AdminProducts() {
                 {allProducts.map((product, idx) => (
                   <tr
                     key={product.id}
+                    draggable={!search && !selectedCategory}
+                    onDragStart={!search && !selectedCategory ? (e) => handleDragStart(e, idx) : undefined}
+                    onDragOver={!search && !selectedCategory ? (e) => handleDragOver(e, idx) : undefined}
+                    onDrop={!search && !selectedCategory ? (e) => handleDrop(e, idx) : undefined}
+                    onDragEnd={!search && !selectedCategory ? handleDragEnd : undefined}
                     className="transition-colors hover:bg-gray-50/70"
                     style={{
                       borderTop: idx > 0 ? '1px solid var(--border-light)' : 'none',
                       opacity: product.is_active ? 1 : 0.45,
+                      background: dragOverIdx === idx ? 'var(--brand-50)' : undefined,
+                      borderTopColor: dragOverIdx === idx ? 'var(--brand-300)' : undefined,
                     }}
                   >
+                    {/* Drag handle — only when no filter active */}
+                    {!search && !selectedCategory && (
+                      <td className="px-2 py-3 w-8">
+                        <GripVertical
+                          size={16}
+                          style={{ color: 'var(--text-light)', cursor: 'grab', display: 'block', margin: '0 auto' }}
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <img

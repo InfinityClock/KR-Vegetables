@@ -27,7 +27,8 @@ export const useProducts = (filters = {}) => {
         if (search)        q = q.or(`name.ilike.%${search}%,tamil_name.ilike.%${search}%`);
         if (sort === 'offers') q = q.not('offer_price', 'is', null);
 
-        q = q.order('created_at', { ascending: false });
+        // sort_order ASC (admin-controlled position), then created_at DESC as tiebreaker
+        q = q.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
         if (limit) q = q.limit(limit);
 
         const { data, error: err } = await q;
@@ -70,6 +71,7 @@ export const useAllProducts = () => {
         .from('products')
         .select(PRODUCT_SELECT)
         .eq('is_active', true)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
         .then(({ data }) => { _allProductsCache = data || []; return _allProductsCache; });
     }
