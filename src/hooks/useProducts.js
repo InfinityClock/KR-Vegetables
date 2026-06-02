@@ -147,7 +147,7 @@ export const useCategories = () => {
   useEffect(() => {
     supabase
       .from('categories')
-      .select('id, name, emoji')
+      .select('id, name, emoji, type')   // type added for vegetable/fruit grouping
       .eq('is_active', true)
       .order('display_order')
       .then(({ data, error: err }) => {

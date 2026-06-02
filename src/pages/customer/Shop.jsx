@@ -5,7 +5,6 @@ import { Search, X, SlidersHorizontal, Check, ShoppingBag } from 'lucide-react'
 import { useAllProducts, useCategories } from '../../hooks/useProducts'
 import { smartSearch } from '../../utils/search'
 import ProductCard from '../../components/ProductCard'
-import { SkeletonProductGrid } from '../../components/Skeleton'
 import WhatsAppButton from '../../components/WhatsAppButton'
 import { PageTopBar } from '../../components/TopBar'
 
@@ -16,47 +15,81 @@ const SORT_OPTIONS = [
   { value: 'offers',     label: 'Offers First',       emoji: '🏷️', desc: 'Best discounts' },
 ]
 
+// ── Primary tabs shown to customers ──────────────────────────────────────────
+// 'type' maps to the category.type column ('vegetable' | 'fruit').
+// 'offers' is a special filter (no type column) — products with offer_price.
+const PRIMARY_TABS = [
+  { key: 'all',       label: 'All',        emoji: '🛒' },
+  { key: 'vegetable', label: 'Vegetables', emoji: '🥬' },
+  { key: 'fruit',     label: 'Fruits',     emoji: '🍎' },
+  { key: 'offers',    label: 'Offers',     emoji: '🏷️' },
+]
+
 export default function Shop() {
   useSeo({
     title: 'Shop Fresh Vegetables & Fruits',
     description: 'Browse 100+ fresh vegetables, fruits and herbs. Daily stock, farm-fresh quality. Order online for same-day delivery in Chennai.',
   })
   const [searchParams, setSearchParams] = useSearchParams()
-  const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
-  const [sort, setSort] = useState(searchParams.get('sort') === 'offers' ? 'offers' : 'default')
+  const [search,       setSearch]       = useState('')
+  const [activeTab,    setActiveTab]    = useState(() => {
+    // Restore tab from URL: ?type=vegetable|fruit|offers
+    const t = searchParams.get('type')
+    return PRIMARY_TABS.find(tb => tb.key === t) ? t : 'all'
+  })
+  const [sort,         setSort]         = useState(searchParams.get('sort') === 'offers' ? 'offers' : 'default')
   const [showSortSheet, setShowSortSheet] = useState(false)
   const searchRef = useRef(null)
 
   const { categories } = useCategories()
   const { products: allProducts, loading } = useAllProducts()
 
-  // 1. category filter
-  const byCategory = selectedCategory
-    ? allProducts.filter((p) => p.category_id === selectedCategory)
-    : allProducts
+  // Build a set of category IDs for each type (populated once categories load)
+  const catIdsByType = { vegetable: new Set(), fruit: new Set() }
+  categories.forEach(c => {
+    if (c.type === 'vegetable') catIdsByType.vegetable.add(c.id)
+    if (c.type === 'fruit')     catIdsByType.fruit.add(c.id)
+  })
 
-  // 2. smart search (tanglish + fuzzy) — client-side
-  const searched = search.trim() ? smartSearch(byCategory, search) : byCategory
+  // 1. Primary tab filter
+  const byTab = (() => {
+    if (activeTab === 'vegetable') return allProducts.filter(p => catIdsByType.vegetable.has(p.category_id))
+    if (activeTab === 'fruit')     return allProducts.filter(p => catIdsByType.fruit.has(p.category_id))
+    if (activeTab === 'offers')    return allProducts.filter(p => p.offer_price !== null && p.offer_price < p.price)
+    return allProducts  // 'all'
+  })()
 
+  // 2. Smart search (Tanglish + fuzzy) — client-side
+  const searched = search.trim() ? smartSearch(byTab, search) : byTab
+
+  // 3. Sort
   const sorted = [...searched].sort((a, b) => {
     if (sort === 'price_asc')  return (a.offer_price || a.price) - (b.offer_price || b.price)
     if (sort === 'price_desc') return (b.offer_price || b.price) - (a.offer_price || a.price)
     if (sort === 'offers') {
-      const aHas = a.offer_price ? 1 : 0
-      const bHas = b.offer_price ? 1 : 0
-      return bHas - aHas
+      return (b.offer_price ? 1 : 0) - (a.offer_price ? 1 : 0)
     }
-    // default: if a search is active, keep relevance order from smartSearch
-    return 0
+    return 0  // default: preserve relevance order from smartSearch
   })
 
+  // Sync tab from URL changes (e.g. navigating from Home category tiles)
   useEffect(() => {
-    const cat = searchParams.get('category')
-    if (cat) setSelectedCategory(cat)
-  }, [searchParams])
+    const t = searchParams.get('type')
+    if (t && PRIMARY_TABS.find(tb => tb.key === t)) setActiveTab(t)
+    // Legacy support: ?category=uuid → clear to 'all' (old URLs)
+    if (searchParams.get('category')) {
+      setSearchParams({})
+    }
+  }, [searchParams])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectedCategoryName = categories.find((c) => c.id === selectedCategory)?.name
+  const selectTab = (key) => {
+    setActiveTab(key)
+    setSearch('')
+    if (key === 'all') setSearchParams({})
+    else setSearchParams({ type: key })
+  }
+
+  const activeTabLabel = PRIMARY_TABS.find(t => t.key === activeTab)?.label || ''
 
   return (
     <div className="pb-nav page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
@@ -66,26 +99,23 @@ export default function Shop() {
       {/* Desktop heading */}
       <div className="hidden lg:flex items-center justify-between px-8 pt-8 pb-5">
         <div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '2.2rem', fontWeight: 600,
-              letterSpacing: '-.03em', color: 'var(--text-dark)', lineHeight: 1.1,
-            }}
-          >
-            Browse All Products
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 600,
+            letterSpacing: '-.03em', color: 'var(--text-dark)', lineHeight: 1.1,
+          }}>
+            Fresh Produce
           </h1>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', marginTop: 4, color: 'var(--text-muted)' }}>
-            Fresh · Daily · Delivered to your door
+            Farm-fresh · Daily · Delivered to your door
           </p>
         </div>
-        {selectedCategory && (
+        {activeTab !== 'all' && (
           <button
-            onClick={() => { setSelectedCategory(''); setSearchParams({}) }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
+            onClick={() => selectTab('all')}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
             style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: '1.5px solid var(--red-100)' }}
           >
-            <X size={13} /> Clear filter
+            <X size={13} /> Show all
           </button>
         )}
       </div>
@@ -110,7 +140,7 @@ export default function Shop() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search in English or Tanglish (vazhai thandu, keerai…)"
+              placeholder="Search vegetables, fruits… (vazhai thandu, keerai)"
               className="flex-1 text-sm outline-none bg-transparent"
               style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-body)' }}
             />
@@ -126,34 +156,57 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* Category pills + Sort */}
-        <div className="scroll-fade">
-        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5 pb-0.5 overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => { setSelectedCategory(''); setSearchParams({}) }}
-            className={`filter-chip flex-shrink-0 ${!selectedCategory ? 'active' : ''}`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
+        {/* ── Primary tabs + Sort ── */}
+        <div className="flex items-center gap-2 px-4 lg:px-8 pt-2.5 pb-0.5">
+          {PRIMARY_TABS.map((tab) => (
             <button
-              key={cat.id}
-              onClick={() => { setSelectedCategory(cat.id); setSearchParams({ category: cat.id }) }}
-              className={`filter-chip flex-shrink-0 ${selectedCategory === cat.id ? 'active' : ''}`}
+              key={tab.key}
+              onClick={() => selectTab(tab.key)}
+              className="flex-shrink-0 flex items-center gap-1.5 transition-all"
+              style={{
+                height: 36,
+                padding: '0 14px',
+                borderRadius: 99,
+                fontFamily: 'var(--font-body)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: activeTab === tab.key
+                  ? 'none'
+                  : '1.5px solid var(--border)',
+                background: activeTab === tab.key
+                  ? 'var(--brand-800)'
+                  : 'var(--bg-card)',
+                color: activeTab === tab.key
+                  ? '#fff'
+                  : 'var(--text-mid)',
+                boxShadow: activeTab === tab.key
+                  ? '0 2px 8px rgba(22,101,52,.25)'
+                  : 'none',
+              }}
             >
-              {cat.emoji} {cat.name}
+              <span>{tab.emoji}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
-          <div className="flex-shrink-0 ml-auto pl-2">
-            <button
-              onClick={() => setShowSortSheet(true)}
-              className={`filter-chip flex-shrink-0 gap-1.5 ${sort !== 'default' ? 'active' : ''}`}
-            >
-              <SlidersHorizontal size={12} />
-              {sort !== 'default' ? SORT_OPTIONS.find(o => o.value === sort)?.label : 'Sort'}
-            </button>
-          </div>
-        </div>
+
+          {/* Sort — pushed right */}
+          <div className="flex-1" />
+          <button
+            onClick={() => setShowSortSheet(true)}
+            className="flex-shrink-0 flex items-center gap-1.5 transition-all"
+            style={{
+              height: 36, padding: '0 12px', borderRadius: 99,
+              fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer',
+              border: sort !== 'default' ? 'none' : '1.5px solid var(--border)',
+              background: sort !== 'default' ? 'var(--brand-800)' : 'var(--bg-card)',
+              color: sort !== 'default' ? '#fff' : 'var(--text-mid)',
+            }}
+          >
+            <SlidersHorizontal size={12} />
+            {sort !== 'default' ? SORT_OPTIONS.find(o => o.value === sort)?.label : 'Sort'}
+          </button>
         </div>
       </div>
 
@@ -163,12 +216,12 @@ export default function Shop() {
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
             <span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{sorted.length}</span>
             {' '}item{sorted.length !== 1 ? 's' : ''}
-            {selectedCategoryName ? (
-              <> in <span style={{ fontWeight: 600, color: 'var(--brand-600)' }}>{selectedCategoryName}</span></>
-            ) : ''}
-            {search ? (
+            {activeTab !== 'all' && !search && (
+              <> in <span style={{ fontWeight: 600, color: 'var(--brand-600)' }}>{activeTabLabel}</span></>
+            )}
+            {search && (
               <> for "<span style={{ fontWeight: 600, color: 'var(--brand-600)' }}>{search}</span>"</>
-            ) : ''}
+            )}
           </p>
           {sort !== 'default' && (
             <button
@@ -197,38 +250,34 @@ export default function Shop() {
           </div>
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-5">
-            <div
-              style={{
-                width: 80, height: 80, borderRadius: '50%',
-                background: 'var(--warm-100)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <ShoppingBag size={34} style={{ color: 'var(--text-light)' }} />
+            <div style={{ fontSize: 56 }}>
+              {activeTab === 'vegetable' ? '🥬' : activeTab === 'fruit' ? '🍎' : activeTab === 'offers' ? '🏷️' : '🛒'}
             </div>
             <div className="text-center">
-              <p
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.5rem', fontWeight: 600,
-                  color: 'var(--text-dark)', letterSpacing: '-.02em',
-                  marginBottom: 6,
-                }}
-              >
+              <p style={{
+                fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600,
+                color: 'var(--text-dark)', letterSpacing: '-.02em', marginBottom: 6,
+              }}>
                 No products found
               </p>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', maxWidth: 280, margin: '0 auto' }}>
                 {search
                   ? `No results for "${search}". Try another spelling or search in English.`
-                  : 'No products in this category yet.'}
+                  : activeTab === 'offers'
+                    ? 'No offers available right now. Check back soon!'
+                    : `No ${activeTabLabel.toLowerCase()} in stock right now.`}
               </p>
             </div>
-            {(search || selectedCategory) && (
+            {(search || activeTab !== 'all') && (
               <button
-                onClick={() => { setSearch(''); setSelectedCategory(''); setSearchParams({}) }}
-                className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-xl"
+                onClick={() => { setSearch(''); selectTab('all') }}
+                style={{
+                  padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: 'var(--brand-800)', color: '#fff',
+                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
+                }}
               >
-                Clear filters
+                Show all products
               </button>
             )}
           </div>
@@ -245,21 +294,17 @@ export default function Shop() {
           <div className="bottom-sheet-overlay" onClick={() => setShowSortSheet(false)} />
           <div className="bottom-sheet">
             <div className="flex items-center justify-between mb-5">
-              <h3
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.5rem', fontWeight: 600,
-                  letterSpacing: '-.02em', color: 'var(--text-dark)',
-                }}
-              >
+              <h3 style={{
+                fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600,
+                letterSpacing: '-.02em', color: 'var(--text-dark)',
+              }}>
                 Sort By
               </h3>
               <button
                 onClick={() => setShowSortSheet(false)}
                 style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  background: 'var(--warm-100)', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  width: 34, height: 34, borderRadius: '50%', background: 'var(--warm-100)',
+                  border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                 }}
               >
                 <X size={15} style={{ color: 'var(--text-muted)' }} />
@@ -280,13 +325,10 @@ export default function Shop() {
                   <div className="flex items-center gap-3">
                     <span style={{ fontSize: 24 }}>{opt.emoji}</span>
                     <div className="text-left">
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600,
-                          color: sort === opt.value ? 'var(--brand-700)' : 'var(--text-dark)',
-                          display: 'block',
-                        }}
-                      >
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600,
+                        color: sort === opt.value ? 'var(--brand-700)' : 'var(--text-dark)', display: 'block',
+                      }}>
                         {opt.label}
                       </span>
                       <span style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-muted)' }}>
@@ -295,13 +337,10 @@ export default function Shop() {
                     </div>
                   </div>
                   {sort === opt.value && (
-                    <div
-                      style={{
-                        width: 24, height: 24, borderRadius: '50%',
-                        background: 'var(--brand-700)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}
-                    >
+                    <div style={{
+                      width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-700)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
                       <Check size={13} color="#fff" strokeWidth={2.5} />
                     </div>
                   )}

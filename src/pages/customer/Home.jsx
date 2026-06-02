@@ -289,6 +289,92 @@ function CategoryStrip({ categories, loading, onSelect }) {
   )
 }
 
+// ─── Quick Categories — 4 clean tiles replacing the 14-chip strip ─────────────
+// Customer-facing simplified navigation: All / Vegetables / Fruits / Offers.
+// The 14 subcategories are preserved in the DB for admin/inventory use.
+function QuickCategories({ loading }) {
+  const navigate = useNavigate()
+
+  const tiles = [
+    {
+      key:     'vegetable',
+      label:   'Vegetables',
+      emoji:   '🥬',
+      desc:    'Leafy greens, gourds, roots & more',
+      bg:      'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+      border:  '#6ee7b7',
+      color:   '#065f46',
+    },
+    {
+      key:     'fruit',
+      label:   'Fruits',
+      emoji:   '🍎',
+      desc:    'Tropical, citrus, seasonal & more',
+      bg:      'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+      border:  '#fbbf24',
+      color:   '#78350f',
+    },
+    {
+      key:     'offers',
+      label:   'Offers',
+      emoji:   '🏷️',
+      desc:    'Today\'s discounted picks',
+      bg:      'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+      border:  '#f87171',
+      color:   '#7f1d1d',
+    },
+    {
+      key:     'all',
+      label:   'All Products',
+      emoji:   '🛒',
+      desc:    'Browse the full catalogue',
+      bg:      'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
+      border:  '#a78bfa',
+      color:   '#4c1d95',
+    },
+  ]
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-3 px-4">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="skeleton rounded-2xl" style={{ height: 88 }} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 px-4">
+      {tiles.map((tile) => (
+        <button
+          key={tile.key}
+          onClick={() => navigate(tile.key === 'all' ? '/shop' : `/shop?type=${tile.key}`)}
+          className="flex items-center gap-3 rounded-2xl p-4 text-left transition-all active:scale-97"
+          style={{
+            background: tile.bg,
+            border: `1.5px solid ${tile.border}`,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,.1)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.06)' }}
+        >
+          <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>{tile.emoji}</span>
+          <div className="min-w-0">
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: tile.color, margin: 0, lineHeight: 1.2 }}>
+              {tile.label}
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', color: tile.color, opacity: .7, margin: '2px 0 0', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {tile.desc}
+            </p>
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Section Header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, subtitle, onSeeAll }) {
   return (
@@ -1108,14 +1194,10 @@ export default function Home() {
         {/* Hero Carousel — full bleed */}
         <HeroCarousel />
 
-        {/* Quick Categories */}
+        {/* Quick Categories — simplified 4-tile layout */}
         <div>
-          <SectionHeader title="Browse by Category" onSeeAll={() => navigate('/shop')} />
-          <CategoryStrip
-            categories={categories}
-            loading={catLoading}
-            onSelect={(cat) => navigate(`/shop?category=${cat.id}`)}
-          />
+          <SectionHeader title="Shop by Category" onSeeAll={() => navigate('/shop')} />
+          <QuickCategories loading={catLoading} />
         </div>
 
         {/* Soft push-notification banner */}
