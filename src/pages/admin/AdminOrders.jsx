@@ -3,7 +3,8 @@ import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock,
 import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
 import { formatDateTime, formatPrice } from '../../utils/format'
-import { ORDER_STATUS, ORDER_STATUS_MESSAGES } from '../../constants'
+import { ORDER_STATUS, ORDER_STATUS_MESSAGES, STORE_LAT, STORE_LNG, DELIVERY_RADIUS_KM } from '../../constants'
+import { haversineKm } from '../../utils/distance'
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/OrderStatusBadge'
 import { SkeletonList } from '../../components/Skeleton'
 import { adminFetch } from '../../lib/adminApi'
@@ -31,6 +32,17 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
   const phone   = order.customers?.phone
   const addr    = order.addresses
   const isCod   = order.payment_method === 'cod'
+
+  // Compute delivery distance if coordinates are available
+  const deliveryDistKm = addr?.lat && addr?.lng
+    ? haversineKm(addr.lat, addr.lng, STORE_LAT, STORE_LNG)
+    : null
+  const distLabel = deliveryDistKm !== null
+    ? deliveryDistKm < 1
+      ? `${Math.round(deliveryDistKm * 1000)} m`
+      : `${deliveryDistKm.toFixed(1)} km`
+    : null
+  const outsideRadius = deliveryDistKm !== null && deliveryDistKm > DELIVERY_RADIUS_KM
 
   // Build a Google Maps URL — use coordinates if available, else address string
   const mapsUrl = addr
@@ -142,16 +154,30 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                   </div>
                   <CopyBtn text={fullAddress} />
                 </div>
-                {mapsUrl && (
-                  <a
-                    href={mapsUrl}
-                    target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-2.5 px-3 h-8 rounded-lg text-xs font-semibold"
-                    style={{ background: '#EFF6FF', color: '#1D4ED8', textDecoration: 'none', border: '1px solid #BFDBFE' }}
-                  >
-                    <Navigation size={12} /> Open in Google Maps
-                  </a>
-                )}
+                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                  {mapsUrl && (
+                    <a
+                      href={mapsUrl}
+                      target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold"
+                      style={{ background: '#EFF6FF', color: '#1D4ED8', textDecoration: 'none', border: '1px solid #BFDBFE' }}
+                    >
+                      <Navigation size={12} /> Open in Google Maps
+                    </a>
+                  )}
+                  {distLabel && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-bold"
+                      style={outsideRadius
+                        ? { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }
+                        : { background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0' }
+                      }
+                      title={outsideRadius ? `Outside ${DELIVERY_RADIUS_KM}km radius` : `Within ${DELIVERY_RADIUS_KM}km radius`}
+                    >
+                      {outsideRadius ? '⚠️' : '📍'} {distLabel}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 

@@ -2,13 +2,16 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Navigation, Search, CreditCard, Banknote,
-  CheckCircle, Loader2,
+  CheckCircle, Loader2, Home, Briefcase, MapPin,
+  AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import { useCartStore, useCartSubtotal, useCartHandlingFee, useCartTotal } from '../../store/cartStore'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { formatPrice } from '../../utils/format'
-import { getNextDeliveryWindow, HANDLING_CHARGE_RATE } from '../../constants'
+import { getNextDeliveryWindow, HANDLING_CHARGE_RATE, STORE_LAT, STORE_LNG, DELIVERY_RADIUS_KM, WHATSAPP_NUMBER } from '../../constants'
+import { isWithinDeliveryRadius, formatDistance } from '../../utils/distance'
+import { getProfile, saveProfile, getDefaultAddress } from '../../utils/customerProfile'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
 
@@ -175,14 +178,24 @@ export default function Checkout() {
   // Prevents duplicate orders on double-tap or network retry.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
-  // ── Customer details — restored from draft if available ──────────────────
-  // kr-checkout-draft is saved just before the Zoho redirect so that if the
-  // customer presses Back, their form is pre-filled when checkout re-renders.
+  // ── Customer details — priority: payment-draft > saved profile > empty ──
+  // 1. kr-checkout-draft (sessionStorage): saved just before Zoho redirect
+  //    so Back-from-payment restores the form exactly as it was.
+  // 2. kr-customer-profile (localStorage): saved after every successful order
+  //    so returning customers see their details pre-filled automatically.
   const [name,  setName]  = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}').name  || '' } catch { return '' }
+    try {
+      const draft   = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
+      const profile = getProfile()
+      return draft.name || profile?.name || ''
+    } catch { return '' }
   })
   const [phone, setPhone] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}').phone || '' } catch { return '' }
+    try {
+      const draft   = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
+      const profile = getProfile()
+      return draft.phone || profile?.phone || ''
+    } catch { return '' }
   })
 
   // ── Location ─────────────────────────────────────────────────────────────
@@ -190,13 +203,60 @@ export default function Checkout() {
   const autocomplRef = useRef(null)
   const [mapsReady,  setMapsReady]  = useState(false)
   const [detecting,  setDetecting]  = useState(false)
-  const [mapCoords,  setMapCoords]  = useState(null) // { lat, lng }
-  const [addr, setAddr] = useState(() => {
+  const [mapCoords,  setMapCoords]  = useState(() => {
+    // Restore saved coordinates from profile default address
     try {
       const draft = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
-      return draft.addr || { line1: '', line2: '', city: '', pincode: '', label: 'Home' }
-    } catch { return { line1: '', line2: '', city: '', pincode: '', label: 'Home' } }
+      if (draft.coords?.lat) return draft.coords
+      const def = getDefaultAddress()
+      if (def?.lat && def?.lng) return { lat: def.lat, lng: def.lng }
+    } catch {}
+    return null
   })
+  const [addr, setAddr] = useState(() => {
+    try {
+      const draft   = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
+      if (draft.addr?.line1) return draft.addr
+      const def = getDefaultAddress()
+      if (def?.line1) return { line1: def.line1, line2: def.line2 || '', city: def.city, pincode: def.pincode, label: def.label || 'Home' }
+    } catch {}
+    return { line1: '', line2: '', city: '', pincode: '', label: 'Home' }
+  })
+
+  // ── Delivery radius state ─────────────────────────────────────────────────
+  // null = unknown (no coordinates yet), true = within radius, false = outside
+  const [radiusOk, setRadiusOk] = useState(() => {
+    // Check saved profile coordinates immediately on mount
+    try {
+      const def = getDefaultAddress()
+      if (def?.lat && def?.lng) return isWithinDeliveryRadius(def.lat, def.lng, STORE_LAT, STORE_LNG, DELIVERY_RADIUS_KM)
+    } catch {}
+    return null
+  })
+  const [radiusDist, setRadiusDist] = useState(() => {
+    try {
+      const def = getDefaultAddress()
+      if (def?.lat && def?.lng) return formatDistance(def.lat, def.lng, STORE_LAT, STORE_LNG)
+    } catch {}
+    return null
+  })
+
+  // Saved addresses from profile — shown as quick-select chips
+  const savedAddresses = getProfile()?.addresses || []
+
+  // ── Helper: update coords + validate radius in one call ──────────────────
+  const applyCoords = (coords) => {
+    setMapCoords(coords)
+    if (coords?.lat && coords?.lng) {
+      const ok   = isWithinDeliveryRadius(coords.lat, coords.lng, STORE_LAT, STORE_LNG, DELIVERY_RADIUS_KM)
+      const dist = formatDistance(coords.lat, coords.lng, STORE_LAT, STORE_LNG)
+      setRadiusOk(ok)
+      setRadiusDist(dist)
+    } else {
+      setRadiusOk(null)
+      setRadiusDist(null)
+    }
+  }
 
   // Load Google Maps API
   useEffect(() => {
@@ -217,7 +277,7 @@ export default function Checkout() {
       if (!place.geometry) return
       const { lat, lng } = place.geometry.location
       const coords = { lat: lat(), lng: lng() }
-      setMapCoords(coords)
+      applyCoords(coords)
       const parsed = parseComponents(place.address_components)
       setAddr((a) => ({ ...a, ...parsed }))
       if (searchRef.current) searchRef.current.value = place.formatted_address
@@ -290,7 +350,7 @@ export default function Checkout() {
 
     const onSuccess = async (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords
-      setMapCoords({ lat, lng })
+      applyCoords({ lat, lng })
       if (MAPS_KEY) {
         try {
           const res  = await fetch(
@@ -350,6 +410,17 @@ export default function Checkout() {
     if (!/^\d{6}$/.test(addr.pincode)) { toast.error('Please enter a valid 6-digit pincode'); return }
     if (items.length === 0) { toast.error('Cart is empty'); return }
 
+    // Delivery radius hard block — check whenever we have coordinates.
+    // If no coordinates (address typed manually), we allow the order through
+    // (admin can verify manually). Block only on confirmed out-of-range.
+    if (mapCoords?.lat && mapCoords?.lng) {
+      const withinRadius = isWithinDeliveryRadius(mapCoords.lat, mapCoords.lng, STORE_LAT, STORE_LNG, DELIVERY_RADIUS_KM)
+      if (!withinRadius) {
+        toast.error(`Sorry, we only deliver within ${DELIVERY_RADIUS_KM} km of our store. Your location is outside our delivery area.`, { duration: 5000 })
+        return
+      }
+    }
+
     setPlacing(true)
 
     // Clear any stale flags from a previous failed payment so they can
@@ -365,7 +436,7 @@ export default function Checkout() {
     // Back from the payment page — their name, phone, and address will be
     // pre-filled when they return to checkout.
     try {
-      sessionStorage.setItem('kr-checkout-draft', JSON.stringify({ name: name.trim(), phone: phone.trim(), addr }))
+      sessionStorage.setItem('kr-checkout-draft', JSON.stringify({ name: name.trim(), phone: phone.trim(), addr, coords: mapCoords }))
     } catch {}
 
     try {
@@ -417,10 +488,12 @@ export default function Checkout() {
 
         addOrderedItems(items)
         clearCart()
-        // COD order fully completed — clear the checkout draft
+        // COD order fully completed — clear drafts and persist customer profile
         try { sessionStorage.removeItem('kr-checkout-draft') } catch {}
-        // Persist phone so the Orders page can auto-load history on next visit
+        // Persist phone for order history auto-load
         try { localStorage.setItem('kr-customer-phone', phone.trim()) } catch {}
+        // Persist full profile (name + phone + address) for future checkout auto-fill
+        saveProfile(name.trim(), phone.trim(), addr, mapCoords)
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
       }
@@ -478,6 +551,9 @@ export default function Checkout() {
         // payment-failed if the user navigates back without completing payment.
         // Cleared as soon as OrderSuccess renders the payment-failed screen.
         sessionStorage.setItem('kr-payment-active', '1')
+        // Persist profile now — the order is in DB regardless of payment outcome
+        try { localStorage.setItem('kr-customer-phone', phone.trim()) } catch {}
+        saveProfile(name.trim(), phone.trim(), addr, mapCoords)
         // Draft no longer needed once the Zoho redirect fires — kr-pending-order
         // carries all the data OrderSuccess needs.
         sessionStorage.removeItem('kr-checkout-draft')
@@ -561,6 +637,40 @@ export default function Checkout() {
         {/* ── 2. Delivery Location ── */}
         <Section step="2" title="Delivery Address">
           <div className="flex flex-col gap-3">
+
+            {/* ── Saved address quick-select chips ── */}
+            {savedAddresses.length > 0 && (
+              <div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+                  Saved Addresses
+                </p>
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+                  {savedAddresses.map((sa) => {
+                    const Icon = sa.label === 'Home' ? Home : sa.label === 'Office' ? Briefcase : MapPin
+                    const isSelected = addr.label === sa.label && addr.line1 === sa.line1
+                    return (
+                      <button
+                        key={sa.id}
+                        type="button"
+                        onClick={() => {
+                          setAddr({ line1: sa.line1, line2: sa.line2 || '', city: sa.city, pincode: sa.pincode, label: sa.label })
+                          if (sa.lat && sa.lng) applyCoords({ lat: sa.lat, lng: sa.lng })
+                        }}
+                        className="flex-shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all"
+                        style={isSelected
+                          ? { background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer' }
+                          : { background: 'var(--bg-card)', color: 'var(--text-mid)', border: '1.5px solid var(--border)', cursor: 'pointer' }
+                        }
+                      >
+                        <Icon size={12} />
+                        {sa.label}
+                        {sa.city ? ` · ${sa.city}` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* GPS Detect button */}
             <button
@@ -687,6 +797,46 @@ export default function Checkout() {
           </div>
         </Section>
 
+        {/* ── Delivery radius indicator ── */}
+        {mapCoords?.lat && (
+          <div
+            className="flex items-start gap-3 rounded-2xl p-4"
+            style={radiusOk === false
+              ? { background: '#FEF2F2', border: '1.5px solid #FECACA' }
+              : { background: '#F0FDF4', border: '1.5px solid #BBF7D0' }
+            }
+          >
+            {radiusOk === false
+              ? <AlertTriangle size={16} style={{ color: '#DC2626', flexShrink: 0, marginTop: 1 }} />
+              : <CheckCircle2   size={16} style={{ color: '#16A34A', flexShrink: 0, marginTop: 1 }} />
+            }
+            <div className="flex-1">
+              {radiusOk === false ? (
+                <>
+                  <p className="text-sm font-semibold" style={{ color: '#991B1B' }}>
+                    Outside delivery area ({radiusDist} from store)
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#B91C1C', lineHeight: 1.5 }}>
+                    We currently deliver within {DELIVERY_RADIUS_KM} km of our store in Thalambur, Chennai. Please enter an address within our delivery zone.
+                  </p>
+                  <a
+                    href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent('Hi! I would like to order but my address seems outside your delivery area. Can you help?')}`}
+                    target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold mt-2"
+                    style={{ color: '#16A34A', textDecoration: 'none' }}
+                  >
+                    💬 WhatsApp us for assistance
+                  </a>
+                </>
+              ) : (
+                <p className="text-sm font-semibold" style={{ color: '#166534' }}>
+                  Delivering to your area ✓  <span style={{ fontWeight: 400, color: '#15803D' }}>({radiusDist} from store)</span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── 3. Order Summary ── */}
         <Section step="3" title={`Order Summary — ${itemCount} item${itemCount !== 1 ? 's' : ''}`}>
           <div className="flex flex-col gap-1.5">
@@ -751,13 +901,13 @@ export default function Checkout() {
         {/* ── Place Order CTA ── */}
         <button
           onClick={handlePlaceOrder}
-          disabled={placing}
+          disabled={placing || radiusOk === false}
           className="btn-ripple transition-all"
           style={{
             width: '100%',
             height: 52,
             borderRadius: 'var(--radius-sm)',
-            background: placing ? 'var(--warm-300)' : 'var(--brand-800)',
+            background: (placing || radiusOk === false) ? 'var(--warm-300)' : 'var(--brand-800)',
             color: '#fff',
             fontFamily: 'var(--font-body)',
             fontSize: '14px',
