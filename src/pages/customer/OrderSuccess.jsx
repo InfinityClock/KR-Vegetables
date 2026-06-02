@@ -233,6 +233,11 @@ export default function OrderSuccess() {
         if (pending.items?.length) addOrderedItems(pending.items)
         clearCart()
         sessionStorage.removeItem('kr-pending-order')
+        // Persist phone to localStorage so the Orders page can auto-load
+        // history on any future visit from this device/browser.
+        if (pending.customerPhone) {
+          try { localStorage.setItem('kr-customer-phone', pending.customerPhone) } catch {}
+        }
 
         // Map cart items to the order_items display shape.
         // We ALWAYS build from sessionStorage — regardless of whether state.order
@@ -399,6 +404,10 @@ export default function OrderSuccess() {
           if (pendingData.items?.length) addOrderedItems(pendingData.items)
           clearCart()
           sessionStorage.removeItem('kr-pending-order')
+          // Persist phone for auto-detection on the Orders page
+          if (pendingData.customerPhone) {
+            try { localStorage.setItem('kr-customer-phone', pendingData.customerPhone) } catch {}
+          }
         }
       } catch {}
 

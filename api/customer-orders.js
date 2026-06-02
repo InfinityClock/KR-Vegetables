@@ -1,24 +1,16 @@
 /**
  * Vercel Edge Function — customer order history by phone number.
  *
- * Since customers are guests (no Supabase auth accounts), phone is the
- * authoritative identity. This endpoint looks up the customer by phone
- * and returns their full paginated order history.
- *
  * POST /api/customer-orders
  *   body: { phone, cursor? }
  *
- *   phone  — 10-digit Indian mobile number (digits only)
- *   cursor — placed_at timestamp of the last item (for keyset pagination)
- *
- * Returns:
- *   { orders: [...], hasMore: bool, total: number }
+ * Returns: { orders, hasMore, total, customerName }
  *
  * Security:
- *   - Phone validated to 10-digit format before any DB query
- *   - Full delivery address NOT returned (city only)
+ *   - Phone validated to 10-digit format
+ *   - Full address NOT returned (city only via addresses join)
  *   - Payment session / Zoho IDs NOT returned
- *   - Rate limited by Vercel Edge Middleware (60 req/min per IP)
+ *   - Rate limited by middleware (60 req/min per IP)
  */
 
 export const config = { runtime: 'edge' }
@@ -30,6 +22,19 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
+}
+
+function sbFetch(supabaseUrl, serviceKey, path, options = {}) {
+  return fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    method: 'GET',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      apikey:         serviceKey,
+      Authorization:  `Bearer ${serviceKey}`,
+      ...(options.headers || {}),
+    },
+  })
 }
 
 export default async function handler(req) {
@@ -48,7 +53,7 @@ export default async function handler(req) {
   }
 
   const phone  = (body.phone  || '').replace(/\D/g, '').slice(-10)
-  const cursor = body.cursor || null
+  const cursor = body.cursor  || null
 
   if (!/^\d{10}$/.test(phone)) {
     return new Response(
@@ -57,73 +62,119 @@ export default async function handler(req) {
     )
   }
 
-  const sb = (path, opts = {}) =>
-    fetch(`${supabaseUrl}/rest/v1/${path}`, {
-      ...opts,
-      headers: {
-        'Content-Type': 'application/json',
-        apikey:         serviceKey,
-        Authorization:  `Bearer ${serviceKey}`,
-        ...opts.headers,
-      },
+  try {
+    // ── Step 1: Look up customer by phone ──────────────────────────────────
+    const custRes  = await sbFetch(supabaseUrl, serviceKey,
+      `customers?phone=eq.${encodeURIComponent(phone)}&select=id,full_name&limit=1`
+    )
+    if (!custRes.ok) {
+      const err = await custRes.text()
+      console.error('[customer-orders] customer lookup failed:', custRes.status, err)
+      return new Response(JSON.stringify({ error: 'Could not verify phone number.' }), { status: 500, headers: cors })
+    }
+    const custData = await custRes.json()
+    const customer = Array.isArray(custData) ? custData[0] : null
+
+    if (!customer) {
+      // Unknown phone — return empty gracefully
+      return new Response(
+        JSON.stringify({ orders: [], hasMore: false, total: 0, customerName: null }),
+        { status: 200, headers: cors }
+      )
+    }
+
+    // ── Step 2: Fetch orders (no nested joins — items fetched separately) ──
+    // Using separate queries matches the proven pattern in useAdminOrders.
+    let ordersPath = `orders`
+      + `?customer_id=eq.${customer.id}`
+      + `&select=id,order_number,placed_at,status,payment_status,payment_method`
+      + `,total_amount,subtotal,delivery_fee,delivery_slot,notes,address_id`
+      + `&order=placed_at.desc`
+      + `&limit=${PAGE_SIZE}`
+
+    if (cursor) ordersPath += `&placed_at=lt.${encodeURIComponent(cursor)}`
+
+    const ordersRes = await sbFetch(supabaseUrl, serviceKey, ordersPath, {
+      headers: { Prefer: 'count=exact' },
     })
 
-  // 1. Look up customer by phone
-  const custRes  = await sb(`customers?phone=eq.${encodeURIComponent(phone)}&select=id,full_name&limit=1`)
-  const custData = await custRes.json()
-  const customer = Array.isArray(custData) ? custData[0] : null
+    if (!ordersRes.ok) {
+      const err = await ordersRes.text()
+      console.error('[customer-orders] orders query failed:', ordersRes.status, err)
+      return new Response(
+        JSON.stringify({ error: 'Could not load orders. Please try again.' }),
+        { status: 500, headers: cors }
+      )
+    }
 
-  if (!customer) {
-    // No customer found — return empty (not 404) so the UI can show a friendly message
+    const ordersData = await ordersRes.json()
+    // Supabase returns an error object (not array) on query failure
+    if (!Array.isArray(ordersData)) {
+      console.error('[customer-orders] unexpected orders response:', JSON.stringify(ordersData))
+      return new Response(
+        JSON.stringify({ error: 'Could not load orders. Please try again.' }),
+        { status: 500, headers: cors }
+      )
+    }
+
+    const total = cursor
+      ? -1
+      : parseInt(ordersRes.headers.get('content-range')?.split('/')[1] ?? '0', 10)
+
+    if (ordersData.length === 0) {
+      return new Response(
+        JSON.stringify({ orders: [], hasMore: false, total: total >= 0 ? total : 0, customerName: customer.full_name }),
+        { status: 200, headers: cors }
+      )
+    }
+
+    const orderIds = ordersData.map(o => o.id)
+
+    // ── Step 3: Fetch order items for this page in one query ───────────────
+    const itemsRes = await sbFetch(supabaseUrl, serviceKey,
+      `order_items?order_id=in.(${orderIds.join(',')})&select=id,order_id,product_id,product_name,unit,quantity,unit_price,total_price`
+    )
+    const itemsData = itemsRes.ok ? await itemsRes.json() : []
+    const itemsByOrder = {}
+    ;(Array.isArray(itemsData) ? itemsData : []).forEach(item => {
+      if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = []
+      itemsByOrder[item.order_id].push(item)
+    })
+
+    // ── Step 4: Fetch addresses for this page in one query ─────────────────
+    const addressIds = [...new Set(ordersData.map(o => o.address_id).filter(Boolean))]
+    let addressById = {}
+    if (addressIds.length > 0) {
+      const addrRes = await sbFetch(supabaseUrl, serviceKey,
+        `addresses?id=in.(${addressIds.join(',')})&select=id,address_line1,address_line2,city,pincode`
+      )
+      if (addrRes.ok) {
+        const addrData = await addrRes.json()
+        ;(Array.isArray(addrData) ? addrData : []).forEach(a => { addressById[a.id] = a })
+      }
+    }
+
+    // ── Step 5: Assemble and return ────────────────────────────────────────
+    const orders = ordersData.map(order => ({
+      ...order,
+      order_items: itemsByOrder[order.id] || [],
+      addresses:   order.address_id ? addressById[order.address_id] || null : null,
+    }))
+
     return new Response(
-      JSON.stringify({ orders: [], hasMore: false, total: 0, customerName: null }),
+      JSON.stringify({
+        orders,
+        hasMore:      orders.length === PAGE_SIZE,
+        total:        total >= 0 ? total : undefined,
+        customerName: customer.full_name || null,
+      }),
       { status: 200, headers: cors }
     )
-  }
-
-  // 2. Fetch orders for this customer (keyset pagination on placed_at DESC)
-  // Select only the fields needed for display — no payment session IDs, no full address
-  let ordersUrl = `${supabaseUrl}/rest/v1/orders`
-    + `?customer_id=eq.${customer.id}`
-    + `&select=id,order_number,placed_at,status,payment_status,payment_method,total_amount,subtotal,delivery_fee,delivery_slot,notes`
-    + `,addresses(address_line1,address_line2,city,pincode)`
-    + `,order_items(id,product_id,product_name,unit,quantity,unit_price,total_price)`
-    + `&order=placed_at.desc`
-    + `&limit=${PAGE_SIZE}`
-
-  if (cursor) ordersUrl += `&placed_at=lt.${encodeURIComponent(cursor)}`
-
-  // Also get total count (first page only)
-  const countRes = !cursor
-    ? await sb(`orders?customer_id=eq.${customer.id}&select=id`, {
-        headers: { Prefer: 'count=exact', Range: '0-0' },
-      })
-    : null
-
-  const [ordersRes] = await Promise.all([
-    sb(ordersUrl),
-    countRes,
-  ])
-
-  const orders = await ordersRes.json()
-  const total  = countRes
-    ? parseInt(countRes.headers.get('content-range')?.split('/')[1] ?? '0', 10)
-    : -1
-
-  if (!Array.isArray(orders)) {
+  } catch (err) {
+    console.error('[customer-orders] unexpected error:', err.message)
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch orders' }),
+      JSON.stringify({ error: 'Something went wrong. Please try again.' }),
       { status: 500, headers: cors }
     )
   }
-
-  return new Response(
-    JSON.stringify({
-      orders,
-      hasMore:      orders.length === PAGE_SIZE,
-      total:        total >= 0 ? total : undefined,
-      customerName: customer.full_name || null,
-    }),
-    { status: 200, headers: cors }
-  )
 }

@@ -419,6 +419,8 @@ export default function Checkout() {
         clearCart()
         // COD order fully completed — clear the checkout draft
         try { sessionStorage.removeItem('kr-checkout-draft') } catch {}
+        // Persist phone so the Orders page can auto-load history on next visit
+        try { localStorage.setItem('kr-customer-phone', phone.trim()) } catch {}
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
       }

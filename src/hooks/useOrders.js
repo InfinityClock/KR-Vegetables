@@ -185,7 +185,8 @@ export const useAdminOrders = (statusFilter = 'all') => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SESSION_KEY = 'kr-order-history'
-const SESSION_TTL = 30 * 60 * 1000  // 30 minutes
+const SESSION_TTL = 30 * 60 * 1000  // 30-minute sessionStorage cache (same tab)
+const PHONE_KEY   = 'kr-customer-phone'  // persisted across sessions (localStorage)
 
 function getCachedSession() {
   try {
@@ -209,14 +210,25 @@ function setCachedSession(phone, customerName, orders, hasMore, total) {
   } catch {}
 }
 
+/** Returns the phone number saved when the customer last placed an order. */
+export function getSavedPhone() {
+  try { return localStorage.getItem(PHONE_KEY) || null } catch { return null }
+}
+
 export function clearOrderHistorySession() {
   try { sessionStorage.removeItem(SESSION_KEY) } catch {}
 }
 
-export function useCustomerOrders() {
-  const cached = getCachedSession()
+export function clearSavedPhone() {
+  try { localStorage.removeItem(PHONE_KEY) } catch {}
+  clearOrderHistorySession()
+}
 
-  const [phone,        setPhone]        = useState(cached?.phone        || '')
+export function useCustomerOrders() {
+  const cached     = getCachedSession()
+  const savedPhone = getSavedPhone()
+
+  const [phone,        setPhone]        = useState(cached?.phone        || savedPhone || '')
   const [customerName, setCustomerName] = useState(cached?.customerName || null)
   const [orders,       setOrders]       = useState(cached?.orders       || [])
   const [hasMore,      setHasMore]      = useState(cached?.hasMore      || false)
@@ -225,6 +237,9 @@ export function useCustomerOrders() {
   const [loadingMore,  setLoadingMore]  = useState(false)
   const [error,        setError]        = useState(null)
   const [verified,     setVerified]     = useState(!!cached)
+  // autoLoad = true means we detected the phone from localStorage and are
+  // triggering the lookup automatically (no manual form submission needed)
+  const [autoLoading,  setAutoLoading]  = useState(!cached && !!savedPhone)
 
   const fetchOrders = useCallback(async (phoneNum, cursor = null, append = false) => {
     if (append) setLoadingMore(true)
@@ -241,6 +256,7 @@ export function useCustomerOrders() {
 
       if (!res.ok) {
         setError(data.error || 'Could not load orders.')
+        setAutoLoading(false)
         return
       }
 
@@ -250,25 +266,35 @@ export function useCustomerOrders() {
       setTotal(data.total  ?? total)
       setCustomerName(data.customerName || null)
       setVerified(true)
+      setAutoLoading(false)
 
-      // Cache the first page so the user doesn't re-enter their phone
-      // on every navigation within the 30-minute window.
       if (!append) {
         setCachedSession(phoneNum, data.customerName, data.orders, data.hasMore, data.total)
       } else {
         setCachedSession(phoneNum, customerName, next, data.hasMore, data.total)
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.')
+      setAutoLoading(false)
     } finally {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [orders, total, customerName])
+  }, [orders, total, customerName]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-trigger: if the customer placed an order before on this device,
+  // their phone is in localStorage — load history immediately without
+  // showing the phone entry form.
+  useEffect(() => {
+    if (!cached && savedPhone && !verified) {
+      fetchOrders(savedPhone)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const lookup = useCallback((phoneNum) => {
     const digits = phoneNum.replace(/\D/g, '').slice(-10)
     setPhone(digits)
+    setAutoLoading(false)
     fetchOrders(digits)
   }, [fetchOrders])
 
@@ -279,19 +305,20 @@ export function useCustomerOrders() {
   }, [orders, hasMore, loadingMore, phone, fetchOrders])
 
   const reset = useCallback(() => {
-    clearOrderHistorySession()
+    clearSavedPhone()
     setPhone('')
     setCustomerName(null)
     setOrders([])
     setHasMore(false)
     setTotal(0)
     setVerified(false)
+    setAutoLoading(false)
     setError(null)
   }, [])
 
   return {
     phone, customerName, orders, hasMore, total,
-    loading, loadingMore, error, verified,
+    loading, loadingMore, autoLoading, error, verified,
     lookup, loadMore, reset,
   }
 }

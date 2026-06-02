@@ -293,9 +293,13 @@ export default function Orders() {
 
   const {
     customerName, orders, hasMore, total,
-    loading, loadingMore, error, verified,
+    loading, loadingMore, autoLoading, error, verified,
     lookup, loadMore, reset,
   } = useCustomerOrders()
+
+  // While auto-loading (phone detected from localStorage), show skeleton
+  // immediately and bypass the phone form entirely
+  const isAutoLoading = autoLoading || (loading && !verified)
 
   const [tab,        setTab]        = useState('all')
   const [reordering, setReordering] = useState(null)  // orderId being reordered
@@ -342,7 +346,7 @@ export default function Orders() {
       <PageTopBar
         title="My Orders"
         showBack={false}
-        rightAction={verified ? (
+        rightAction={(verified || isAutoLoading) ? (
           <button
             onClick={reset}
             className="text-xs font-medium px-3 py-1.5 rounded-full"
@@ -353,8 +357,21 @@ export default function Orders() {
         ) : null}
       />
 
-      {/* ── Phone entry ── */}
-      {!verified && (
+      {/* ── Auto-loading skeleton — shown while auto-detecting from localStorage ── */}
+      {isAutoLoading && (
+        <div className="px-4 pt-6 space-y-4">
+          <div style={{ height: 28, width: 160 }} className="skeleton rounded-lg" />
+          <div style={{ height: 12, width: 100 }} className="skeleton rounded" />
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="skeleton rounded-2xl" style={{ height: 148 }} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Phone entry — only shown when no saved phone and not auto-loading ── */}
+      {!verified && !isAutoLoading && (
         <>
           <PhoneForm onSubmit={lookup} loading={loading} />
 
@@ -421,7 +438,7 @@ export default function Orders() {
       )}
 
       {/* ── Order list ── */}
-      {verified && !error && (
+      {verified && !error && !isAutoLoading && (
         <div className="px-4 pt-4 space-y-4">
 
           {/* Greeting */}
