@@ -178,11 +178,12 @@ export default function Checkout() {
   // Prevents duplicate orders on double-tap or network retry.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
-  // ── Customer details — priority: payment-draft > saved profile > empty ──
-  // 1. kr-checkout-draft (sessionStorage): saved just before Zoho redirect
-  //    so Back-from-payment restores the form exactly as it was.
-  // 2. kr-customer-profile (localStorage): saved after every successful order
-  //    so returning customers see their details pre-filled automatically.
+  // ── Customer details — priority order (highest → lowest) ───────────────
+  // 1. kr-checkout-draft (sessionStorage): exact snapshot before Zoho redirect
+  // 2. kr-customer-profile (localStorage): full profile saved after each order
+  // 3. kr-customer-phone (localStorage): phone-only key saved since order history
+  //    feature — catches all existing customers who ordered before full profile
+  //    persistence was introduced.  Name/address are bootstrapped async below.
   const [name,  setName]  = useState(() => {
     try {
       const draft   = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
@@ -194,9 +195,15 @@ export default function Checkout() {
     try {
       const draft   = JSON.parse(sessionStorage.getItem('kr-checkout-draft') || '{}')
       const profile = getProfile()
-      return draft.phone || profile?.phone || ''
+      // Fall back to the phone-only key that was saved by the order-history feature
+      // before full profile persistence existed.
+      const savedPhone = localStorage.getItem('kr-customer-phone') || ''
+      return draft.phone || profile?.phone || savedPhone
     } catch { return '' }
   })
+
+  // Track whether we've attempted a profile bootstrap so we don't re-fetch
+  const [bootstrapped, setBootstrapped] = useState(false)
 
   // ── Location ─────────────────────────────────────────────────────────────
   const searchRef    = useRef(null)
@@ -242,7 +249,78 @@ export default function Checkout() {
   })
 
   // Saved addresses from profile — shown as quick-select chips
-  const savedAddresses = getProfile()?.addresses || []
+  const [savedAddresses, setSavedAddresses] = useState(() => getProfile()?.addresses || [])
+
+  // ── Profile bootstrap: one-time fetch for customers without a local profile ──
+  // Fires when: phone is known (from any source) but kr-customer-profile is absent.
+  // Uses /api/customer-orders to retrieve the customer's name and most-recent
+  // delivery address from the database, then saves them as the local profile.
+  // After this runs once, all future checkouts load from localStorage instantly.
+  useEffect(() => {
+    const savedPhone = localStorage.getItem('kr-customer-phone') || ''
+    const profile    = getProfile()
+
+    // Only bootstrap if we have a phone but no existing profile
+    if (!savedPhone || profile || bootstrapped) return
+
+    const digits = savedPhone.replace(/\D/g, '').slice(-10)
+    if (digits.length !== 10) return
+
+    setBootstrapped(true)
+
+    fetch('/api/customer-orders', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phone: digits }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data?.orders?.length) return
+
+        const customerName = data.customerName || ''
+        // Use the most recent order's address as the default
+        const latestOrder  = data.orders[0]
+        const addrData     = latestOrder?.addresses
+
+        // Pre-fill name if form is still empty (user hasn't started typing)
+        if (customerName) {
+          setName(prev => prev || customerName)
+        }
+
+        if (addrData?.address_line1) {
+          const restoredAddr = {
+            line1:   addrData.address_line1,
+            line2:   addrData.address_line2 || '',
+            city:    addrData.city   || '',
+            pincode: addrData.pincode || '',
+            label:   'Home',
+          }
+          const restoredCoords = addrData.lat && addrData.lng
+            ? { lat: addrData.lat, lng: addrData.lng }
+            : null
+
+          // Only auto-fill address if form is still empty
+          setAddr(prev => {
+            if (prev.line1) return prev  // user already has something — don't overwrite
+            if (restoredCoords) applyCoords(restoredCoords)
+            return restoredAddr
+          })
+
+          // Persist as profile so subsequent checkouts skip this fetch entirely
+          saveProfile(
+            customerName || name,
+            digits,
+            { ...restoredAddr, id: crypto.randomUUID() },
+            restoredCoords
+          )
+          setSavedAddresses(getProfile()?.addresses || [])
+        } else if (customerName) {
+          // At least save name + phone even without an address
+          saveProfile(customerName, digits, { line1: '', line2: '', city: '', pincode: '', label: 'Home' }, null)
+        }
+      })
+      .catch(() => { /* non-critical — form still usable without bootstrap */ })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Helper: update coords + validate radius in one call ──────────────────
   const applyCoords = (coords) => {
@@ -494,6 +572,7 @@ export default function Checkout() {
         try { localStorage.setItem('kr-customer-phone', phone.trim()) } catch {}
         // Persist full profile (name + phone + address) for future checkout auto-fill
         saveProfile(name.trim(), phone.trim(), addr, mapCoords)
+        setSavedAddresses(getProfile()?.addresses || [])
         navigate(`/order-success/${orderId}`, { state: { order, name } })
         return
       }
@@ -554,6 +633,7 @@ export default function Checkout() {
         // Persist profile now — the order is in DB regardless of payment outcome
         try { localStorage.setItem('kr-customer-phone', phone.trim()) } catch {}
         saveProfile(name.trim(), phone.trim(), addr, mapCoords)
+        setSavedAddresses(getProfile()?.addresses || [])
         // Draft no longer needed once the Zoho redirect fires — kr-pending-order
         // carries all the data OrderSuccess needs.
         sessionStorage.removeItem('kr-checkout-draft')

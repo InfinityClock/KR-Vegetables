@@ -146,7 +146,7 @@ export default async function handler(req) {
     let addressById = {}
     if (addressIds.length > 0) {
       const addrRes = await sbFetch(supabaseUrl, serviceKey,
-        `addresses?id=in.(${addressIds.join(',')})&select=id,address_line1,address_line2,city,pincode`
+        `addresses?id=in.(${addressIds.join(',')})&select=id,address_line1,address_line2,city,pincode,lat,lng`
       )
       if (addrRes.ok) {
         const addrData = await addrRes.json()
