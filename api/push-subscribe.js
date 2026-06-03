@@ -30,7 +30,7 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: cors })
   }
 
-  const { endpoint, p256dh, auth, orderId } = body
+  const { endpoint, p256dh, auth, orderId, customerPhone } = body
   if (!endpoint || !p256dh || !auth) {
     return new Response(
       JSON.stringify({ error: 'endpoint, p256dh and auth are required' }),
@@ -38,10 +38,26 @@ export default async function handler(req) {
     )
   }
 
-  const payload = { endpoint, p256dh, auth }
-  if (orderId) payload.order_id = orderId
+  // Detect platform from User-Agent for subscriber management UI
+  const ua = req.headers.get('user-agent') || ''
+  const platform = /iphone|ipad/i.test(ua)
+    ? 'ios'
+    : /android/i.test(ua)
+      ? 'android'
+      : 'desktop'
 
-  // Upsert: if endpoint already exists, update it (e.g. new orderId after repeat order)
+  const payload = {
+    endpoint,
+    p256dh,
+    auth,
+    user_agent: ua.slice(0, 512),
+    platform,
+    updated_at: new Date().toISOString(),
+  }
+  if (orderId)       payload.order_id       = orderId
+  if (customerPhone) payload.customer_phone = customerPhone.replace(/\D/g, '').slice(-10)
+
+  // Upsert: if endpoint already exists, update customer_phone + order_id
   const res = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions`, {
     method: 'POST',
     headers: {

@@ -75,11 +75,16 @@ export function usePushNotifications() {
       const p256dhKey = sub.getKey('p256dh')
       const authKey   = sub.getKey('auth')
 
+      // Include the customer's phone if available (saved to localStorage after any order)
+      // This links the push subscription to the customer identity for targeted sends.
+      const savedPhone = (() => { try { return localStorage.getItem('kr-customer-phone') || '' } catch { return '' } })()
+
       // Save to backend
       const body = {
-        endpoint: sub.endpoint,
-        p256dh:   ab2b64(p256dhKey),
-        auth:     ab2b64(authKey),
+        endpoint:      sub.endpoint,
+        p256dh:        ab2b64(p256dhKey),
+        auth:          ab2b64(authKey),
+        customerPhone: savedPhone || undefined,
       }
       if (orderId) body.orderId = orderId
 

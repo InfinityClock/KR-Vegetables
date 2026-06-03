@@ -93,12 +93,28 @@ export default async function handler(req, res) {
 
   webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
 
-  const { title, body, url = '/', orderId, tag } = req.body ?? {}
+  const { title, body, url = '/', orderId, tag, target = 'all', customerPhone } = req.body ?? {}
   if (!title || !body) return res.status(400).json({ error: 'title and body are required' })
 
-  // Fetch target subscriptions
+  // Build subscriber query based on target segment (Phase D: smart targeting)
+  // target options: 'all' | 'recent_buyers' | 'cod_customers' | phone number
   let subUrl = `${SUPABASE_URL}/rest/v1/push_subscriptions?select=id,endpoint,p256dh,auth`
-  if (orderId) subUrl += `&order_id=eq.${orderId}`
+
+  if (orderId) {
+    // Order-specific notification (order status updates)
+    subUrl += `&order_id=eq.${orderId}`
+  } else if (customerPhone) {
+    // Targeted to a specific customer by phone
+    subUrl += `&customer_phone=eq.${encodeURIComponent(customerPhone)}`
+  } else if (target === 'recent_buyers') {
+    // Customers who subscribed and also have a recent order (order_id is set)
+    subUrl += `&order_id=not.is.null`
+  } else if (target === 'cod_customers') {
+    // Subscribers who have a linked order that was COD — resolved via order_id join
+    // PostgREST join filter: orders.payment_method = cod
+    subUrl += `&orders.payment_method=eq.cod`
+  }
+  // else target='all' → no additional filter (broadcast to everyone)
 
   const sbRes  = await fetch(subUrl, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
@@ -144,6 +160,29 @@ export default async function handler(req, res) {
       `${SUPABASE_URL}/rest/v1/push_subscriptions?id=in.(${staleIds.join(',')})`,
       { method: 'DELETE', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     ).catch(() => {})
+  }
+
+  // Phase B: Log to notification_logs (fire-and-forget, non-critical)
+  // Only log broadcast notifications (not per-order status pings)
+  if (!orderId && title && body) {
+    fetch(`${SUPABASE_URL}/rest/v1/notification_logs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey:         SERVICE_KEY,
+        Authorization:  `Bearer ${SERVICE_KEY}`,
+        Prefer:         'return=minimal',
+      },
+      body: JSON.stringify({
+        title,
+        body,
+        url,
+        target: target || 'all',
+        recipient_count: subs.length,
+        sent_count:      sent,
+        failed_count:    failed,
+      }),
+    }).catch(() => {})
   }
 
   return res.status(200).json({ sent, failed, total: subs.length })
