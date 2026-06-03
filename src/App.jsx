@@ -44,6 +44,7 @@ const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications')
 // Components
 import BottomNav from './components/BottomNav'
 import Onboarding from './components/Onboarding'
+import ScrollToTop from './components/ScrollToTop'
 
 // ─── Auth loading screen ──────────────────────────────────────────────────────
 function AuthLoadingScreen() {
@@ -330,6 +331,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <ScrollToTop />
       <AppRoutes />
       <Toaster
         position="top-center"
