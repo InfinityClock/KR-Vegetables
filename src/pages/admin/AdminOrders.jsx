@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle, Search, Download, CheckSquare, Square, Filter, ChevronDown, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
 import { formatDateTime, formatPrice } from '../../utils/format'
@@ -316,132 +316,302 @@ function NextStatusButton({ order, onUpdate }) {
   )
 }
 
-export default function AdminOrders() {
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedOrder, setSelectedOrder] = useState(null)
-  const { orders, loading, loadingMore, hasMore, refetch, loadMore } = useAdminOrders(statusFilter)
-  const { userRole } = useAuthStore()
+// ── CSV export helper ────────────────────────────────────────────────────────
+function exportOrdersCSV(orders) {
+  const headers = [
+    'Order #', 'Date', 'Customer', 'Phone', 'Address', 'City', 'Pincode',
+    'Delivery Slot', 'Payment Method', 'Payment Status', 'Order Status',
+    'Items', 'Subtotal', 'Handling', 'Total',
+  ]
+  const rows = orders.map(o => [
+    o.order_number,
+    o.placed_at ? new Date(o.placed_at).toLocaleString('en-IN') : '',
+    o.customers?.full_name || '',
+    o.customers?.phone || '',
+    [o.addresses?.address_line1, o.addresses?.address_line2].filter(Boolean).join(', '),
+    o.addresses?.city || '',
+    o.addresses?.pincode || '',
+    o.delivery_slot || '',
+    o.payment_method || '',
+    o.payment_status || '',
+    o.status || '',
+    (o.order_items || []).map(i => `${i.product_name}×${i.quantity}${i.unit}`).join('; '),
+    o.subtotal ?? '',
+    o.delivery_fee ?? '',
+    o.total_amount ?? '',
+  ])
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── Chip filter button ────────────────────────────────────────────────────────
+function FilterChip({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 32, padding: '0 12px', borderRadius: 99, flexShrink: 0,
+        fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: active ? 700 : 500,
+        cursor: 'pointer',
+        border: active ? 'none' : '1.5px solid var(--border)',
+        background: active ? 'var(--brand-800)' : 'var(--bg-card)',
+        color: active ? '#fff' : 'var(--text-mid)',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+export default function AdminOrders() {
+  // ── Filter state ─────────────────────────────────────────────────────────
+  const [search,        setSearch]        = useState('')
+  const [statusFilter,  setStatusFilter]  = useState('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
+  const [dateFilter,    setDateFilter]    = useState('all')
+  const [slotFilter,    setSlotFilter]    = useState('all')
+
+  const [selectedOrder,  setSelectedOrder]  = useState(null)
+  const [selected,       setSelected]       = useState(new Set())  // bulk selection
+  const [bulkStatus,     setBulkStatus]     = useState('')
+  const [bulkLoading,    setBulkLoading]    = useState(false)
+  const searchRef = useRef(null)
+
+  const { userRole } = useAuthStore()
+  const {
+    orders, loading, loadingMore, hasMore, totalCount, error, refetch, loadMore,
+  } = useAdminOrders({ statusFilter, search, paymentFilter, dateFilter, slotFilter })
+
+  const hasActiveFilters = search || statusFilter !== 'all' || paymentFilter !== 'all' ||
+    dateFilter !== 'all' || slotFilter !== 'all'
+
+  const clearAllFilters = () => {
+    setSearch(''); setStatusFilter('all'); setPaymentFilter('all')
+    setDateFilter('all'); setSlotFilter('all'); setSelected(new Set())
+  }
+
+  // ── Status update ─────────────────────────────────────────────────────────
+  const updateOrderStatus = useCallback(async (orderId, newStatus) => {
     try {
       const res = await adminFetch('/api/admin-orders', {
         method: 'POST',
-        body: JSON.stringify({
-          action: 'update_status',
-          orderId,
-          newStatus,
-          trackingMessage: ORDER_STATUS_MESSAGES[newStatus],
-        }),
+        body: JSON.stringify({ action: 'update_status', orderId, newStatus, trackingMessage: ORDER_STATUS_MESSAGES[newStatus] }),
       })
-
       const result = await res.json()
-
-      if (!res.ok || result.error) {
-        toast.error('Failed to update: ' + (result.error || 'Unknown error'))
-        return
-      }
-
-      toast.success(`Order marked as ${ORDER_STATUS[newStatus]?.label}`)
+      if (!res.ok || result.error) { toast.error('Failed: ' + (result.error || 'Unknown')); return }
+      toast.success(`Marked as ${ORDER_STATUS[newStatus]?.label}`)
       refetch()
-    } catch (err) {
-      toast.error('Network error — ' + err.message)
-    }
+    } catch (err) { toast.error('Network error — ' + err.message) }
+  }, [refetch])
+
+  // ── Bulk status update ────────────────────────────────────────────────────
+  const applyBulkStatus = async () => {
+    if (!bulkStatus || selected.size === 0) return
+    setBulkLoading(true)
+    const ids = [...selected]
+    await Promise.all(ids.map(id => updateOrderStatus(id, bulkStatus)))
+    setSelected(new Set())
+    setBulkStatus('')
+    setBulkLoading(false)
   }
 
-  const tabs = ['all', ...Object.keys(ORDER_STATUS)]
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+  const toggleAll = () => {
+    if (selected.size === orders.length) setSelected(new Set())
+    else setSelected(new Set(orders.map(o => o.id)))
+  }
+
+  const statusTabs = ['all', ...Object.keys(ORDER_STATUS)]
 
   return (
-    <div className="p-4 lg:p-6 max-w-7xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 lg:p-6 max-w-7xl space-y-4">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}
-          >
+          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-dark)' }}>
             Orders
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            {orders.length} order{orders.length !== 1 ? 's' : ''} {statusFilter !== 'all' ? `· ${ORDER_STATUS[statusFilter]?.label}` : ''}
+            {totalCount != null ? `${totalCount} total` : `${orders.length} shown`}
+            {hasActiveFilters && <span style={{ color: 'var(--brand-600)', fontWeight: 600 }}> · filtered</span>}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
+            <button onClick={clearAllFilters} className="flex items-center gap-1 text-xs font-semibold px-3 h-8 rounded-lg"
+              style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', cursor: 'pointer' }}>
+              <X size={11} /> Clear filters
+            </button>
+          )}
+          <button
+            onClick={() => exportOrdersCSV(orders)}
+            disabled={orders.length === 0}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 h-8 rounded-lg transition-all"
+            style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: '1.5px solid var(--brand-100)', cursor: orders.length === 0 ? 'not-allowed' : 'pointer', opacity: orders.length === 0 ? 0.5 : 1 }}
+          >
+            <Download size={12} /> Export CSV
+          </button>
+          <button onClick={refetch} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }} title="Refresh">
+            <RefreshCw size={13} style={{ color: 'var(--text-mid)' }} />
+          </button>
         </div>
       </div>
 
-      {/* Status tabs */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-5 pb-1">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setStatusFilter(t)}
-            className="flex-shrink-0 px-4 h-9 rounded-full text-xs font-semibold transition-all"
-            style={
-              statusFilter === t
-                ? { background: 'var(--brand-700)', color: '#fff', border: '1.5px solid var(--brand-700)' }
-                : { background: '#fff', color: 'var(--text-mid)', border: '1.5px solid var(--border)' }
-            }
-          >
-            {t === 'all' ? 'All Orders' : ORDER_STATUS[t]?.label}
+      {/* ── Search bar ── */}
+      <div style={{ position: 'relative' }}>
+        <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <input
+          ref={searchRef}
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by order number, customer name or phone…"
+          style={{
+            width: '100%', height: 44, paddingLeft: 38, paddingRight: search ? 36 : 16,
+            borderRadius: 12, border: '1.5px solid var(--border)',
+            background: 'var(--bg-card)', fontFamily: 'var(--font-body)',
+            fontSize: 13, color: 'var(--text-dark)', outline: 'none',
+            boxShadow: '0 1px 4px rgba(28,26,23,.05)',
+          }}
+          onFocus={e => { e.target.style.borderColor = 'var(--brand-500)' }}
+          onBlur={e =>  { e.target.style.borderColor = 'var(--border)' }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+            <X size={14} />
           </button>
+        )}
+      </div>
+
+      {/* ── Filter rows ── */}
+      {/* Row 1: Status tabs */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+        {statusTabs.map(t => (
+          <FilterChip key={t} label={t === 'all' ? 'All Orders' : ORDER_STATUS[t]?.label} active={statusFilter === t} onClick={() => setStatusFilter(t)} />
         ))}
       </div>
 
-      {/* Content */}
+      {/* Row 2: Payment · Date · Slot filters */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          Payment:
+        </span>
+        {[['all', 'All'], ['cod', 'COD'], ['online', 'Online'], ['failed', 'Failed']].map(([k, l]) => (
+          <FilterChip key={k} label={l} active={paymentFilter === k} onClick={() => setPaymentFilter(k)} />
+        ))}
+
+        <div style={{ width: 1, background: 'var(--border-light)', margin: '0 4px', flexShrink: 0 }} />
+
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          Date:
+        </span>
+        {[['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => (
+          <FilterChip key={k} label={l} active={dateFilter === k} onClick={() => setDateFilter(k)} />
+        ))}
+
+        <div style={{ width: 1, background: 'var(--border-light)', margin: '0 4px', flexShrink: 0 }} />
+
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          Slot:
+        </span>
+        {[['all', 'Any'], ['morning', '8AM–1PM'], ['afternoon', '3PM–8PM']].map(([k, l]) => (
+          <FilterChip key={k} label={l} active={slotFilter === k} onClick={() => setSlotFilter(k)} />
+        ))}
+      </div>
+
+      {/* ── Bulk action bar (shown when rows are selected) ── */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'var(--brand-50)', border: '1.5px solid var(--brand-100)' }}>
+          <span className="text-sm font-semibold" style={{ color: 'var(--brand-800)' }}>
+            {selected.size} order{selected.size !== 1 ? 's' : ''} selected
+          </span>
+          <select
+            value={bulkStatus}
+            onChange={e => setBulkStatus(e.target.value)}
+            style={{ height: 32, padding: '0 10px', borderRadius: 8, border: '1.5px solid var(--brand-300)', background: '#fff', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-dark)', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="">Update status to…</option>
+            {STATUS_FLOW.map(s => <option key={s} value={s}>{ORDER_STATUS[s]?.label}</option>)}
+          </select>
+          <button
+            onClick={applyBulkStatus}
+            disabled={!bulkStatus || bulkLoading}
+            className="flex items-center gap-1.5 text-xs font-bold px-4 h-8 rounded-lg"
+            style={{ background: bulkStatus ? 'var(--brand-700)' : 'var(--gray-200)', color: bulkStatus ? '#fff' : 'var(--text-muted)', border: 'none', cursor: bulkStatus ? 'pointer' : 'not-allowed' }}
+          >
+            {bulkLoading ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+            Apply to {selected.size}
+          </button>
+          <button onClick={() => setSelected(new Set())} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Content ── */}
       {loading ? (
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: '#fff', border: '1px solid var(--border-light)' }}
-        >
+        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid var(--border-light)' }}>
           <SkeletonList count={6} height="h-16" />
         </div>
+      ) : error ? (
+        <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px solid #FECACA' }}>
+          <AlertTriangle size={32} style={{ color: '#DC2626', margin: '0 auto 8px' }} />
+          <p className="text-sm font-semibold" style={{ color: '#991B1B' }}>{error}</p>
+          <button onClick={refetch} className="mt-3 text-xs font-semibold px-4 py-2 rounded-lg" style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: 'none', cursor: 'pointer' }}>
+            Retry
+          </button>
+        </div>
       ) : orders.length === 0 ? (
-        <div
-          className="rounded-2xl py-20 flex flex-col items-center gap-4"
-          style={{ background: '#fff', border: '1px solid var(--border-light)' }}
-        >
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'var(--brand-50)', border: '2px solid var(--brand-100)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Package size={36} style={{ color: 'var(--brand-300)' }} />
+        <div className="rounded-2xl py-20 flex flex-col items-center gap-4" style={{ background: '#fff', border: '1px solid var(--border-light)' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--brand-50)', border: '2px solid var(--brand-100)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {search ? <Search size={36} style={{ color: 'var(--brand-300)' }} /> : <Package size={36} style={{ color: 'var(--brand-300)' }} />}
           </div>
           <div className="text-center">
             <p className="text-base font-semibold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
-              {statusFilter === 'all' ? 'No orders yet' : `No ${ORDER_STATUS[statusFilter]?.label || statusFilter} orders`}
+              {search ? `No orders matching "${search}"` : 'No orders found'}
             </p>
-            <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)', maxWidth: 280 }}>
-              {statusFilter === 'all'
-                ? 'Orders placed by customers will appear here in real-time.'
-                : 'No orders match this status filter right now.'}
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+              {search ? 'Try a different name, phone number, or order ID.' : 'Orders placed by customers will appear here.'}
             </p>
           </div>
-          {statusFilter !== 'all' && (
-            <button
-              onClick={() => setStatusFilter('all')}
-              className="text-sm font-semibold px-5 py-2 rounded-xl"
-              style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: '1.5px solid var(--brand-100)', cursor: 'pointer' }}
-            >
-              View all orders
+          {hasActiveFilters && (
+            <button onClick={clearAllFilters} className="text-sm font-semibold px-5 py-2 rounded-xl" style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: '1.5px solid var(--brand-100)', cursor: 'pointer' }}>
+              Clear all filters
             </button>
           )}
         </div>
       ) : (
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}
-        >
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           {/* Desktop table */}
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--border-light)' }}>
                 <tr>
-                  {['Order #', 'Customer', 'Items', ...(userRole !== 'sales' ? ['Total', 'Payment'] : []), 'Method', 'Status', 'Time', 'Action'].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {h}
-                    </th>
+                  {/* Select all */}
+                  <th className="px-3 py-3 w-8">
+                    <button onClick={toggleAll} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                      {selected.size === orders.length && orders.length > 0 ? <CheckSquare size={15} style={{ color: 'var(--brand-600)' }} /> : <Square size={15} />}
+                    </button>
+                  </th>
+                  {['Order #', 'Customer', 'Items', ...(userRole !== 'sales' ? ['Total', 'Payment'] : []), 'Method', 'Status', 'Time', 'Action'].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -450,56 +620,43 @@ export default function AdminOrders() {
                   <tr
                     key={order.id}
                     className="transition-colors"
-                    style={{ borderBottom: idx < orders.length - 1 ? '1px solid var(--border-light)' : 'none' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gray-50)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                    style={{
+                      borderBottom: idx < orders.length - 1 ? '1px solid var(--border-light)' : 'none',
+                      background: selected.has(order.id) ? 'var(--brand-25)' : 'transparent',
+                    }}
+                    onMouseEnter={e => { if (!selected.has(order.id)) e.currentTarget.style.background = 'var(--gray-50)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = selected.has(order.id) ? 'var(--brand-25)' : 'transparent' }}
                   >
-                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text-dark)' }}>
-                      {order.order_number}
+                    <td className="px-3 py-3">
+                      <button onClick={() => toggleSelect(order.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                        {selected.has(order.id) ? <CheckSquare size={15} style={{ color: 'var(--brand-600)' }} /> : <Square size={15} />}
+                      </button>
                     </td>
+                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text-dark)' }}>{order.order_number}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium" style={{ color: 'var(--text-dark)' }}>{order.customers?.full_name || '—'}</p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.customers?.phone || ''}</p>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--text-mid)' }}>
-                      {(order.order_items?.length ?? 0) > 0
-                        ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
-                        : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                      {(order.order_items?.length ?? 0) > 0 ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}` : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     </td>
                     {userRole !== 'sales' && (
-                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-700)' }}>
-                        {formatPrice(order.total_amount)}
-                      </td>
+                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</td>
                     )}
                     {userRole !== 'sales' && (
                       <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
                     )}
                     <td className="px-4 py-3">
-                      <span
-                        className="text-xs font-bold uppercase px-2 py-1 rounded-lg"
-                        style={{
-                          background: order.payment_method === 'cod' ? 'var(--gray-100)' : 'var(--brand-50)',
-                          color: order.payment_method === 'cod' ? 'var(--text-mid)' : 'var(--brand-700)',
-                        }}
-                      >
+                      <span className="text-xs font-bold uppercase px-2 py-1 rounded-lg" style={{ background: order.payment_method === 'cod' ? 'var(--gray-100)' : 'var(--brand-50)', color: order.payment_method === 'cod' ? 'var(--text-mid)' : 'var(--brand-700)' }}>
                         {order.payment_method === 'cod' ? 'COD' : 'Online'}
                       </span>
                     </td>
                     <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {formatDateTime(order.placed_at)}
-                    </td>
+                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</td>
                     <td className="px-4 py-3">
-                      {/* Quick actions: one-tap next-status button + details */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <NextStatusButton order={order} onUpdate={updateOrderStatus} />
-                        {/* Details button */}
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center"
-                          style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }}
-                          title="View Details"
-                        >
+                        <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }} title="View Details">
                           <Eye size={13} style={{ color: 'var(--text-mid)' }} />
                         </button>
                       </div>
@@ -512,38 +669,22 @@ export default function AdminOrders() {
 
           {/* Mobile cards */}
           <div className="lg:hidden divide-y" style={{ borderColor: 'var(--border-light)' }}>
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                className="p-4 cursor-pointer transition-colors"
-                onClick={() => setSelectedOrder(order)}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gray-50)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-              >
+            {orders.map(order => (
+              <div key={order.id} className="p-4 cursor-pointer transition-colors" onClick={() => setSelectedOrder(order)} onMouseEnter={e => { e.currentTarget.style.background = 'var(--gray-50)' }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
                 <div className="flex items-start justify-between mb-1.5">
                   <div>
                     <p className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>{order.order_number}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      {order.customers?.full_name} · {formatDateTime(order.placed_at)}
-                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{order.customers?.full_name} · {formatDateTime(order.placed_at)}</p>
                   </div>
                   <OrderStatusBadge status={order.status} />
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-3">
-                    {userRole !== 'sales' && (
-                      <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
-                        {formatPrice(order.total_amount)}
-                      </span>
-                    )}
+                    {userRole !== 'sales' && <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>}
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {order.order_items?.length > 0
-                        ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
-                        : '—'}
-                      {' '}· <span className="uppercase">{order.payment_method}</span>
+                      {(order.order_items?.length ?? 0) > 0 ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}` : '—'}{' '}· <span className="uppercase">{order.payment_method}</span>
                     </span>
                   </div>
-                  {/* Quick next-status button on mobile — safe component, no IIFE */}
                   <NextStatusButton order={order} onUpdate={updateOrderStatus} />
                 </div>
               </div>
@@ -552,18 +693,9 @@ export default function AdminOrders() {
 
           {/* Load More */}
           {hasMore && (
-            <div className="flex justify-center pt-4 pb-2">
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="flex items-center gap-2 px-6 h-10 rounded-xl text-sm font-semibold transition-all"
-                style={{
-                  background: loadingMore ? 'var(--gray-100)' : 'var(--brand-50)',
-                  color: loadingMore ? 'var(--text-muted)' : 'var(--brand-700)',
-                  border: '1.5px solid var(--brand-100)',
-                  cursor: loadingMore ? 'wait' : 'pointer',
-                }}
-              >
+            <div className="flex justify-center pt-4 pb-3">
+              <button onClick={loadMore} disabled={loadingMore} className="flex items-center gap-2 px-6 h-10 rounded-xl text-sm font-semibold transition-all" style={{ background: loadingMore ? 'var(--gray-100)' : 'var(--brand-50)', color: loadingMore ? 'var(--text-muted)' : 'var(--brand-700)', border: '1.5px solid var(--brand-100)', cursor: loadingMore ? 'wait' : 'pointer' }}>
+                {loadingMore ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : null}
                 {loadingMore ? 'Loading…' : 'Load more orders'}
               </button>
             </div>
@@ -579,6 +711,8 @@ export default function AdminOrders() {
           userRole={userRole}
         />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

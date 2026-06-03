@@ -94,65 +94,173 @@ export const useOrder = (orderId) => {
 
 const PAGE_SIZE = 50
 
-export const useAdminOrders = (statusFilter = 'all') => {
-  const [orders,   setOrders]   = useState([])
-  const [loading,  setLoading]  = useState(true)
+// ─── Date range helpers ──────────────────────────────────────────────────────
+function getDateRange(preset) {
+  const now   = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  switch (preset) {
+    case 'today':     return { from: today, to: null }
+    case 'yesterday': {
+      const y = new Date(today); y.setDate(y.getDate() - 1)
+      return { from: y, to: today }
+    }
+    case 'week': {
+      const w = new Date(today); w.setDate(w.getDate() - 7)
+      return { from: w, to: null }
+    }
+    case 'month': {
+      const m = new Date(today); m.setDate(m.getDate() - 30)
+      return { from: m, to: null }
+    }
+    default: return { from: null, to: null }
+  }
+}
+
+/**
+ * useAdminOrders — full search + filter + pagination for the admin orders page.
+ *
+ * @param {object} filters
+ *   statusFilter   — order status ('all' | 'placed' | 'confirmed' | ...)
+ *   search         — free text (order number, customer name, phone)  [debounced]
+ *   paymentFilter  — 'all' | 'cod' | 'zoho' | 'failed'
+ *   dateFilter     — 'all' | 'today' | 'yesterday' | 'week' | 'month'
+ *   slotFilter     — 'all' | 'morning' | 'afternoon'
+ */
+export const useAdminOrders = ({
+  statusFilter  = 'all',
+  search        = '',
+  paymentFilter = 'all',
+  dateFilter    = 'all',
+  slotFilter    = 'all',
+} = {}) => {
+  const [orders,      setOrders]      = useState([])
+  const [loading,     setLoading]     = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [error,    setError]    = useState(null)
-  const [hasMore,  setHasMore]  = useState(false)
-  // cursor = placed_at of the last loaded order (for keyset pagination)
-  const [cursor,   setCursor]   = useState(null)
+  const [error,       setError]       = useState(null)
+  const [hasMore,     setHasMore]     = useState(false)
+  const [totalCount,  setTotalCount]  = useState(null)
+  const [cursor,      setCursor]      = useState(null)
+
+  // Debounced search — 350ms prevents a query on every keypress
+  const [debouncedSearch, setDebouncedSearch] = useState(search)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 350)
+    return () => clearTimeout(timer)
+  }, [search])
 
   const fetchPage = useCallback(async (afterCursor = null, append = false) => {
     if (append) setLoadingMore(true)
     else        setLoading(true)
+    setError(null)
 
-    let query = supabase
-      .from('orders')
-      .select('*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode)')
-      .order('placed_at', { ascending: false })
-      .limit(PAGE_SIZE)
+    try {
+      // ── Step 1: resolve customer IDs when searching by name/phone ────────
+      // Two-pass search avoids needing a complex JOIN in PostgREST.
+      let customerIdFilter = null  // null = no customer filter
 
-    if (statusFilter !== 'all') query = query.eq('status', statusFilter)
-    // Keyset pagination: fetch orders placed before the cursor timestamp
-    if (afterCursor) query = query.lt('placed_at', afterCursor)
+      const q = debouncedSearch.trim()
+      if (q) {
+        const isOrderNumber = /^\d+$/.test(q) || q.toUpperCase().startsWith('KR')
+        if (!isOrderNumber) {
+          // Search customers by name OR phone in parallel
+          const [nameRes, phoneRes] = await Promise.all([
+            supabase.from('customers').select('id').ilike('full_name', `%${q}%`).limit(100),
+            supabase.from('customers').select('id').ilike('phone', `%${q}%`).limit(100),
+          ])
+          const ids = new Set([
+            ...((nameRes.data || []).map(c => c.id)),
+            ...((phoneRes.data || []).map(c => c.id)),
+          ])
+          customerIdFilter = [...ids]
+          // If no customers match, there are no matching orders
+          if (customerIdFilter.length === 0) {
+            setOrders(append ? orders => orders : [])
+            setHasMore(false)
+            setTotalCount(0)
+            setLoading(false)
+            setLoadingMore(false)
+            return
+          }
+        }
+      }
 
-    const { data: ordersData, error: err } = await query
-    if (err) {
-      setError(err.message)
+      // ── Step 2: Build the orders query ───────────────────────────────────
+      let ordersQuery = supabase
+        .from('orders')
+        .select('*, customers(full_name, phone), addresses(address_line1, address_line2, city, pincode, lat, lng)', {
+          count: afterCursor ? undefined : 'exact',
+        })
+        .order('placed_at', { ascending: false })
+        .limit(PAGE_SIZE)
+
+      // Status filter
+      if (statusFilter !== 'all') ordersQuery = ordersQuery.eq('status', statusFilter)
+
+      // Payment filter
+      if (paymentFilter === 'cod')    ordersQuery = ordersQuery.eq('payment_method', 'cod')
+      if (paymentFilter === 'online') ordersQuery = ordersQuery.in('payment_method', ['zoho', 'razorpay'])
+      if (paymentFilter === 'failed') ordersQuery = ordersQuery.eq('payment_status', 'failed')
+
+      // Date filter
+      const { from: dateFrom, to: dateTo } = getDateRange(dateFilter)
+      if (dateFrom) ordersQuery = ordersQuery.gte('placed_at', dateFrom.toISOString())
+      if (dateTo)   ordersQuery = ordersQuery.lt('placed_at',  dateTo.toISOString())
+
+      // Delivery slot filter
+      if (slotFilter === 'morning')   ordersQuery = ordersQuery.ilike('delivery_slot', '%8AM%')
+      if (slotFilter === 'afternoon') ordersQuery = ordersQuery.ilike('delivery_slot', '%3PM%')
+
+      // Text search — order number or customer lookup
+      if (q) {
+        if (customerIdFilter !== null) {
+          // Phone/name search — filter by resolved customer IDs
+          ordersQuery = ordersQuery.in('customer_id', customerIdFilter)
+        } else {
+          // Order number / numeric ID search
+          ordersQuery = ordersQuery.ilike('order_number', `%${q}%`)
+        }
+      }
+
+      // Keyset pagination
+      if (afterCursor) ordersQuery = ordersQuery.lt('placed_at', afterCursor)
+
+      const { data: ordersData, error: err, count } = await ordersQuery
+      if (err) { setError(err.message); return }
+
+      const rows = ordersData || []
+      if (count != null) setTotalCount(count)
+
+      // ── Step 3: Fetch order items for this page ──────────────────────────
+      if (rows.length > 0) {
+        const orderIds = rows.map(o => o.id)
+        const { data: itemsData } = await supabase
+          .from('order_items')
+          .select('id, order_id, product_name, unit, quantity, unit_price, total_price')
+          .in('order_id', orderIds)
+
+        const byOrder = {}
+        ;(itemsData || []).forEach(item => {
+          if (!byOrder[item.order_id]) byOrder[item.order_id] = []
+          byOrder[item.order_id].push(item)
+        })
+        rows.forEach(o => { o.order_items = byOrder[o.id] || [] })
+      }
+
+      setOrders(prev => append ? [...prev, ...rows] : rows)
+      setHasMore(rows.length === PAGE_SIZE)
+      setCursor(rows.length > 0 ? rows[rows.length - 1].placed_at : null)
+    } catch (err) {
+      setError(err.message || 'Failed to load orders')
+    } finally {
       setLoading(false)
       setLoadingMore(false)
-      return
     }
+  }, [debouncedSearch, statusFilter, paymentFilter, dateFilter, slotFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const rows = ordersData || []
-
-    // Fetch order items for this page
-    if (rows.length > 0) {
-      const orderIds = rows.map((o) => o.id)
-      const { data: itemsData } = await supabase
-        .from('order_items')
-        .select('id, order_id, product_name, unit, quantity, unit_price, total_price')
-        .in('order_id', orderIds)
-
-      const byOrder = {}
-      ;(itemsData || []).forEach((item) => {
-        if (!byOrder[item.order_id]) byOrder[item.order_id] = []
-        byOrder[item.order_id].push(item)
-      })
-      rows.forEach((o) => { o.order_items = byOrder[o.id] || [] })
-    }
-
-    setOrders((prev) => append ? [...prev, ...rows] : rows)
-    setHasMore(rows.length === PAGE_SIZE)
-    setCursor(rows.length > 0 ? rows[rows.length - 1].placed_at : null)
-    setLoading(false)
-    setLoadingMore(false)
-  }, [statusFilter])
-
-  // Reset and reload whenever filter changes
+  // Reset and reload whenever any filter changes
   useEffect(() => {
     setCursor(null)
+    setTotalCount(null)
     fetchPage(null, false)
   }, [fetchPage])
 
@@ -162,19 +270,23 @@ export const useAdminOrders = (statusFilter = 'all') => {
 
   const refetch = useCallback(() => {
     setCursor(null)
+    setTotalCount(null)
     fetchPage(null, false)
   }, [fetchPage])
 
-  // Realtime — single stable channel; refetches current first page on any change
+  // Realtime — refetch on DB changes (only when no search active to avoid noise)
   useEffect(() => {
     const channel = supabase
       .channel('admin-orders-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, refetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        // Don't interrupt an active search — only auto-refresh when idle
+        if (!debouncedSearch) refetch()
+      })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [refetch])
+  }, [refetch, debouncedSearch])
 
-  return { orders, loading, loadingMore, hasMore, error, refetch, loadMore }
+  return { orders, loading, loadingMore, hasMore, totalCount, error, refetch, loadMore }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
