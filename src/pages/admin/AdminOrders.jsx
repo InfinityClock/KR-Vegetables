@@ -294,6 +294,28 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
   )
 }
 
+// Safe helper — replaces the IIFE pattern in JSX which can miscompile in Rolldown/Vite 8
+// production builds and throw "Objects are not valid as React child".
+function NextStatusButton({ order, onUpdate }) {
+  if (order.status === 'delivered' || order.status === 'cancelled') return null
+  const currentIdx  = STATUS_FLOW.indexOf(order.status)
+  const nextStatus  = currentIdx >= 0 ? STATUS_FLOW[currentIdx + 1] : null
+  if (!nextStatus || nextStatus === 'delivered' && order.status === 'out_for_delivery') {
+    // still show delivered button when out_for_delivery
+  }
+  if (!nextStatus) return null
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onUpdate(order.id, nextStatus) }}
+      className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold transition-all"
+      style={{ background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+      title={`Mark as ${ORDER_STATUS[nextStatus]?.label ?? nextStatus}`}
+    >
+      ✓ {ORDER_STATUS[nextStatus]?.label ?? nextStatus}
+    </button>
+  )
+}
+
 export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
@@ -372,11 +394,35 @@ export default function AdminOrders() {
         </div>
       ) : orders.length === 0 ? (
         <div
-          className="rounded-2xl py-16 flex flex-col items-center gap-3"
-          style={{ background: '#fff', border: '1px solid var(--border-light)', color: 'var(--text-muted)' }}
+          className="rounded-2xl py-20 flex flex-col items-center gap-4"
+          style={{ background: '#fff', border: '1px solid var(--border-light)' }}
         >
-          <Package size={36} style={{ opacity: 0.3 }} />
-          <p className="text-sm">No orders found</p>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'var(--brand-50)', border: '2px solid var(--brand-100)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Package size={36} style={{ color: 'var(--brand-300)' }} />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-semibold" style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>
+              {statusFilter === 'all' ? 'No orders yet' : `No ${ORDER_STATUS[statusFilter]?.label || statusFilter} orders`}
+            </p>
+            <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)', maxWidth: 280 }}>
+              {statusFilter === 'all'
+                ? 'Orders placed by customers will appear here in real-time.'
+                : 'No orders match this status filter right now.'}
+            </p>
+          </div>
+          {statusFilter !== 'all' && (
+            <button
+              onClick={() => setStatusFilter('all')}
+              className="text-sm font-semibold px-5 py-2 rounded-xl"
+              style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: '1.5px solid var(--brand-100)', cursor: 'pointer' }}
+            >
+              View all orders
+            </button>
+          )}
         </div>
       ) : (
         <div
@@ -412,11 +458,11 @@ export default function AdminOrders() {
                       {order.order_number}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-medium" style={{ color: 'var(--text-dark)' }}>{order.customers?.full_name || 'N/A'}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.customers?.phone}</p>
+                      <p className="font-medium" style={{ color: 'var(--text-dark)' }}>{order.customers?.full_name || '—'}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.customers?.phone || ''}</p>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--text-mid)' }}>
-                      {order.order_items?.length > 0
+                      {(order.order_items?.length ?? 0) > 0
                         ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}`
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     </td>
@@ -446,21 +492,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3">
                       {/* Quick actions: one-tap next-status button + details */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* Next status — most common action, no modal needed */}
-                        {order.status !== 'delivered' && order.status !== 'cancelled' && (() => {
-                          const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]
-                          if (!nextStatus) return null
-                          return (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, nextStatus) }}
-                              className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold transition-all"
-                              style={{ background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                              title={`Mark as ${ORDER_STATUS[nextStatus]?.label}`}
-                            >
-                              ✓ {ORDER_STATUS[nextStatus]?.label}
-                            </button>
-                          )
-                        })()}
+                        <NextStatusButton order={order} onUpdate={updateOrderStatus} />
                         {/* Details button */}
                         <button
                           onClick={() => setSelectedOrder(order)}
@@ -511,19 +543,8 @@ export default function AdminOrders() {
                       {' '}· <span className="uppercase">{order.payment_method}</span>
                     </span>
                   </div>
-                  {/* Quick next-status button on mobile */}
-                  {order.status !== 'delivered' && order.status !== 'cancelled' && (() => {
-                    const next = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]
-                    return next ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, next) }}
-                        className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold"
-                        style={{ background: 'var(--brand-700)', color: '#fff', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-                      >
-                        ✓ {ORDER_STATUS[next]?.label}
-                      </button>
-                    ) : null
-                  })()}
+                  {/* Quick next-status button on mobile — safe component, no IIFE */}
+                  <NextStatusButton order={order} onUpdate={updateOrderStatus} />
                 </div>
               </div>
             ))}

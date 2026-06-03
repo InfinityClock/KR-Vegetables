@@ -188,13 +188,16 @@ export default function AdminDashboard() {
         hourlyMap[h].orders++
       })
       // Only show meaningful hours (6 AM – 10 PM)
+      // Guard: if all values are 0, there is no meaningful "peak" — mark nothing.
+      const maxHourly = hourlyMap.reduce((m, h) => Math.max(m, h.orders), 0)
       setHourlyData(
         hourlyMap
           .filter(h => h.hour >= 6 && h.hour <= 22)
           .map(h => ({
             label: h.hour === 12 ? '12p' : h.hour > 12 ? `${h.hour - 12}p` : `${h.hour}a`,
             orders: h.orders,
-            peak: h.orders === Math.max(...hourlyMap.map(x => x.orders)),
+            // Only mark as peak when there are real orders; avoids all-peak styling on empty data
+            peak: maxHourly > 0 && h.orders === maxHourly,
           }))
       )
 
@@ -425,8 +428,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Hourly + Day-of-Week Charts ── */}
-      {(hourlyData.length > 0 || dowData.length > 0) && (
+      {/* ── Hourly + Day-of-Week Charts — only shown when there is real data ── */}
+      {hourlyData.some(h => h.orders > 0) && (
         <div className={`grid gap-4 ${userRole !== 'sales' ? 'lg:grid-cols-2' : ''}`}>
 
           {/* Hourly distribution */}
@@ -523,12 +526,25 @@ export default function AdminDashboard() {
             ))}
           </div>
         ) : recentOrders.length === 0 ? (
-          <div
-            className="py-14 flex flex-col items-center gap-3"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <Package size={32} style={{ opacity: 0.35 }} />
-            <p className="text-sm">No orders yet</p>
+          <div className="py-14 flex flex-col items-center gap-4">
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%',
+              background: 'var(--brand-50)', border: '1.5px solid var(--brand-100)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Package size={32} style={{ color: 'var(--brand-300)' }} />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-dark)' }}>No orders yet</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Your first order will appear here</p>
+            </div>
+            <button
+              onClick={() => navigate('/admin/orders')}
+              className="text-xs font-semibold px-4 py-2 rounded-lg"
+              style={{ background: 'var(--brand-50)', color: 'var(--brand-700)', border: '1px solid var(--brand-100)' }}
+            >
+              View Orders →
+            </button>
           </div>
         ) : (
           <div>
