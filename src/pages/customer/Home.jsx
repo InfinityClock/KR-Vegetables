@@ -1364,124 +1364,213 @@ export default function Home() {
         <div style={{ height: 8 }} />
       </div>
 
-      {/* ─── Footer ─── */}
-      <footer style={{ background: 'var(--brand-900)', borderTop: '1px solid rgba(255,255,255,.07)', marginTop: 8 }}>
+      {/* ─── Premium Footer ──────────────────────────────────────────────── */}
+      <footer style={{ background: 'var(--brand-900)', marginTop: 8 }}>
 
-        {/* ── Top: 3-column grid ── */}
-        <div
-          style={{
-            maxWidth: 960,
-            margin: '0 auto',
-            padding: '40px 24px 32px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '32px 40px',
-            alignItems: 'start',
-          }}
+        {/* Teal accent line at top */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg, var(--teal-700) 0%, var(--brand-600) 50%, var(--teal-700) 100%)' }} />
+
+        {/* ── Main grid: 4 columns on desktop, 2×2 on tablet, 1 on mobile ── */}
+        <div style={{
+          maxWidth: 1080,
+          margin: '0 auto',
+          padding: '52px 28px 44px',
+          display: 'grid',
+          /* Desktop: [brand] [links] [policies] [contact] */
+          gridTemplateColumns: 'minmax(0,1.8fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr)',
+          gap: '0 48px',
+          alignItems: 'start',
+        }}
+          className="footer-grid"
         >
-          {/* Brand */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>
-              KR Vegetables &amp; Fruits
-            </span>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', lineHeight: 1.6, margin: 0 }}>
-              Farm-fresh vegetables and fruits delivered daily to your door in Chennai. Two convenient delivery windows — morning and afternoon, every day.
+          {/* ── Col 1: Brand ── */}
+          <div style={{ paddingRight: 8 }}>
+            {/* Logo mark */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 20 }}>🌿</span>
+              </div>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 700, color: '#fff', letterSpacing: '-.02em', lineHeight: 1.2 }}>
+                KR Vegetables<br />
+                <span style={{ fontWeight: 400, color: 'rgba(255,255,255,.6)' }}>&amp; Fruits</span>
+              </span>
+            </div>
+
+            {/* Tagline */}
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.5)', lineHeight: 1.75, margin: '0 0 18px', maxWidth: 260 }}>
+              Farm-fresh vegetables &amp; fruits delivered daily to your door in Chennai.
             </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.35)', lineHeight: 1.5, margin: 0 }}>
-              GSTIN: Pending registration<br />
+
+            {/* Trust pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+              {['🌿 Farm fresh', '🚚 Free delivery', '✅ Quality promise'].map(pill => (
+                <span key={pill} style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 600, color: 'rgba(255,255,255,.6)', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 99, padding: '3px 10px', whiteSpace: 'nowrap' }}>
+                  {pill}
+                </span>
+              ))}
+            </div>
+
+            {/* Location */}
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,.28)', margin: 0, lineHeight: 1.5 }}>
               Chennai, Tamil Nadu, India
             </p>
           </div>
 
-          {/* Our Store */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.35)', margin: 0 }}>
-              Our Store
+          {/* ── Col 2: Quick Links ── */}
+          <div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.3)', margin: '0 0 16px' }}>
+              Quick Links
             </p>
-            <a
-              href={STORE_MAPS_URL}
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: 'flex', alignItems: 'flex-start', gap: 8, textDecoration: 'none' }}
-            >
-              <MapPin size={13} style={{ color: 'var(--teal-400)', flexShrink: 0, marginTop: 2 }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,.7)', lineHeight: 1.6 }}>
-                {STORE_ADDRESS}
-              </span>
-            </a>
-          </div>
-
-          {/* Contact Us */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.35)', margin: 0 }}>
-              Contact Us
-            </p>
-
-            {/* Phone — displayed as plain text + clickable */}
-            <a
-              href={`tel:${STORE_PHONE.replace(/\s/g, '')}`}
-              style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 7 }}
-            >
-              <Phone size={13} style={{ color: 'var(--teal-400)', flexShrink: 0 }} />
-              {STORE_PHONE}
-            </a>
-
-            {/* WhatsApp */}
-            {WHATSAPP_NUMBER && (
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: '#4ADE80', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <span style={{ fontSize: 13 }}>💬</span> WhatsApp Us
-              </a>
-            )}
-
-            {/* Email */}
-            <a
-              href={`mailto:${ADMIN_EMAIL}`}
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.55)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <span style={{ fontSize: 13 }}>✉️</span> {ADMIN_EMAIL}
-            </a>
-
-            {/* Policy links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
               {[
-                { to: '/contact',         label: 'Contact Us' },
-                { to: '/terms',           label: 'Terms of Service' },
-                { to: '/refund-policy',   label: 'Refund & Cancellation Policy' },
-                { to: '/shipping-policy', label: 'Shipping & Delivery Policy' },
-                { to: '/privacy-policy',  label: 'Privacy Policy' },
+                { to: '/',        label: 'Home' },
+                { to: '/shop',    label: 'Shop' },
+                { to: '/orders',  label: 'My Orders' },
+                { to: '/orders',  label: 'Track Order' },
+                { to: '/contact', label: 'Contact Us' },
               ].map(({ to, label }) => (
                 <Link
-                  key={to}
+                  key={label}
                   to={to}
-                  style={{ fontFamily: 'var(--font-body)', fontSize: '12.5px', color: 'rgba(255,255,255,.45)', textDecoration: 'none' }}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,.52)', textDecoration: 'none', transition: 'color .15s', display: 'inline-block' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,.88)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,.52)' }}
                 >
                   {label}
                 </Link>
               ))}
+            </nav>
+          </div>
+
+          {/* ── Col 3: Policies ── */}
+          <div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.3)', margin: '0 0 16px' }}>
+              Policies
+            </p>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {[
+                { to: '/terms',           label: 'Terms of Service' },
+                { to: '/privacy-policy',  label: 'Privacy Policy' },
+                { to: '/refund-policy',   label: 'Refund Policy' },
+                { to: '/shipping-policy', label: 'Shipping Policy' },
+              ].map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,.52)', textDecoration: 'none', transition: 'color .15s', display: 'inline-block' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,.88)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,.52)' }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* ── Col 4: Contact & Hours ── */}
+          <div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.3)', margin: '0 0 16px' }}>
+              Contact &amp; Hours
+            </p>
+
+            {/* Contact links */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+              <a href={`tel:${STORE_PHONE.replace(/\s/g, '')}`}
+                style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, transition: 'opacity .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '.75' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+              >
+                <span style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>📞</span>
+                {STORE_PHONE}
+              </a>
+
+              {WHATSAPP_NUMBER && (
+                <a href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}`}
+                  target="_blank" rel="noreferrer"
+                  style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#4ADE80', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, transition: 'opacity .15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '.75' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+                >
+                  <span style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(74,222,128,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>💬</span>
+                  WhatsApp
+                </a>
+              )}
+
+              <a href={`mailto:${ADMIN_EMAIL}`}
+                style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,.52)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, transition: 'opacity .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '.75' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+              >
+                <span style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>✉️</span>
+                {ADMIN_EMAIL}
+              </a>
+
+              <a href={STORE_MAPS_URL} target="_blank" rel="noreferrer"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,.45)', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.55, transition: 'opacity .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '.75' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+              >
+                <span style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, marginTop: 1 }}>📍</span>
+                <span>{STORE_ADDRESS}</span>
+              </a>
+            </div>
+
+            {/* Delivery hours */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 16 }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.28)', margin: '0 0 10px' }}>
+                Delivery Windows
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {[
+                  { slot: 'Morning',   time: '8:00 AM – 1:00 PM' },
+                  { slot: 'Afternoon', time: '3:00 PM – 8:00 PM' },
+                ].map(({ slot, time }) => (
+                  <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,.42)' }}>{slot}</span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,.65)' }}>{time}</span>
+                  </div>
+                ))}
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', color: 'rgba(255,255,255,.25)', margin: '4px 0 0' }}>
+                  Every day · Free delivery
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── Bottom bar: copyright ── */}
-        <div
-          style={{
-            borderTop: '1px solid rgba(255,255,255,.07)',
-            padding: '14px 24px',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.3)', margin: 0 }}>
-            © {new Date().getFullYear()} KR Vegetables &amp; Fruits. All rights reserved.
-          </p>
+        {/* ── Bottom bar ── */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', padding: '16px 28px' }}>
+          <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.28)', margin: 0 }}>
+              © {new Date().getFullYear()} KR Vegetables &amp; Fruits. All rights reserved.
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.22)', margin: 0 }}>
+              Made with 🌿 in Chennai
+            </p>
+          </div>
         </div>
+
+        {/* Responsive footer styles */}
+        <style>{`
+          /* Tablet: 2×2 grid */
+          @media (max-width: 900px) {
+            .footer-grid {
+              grid-template-columns: 1fr 1fr !important;
+              gap: 36px 32px !important;
+            }
+          }
+          /* Mobile: single column */
+          @media (max-width: 560px) {
+            .footer-grid {
+              grid-template-columns: 1fr !important;
+              gap: 32px 0 !important;
+            }
+          }
+        `}</style>
 
       </footer>
 
+      {/* WhatsApp FAB — positioned above footer on mobile, clear of nav bar */}
       <WhatsAppButton />
     </div>
   )

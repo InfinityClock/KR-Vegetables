@@ -16,8 +16,10 @@ export default function WhatsAppButton({ message }) {
       className="pulse-ring"
       style={{
         position: 'fixed',
-        bottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px)',
-        right: 16,
+        /* Mobile: above the bottom nav bar
+           Desktop: above the page fold (no nav bar, so just 24px from bottom) */
+        bottom: 'calc(var(--nav-h, 0px) + env(safe-area-inset-bottom, 0px) + 20px)',
+        right: 20,
         zIndex: 40,
         width: 'auto',
         height: 44,
