@@ -7,6 +7,7 @@ import { smartSearch } from '../../utils/search'
 import ProductCard from '../../components/ProductCard'
 import WhatsAppButton from '../../components/WhatsAppButton'
 import { PageTopBar } from '../../components/TopBar'
+import { t } from '../../i18n/index'
 
 const SORT_OPTIONS = [
   { value: 'default',    label: 'Default',           emoji: '✨', desc: 'Curated order' },
@@ -15,14 +16,14 @@ const SORT_OPTIONS = [
   { value: 'offers',     label: 'Offers First',       emoji: '🏷️', desc: 'Best discounts' },
 ]
 
-// ── Primary tabs shown to customers ──────────────────────────────────────────
+// ── Primary tabs — bilingual (English + Tamil) ─────────────────────────────
 // 'type' maps to the category.type column ('vegetable' | 'fruit').
-// 'offers' is a special filter (no type column) — products with offer_price.
+// 'offers' is a special filter — products with offer_price set.
 const PRIMARY_TABS = [
-  { key: 'all',       label: 'All',        emoji: '🛒' },
-  { key: 'vegetable', label: 'Vegetables', emoji: '🥬' },
-  { key: 'fruit',     label: 'Fruits',     emoji: '🍎' },
-  { key: 'offers',    label: 'Offers',     emoji: '🏷️' },
+  { key: 'all',       label: 'All',        labelTa: t('category.all'),       emoji: '🛒' },
+  { key: 'vegetable', label: 'Vegetables', labelTa: t('category.vegetable'), emoji: '🥬' },
+  { key: 'fruit',     label: 'Fruits',     labelTa: t('category.fruit'),     emoji: '🍎' },
+  { key: 'offers',    label: 'Offers',     labelTa: t('category.offers'),    emoji: '🏷️' },
 ]
 
 export default function Shop() {
@@ -164,29 +165,31 @@ export default function Shop() {
               onClick={() => selectTab(tab.key)}
               className="flex-shrink-0 flex items-center gap-1.5 transition-all"
               style={{
-                height: 36,
-                padding: '0 14px',
+                height: 'auto',
+                padding: '6px 14px',
                 borderRadius: 99,
                 fontFamily: 'var(--font-body)',
-                fontSize: '13px',
-                fontWeight: 600,
                 cursor: 'pointer',
-                border: activeTab === tab.key
-                  ? 'none'
-                  : '1.5px solid var(--border)',
-                background: activeTab === tab.key
-                  ? 'var(--brand-800)'
-                  : 'var(--bg-card)',
-                color: activeTab === tab.key
-                  ? '#fff'
-                  : 'var(--text-mid)',
-                boxShadow: activeTab === tab.key
-                  ? '0 2px 8px rgba(22,101,52,.25)'
-                  : 'none',
+                border: activeTab === tab.key ? 'none' : '1.5px solid var(--border)',
+                background: activeTab === tab.key ? 'var(--brand-800)' : 'var(--bg-card)',
+                color: activeTab === tab.key ? '#fff' : 'var(--text-mid)',
+                boxShadow: activeTab === tab.key ? '0 2px 8px rgba(22,101,52,.25)' : 'none',
               }}
             >
-              <span>{tab.emoji}</span>
-              <span>{tab.label}</span>
+              <span style={{ fontSize: 14 }}>{tab.emoji}</span>
+              {/* Bilingual: English bold + Tamil smaller below */}
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 700, lineHeight: 1.3 }}>{tab.label}</span>
+                {tab.labelTa && (
+                  <span style={{
+                    fontSize: '9.5px', lineHeight: 1.2,
+                    opacity: activeTab === tab.key ? 0.75 : 0.6,
+                    fontWeight: 400,
+                  }}>
+                    {tab.labelTa}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
 

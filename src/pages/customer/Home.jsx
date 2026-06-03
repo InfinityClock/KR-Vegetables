@@ -1,5 +1,6 @@
 import { useSeo } from '../../hooks/useSeo'
 import { useState, useEffect, useRef } from 'react'
+// i18n imported by QuickCategories and DeliveryPromise via inline Tamil strings
 import { supabase } from '../../lib/supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { useProducts, useCategories } from '../../hooks/useProducts'
@@ -67,10 +68,10 @@ function MarqueeTicker() {
 // Appears just below the hero on mobile, and below the heading on desktop.
 function DeliveryPromise() {
   const promises = [
-    { icon: '🚚', text: 'Free delivery always' },
-    { icon: '⏰', text: '8AM–1PM & 3PM–8PM' },
-    { icon: '🌿', text: 'Farm fresh daily' },
-    { icon: '✅', text: 'Quality guaranteed' },
+    { icon: '🚚', text: 'Free delivery',  textTa: 'இலவச டெலிவரி' },
+    { icon: '⏰', text: '8AM–1PM & 3PM–8PM', textTa: 'இரண்டு நேர சாளரங்கள்' },
+    { icon: '🌿', text: 'Farm fresh daily', textTa: 'தினமும் புதியவை' },
+    { icon: '✅', text: 'Quality guaranteed', textTa: 'தரம் உறுதி' },
   ]
   return (
     <div
@@ -95,12 +96,23 @@ function DeliveryPromise() {
           }}
         >
           <span style={{ fontSize: 14 }}>{p.icon}</span>
-          <span style={{
-            fontFamily: 'var(--font-body)', fontSize: '11.5px',
-            fontWeight: 600, color: 'var(--brand-800)',
-            whiteSpace: 'nowrap',
-          }}>
-            {p.text}
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '11.5px',
+              fontWeight: 600, color: 'var(--brand-800)',
+              whiteSpace: 'nowrap', lineHeight: 1.3,
+            }}>
+              {p.text}
+            </span>
+            {p.textTa && (
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: '9.5px',
+                color: 'var(--brand-700)', opacity: 0.7,
+                whiteSpace: 'nowrap', lineHeight: 1.2,
+              }}>
+                {p.textTa}
+              </span>
+            )}
           </span>
         </div>
       ))}
@@ -335,8 +347,9 @@ function CategoryStrip({ categories, loading, onSelect }) {
   )
 }
 
-// ─── Quick Categories — 4 clean tiles replacing the 14-chip strip ─────────────
-// Customer-facing simplified navigation: All / Vegetables / Fruits / Offers.
+// ─── Quick Categories — bilingual 4-tile grid ─────────────────────────────────
+// Customer-facing: All / Vegetables / Fruits / Offers.
+// Each tile shows English label + Tamil name + Tamil description.
 // The 14 subcategories are preserved in the DB for admin/inventory use.
 function QuickCategories({ loading }) {
   const navigate = useNavigate()
@@ -345,8 +358,10 @@ function QuickCategories({ loading }) {
     {
       key:     'vegetable',
       label:   'Vegetables',
+      labelTa: 'காய்கறிகள்',
       emoji:   '🥬',
       desc:    'Leafy greens, gourds, roots & more',
+      descTa:  'கீரை, காய்கறி, கிழங்கு',
       bg:      'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
       border:  '#6ee7b7',
       color:   '#065f46',
@@ -354,8 +369,10 @@ function QuickCategories({ loading }) {
     {
       key:     'fruit',
       label:   'Fruits',
+      labelTa: 'பழங்கள்',
       emoji:   '🍎',
       desc:    'Tropical, citrus, seasonal & more',
+      descTa:  'வெப்பமண்டல, சிட்ரஸ், பருவகால',
       bg:      'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
       border:  '#fbbf24',
       color:   '#78350f',
@@ -363,8 +380,10 @@ function QuickCategories({ loading }) {
     {
       key:     'offers',
       label:   'Offers',
+      labelTa: 'சலுகைகள்',
       emoji:   '🏷️',
-      desc:    'Today\'s discounted picks',
+      desc:    "Today's discounted picks",
+      descTa:  'இன்றைய சலுகை விலைகள்',
       bg:      'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
       border:  '#f87171',
       color:   '#7f1d1d',
@@ -372,8 +391,10 @@ function QuickCategories({ loading }) {
     {
       key:     'all',
       label:   'All Products',
+      labelTa: 'அனைத்தும்',
       emoji:   '🛒',
       desc:    'Browse the full catalogue',
+      descTa:  'முழு தயாரிப்பு பட்டியல்',
       bg:      'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
       border:  '#a78bfa',
       color:   '#4c1d95',
@@ -384,7 +405,7 @@ function QuickCategories({ loading }) {
     return (
       <div className="grid grid-cols-2 gap-3 px-4">
         {[1,2,3,4].map(i => (
-          <div key={i} className="skeleton rounded-2xl" style={{ height: 88 }} />
+          <div key={i} className="skeleton rounded-2xl" style={{ height: 96 }} />
         ))}
       </div>
     )
@@ -396,7 +417,7 @@ function QuickCategories({ loading }) {
         <button
           key={tile.key}
           onClick={() => navigate(tile.key === 'all' ? '/shop' : `/shop?type=${tile.key}`)}
-          className="flex items-center gap-3 rounded-2xl p-4 text-left transition-all active:scale-97"
+          className="flex items-center gap-3 rounded-2xl p-3.5 text-left transition-all active:scale-97"
           style={{
             background: tile.bg,
             border: `1.5px solid ${tile.border}`,
@@ -406,13 +427,29 @@ function QuickCategories({ loading }) {
           onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,.1)' }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.06)' }}
         >
-          <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>{tile.emoji}</span>
+          <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{tile.emoji}</span>
           <div className="min-w-0">
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: tile.color, margin: 0, lineHeight: 1.2 }}>
+            {/* English label */}
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700,
+              color: tile.color, margin: 0, lineHeight: 1.2,
+            }}>
               {tile.label}
             </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10.5px', color: tile.color, opacity: .7, margin: '2px 0 0', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {tile.desc}
+            {/* Tamil label — prominent, readable */}
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600,
+              color: tile.color, opacity: 0.8, margin: '1px 0 2px', lineHeight: 1.3,
+            }}>
+              {tile.labelTa}
+            </p>
+            {/* Tamil description — very small, muted */}
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '9.5px',
+              color: tile.color, opacity: 0.55, margin: 0, lineHeight: 1.3,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {tile.descTa}
             </p>
           </div>
         </button>
