@@ -11,8 +11,8 @@ import toast from 'react-hot-toast'
 
 // ─── Quick-fill templates ─────────────────────────────────────────────────────
 const TEMPLATES = [
-  { id: 'offer',    icon: Tag,       label: 'Special Offer',  color: '#f97316', bg: '#fff7ed', title: '🎉 Special Offer Today!',       body: 'Fresh deals on vegetables & fruits — limited time only. Shop now!', url: '/shop' },
-  { id: 'arrival',  icon: ShoppingBag, label: 'New Arrivals', color: '#0891b2', bg: '#ecfeff', title: '🌿 Fresh Stock Just In!',          body: 'New arrivals are here — exotic vegetables, seasonal fruits, and more.', url: '/shop' },
+  { id: 'offer',    icon: Tag,       label: 'Special Offer',  color: '#f97316', bg: '#fff7ed', title: '🎉 Special Offer Today!',       body: 'Fresh deals on vegetables and fruits. Limited time only. Shop now!', url: '/shop' },
+  { id: 'arrival',  icon: ShoppingBag, label: 'New Arrivals', color: '#0891b2', bg: '#ecfeff', title: '🌿 Fresh Stock Just In!',          body: 'New arrivals are here. Exotic vegetables, seasonal fruits, and more.', url: '/shop' },
   { id: 'delivery', icon: Zap,       label: 'Delivery Update',color: '#7c3aed', bg: '#f5f3ff', title: '🚚 Delivery Slots Open',          body: 'Morning and afternoon delivery slots are available. Order before 6 PM!', url: '/' },
   { id: 'custom',   icon: Megaphone, label: 'Custom',         color: '#2D6A4F', bg: '#f0fdf4', title: '',                                body: '', url: '/' },
 ]

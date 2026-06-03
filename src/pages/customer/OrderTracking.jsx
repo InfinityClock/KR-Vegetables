@@ -359,7 +359,7 @@ export default function OrderTracking() {
                   {order.addresses.address_line1}
                   {order.addresses.address_line2 && `, ${order.addresses.address_line2}`}
                   <br />
-                  {order.addresses.city} — {order.addresses.pincode}
+                  {order.addresses.city}{order.addresses.pincode ? `, ${order.addresses.pincode}` : ''}
                 </p>
                 <p
                   className="text-xs font-medium mt-1"

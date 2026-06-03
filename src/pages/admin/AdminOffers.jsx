@@ -123,7 +123,7 @@ function OfferModal({ product, onClose, onSaved }) {
           <div className="rounded-xl p-3 text-center" style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)' }}>
             <p className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>
               <Zap size={14} className="inline mr-1" />
-              {discountPct}% discount — customer saves {formatPrice(product.price - offerPrice)}
+              {discountPct}% discount. Customer saves {formatPrice(product.price - offerPrice)}
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ function BannersPanel({ banners, setBanners }) {
       {/* List */}
       {banners.length === 0 ? (
         <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--gray-50)', border: '1px dashed var(--border)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No banners yet. Add one above — it will appear in the home page hero carousel.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No banners yet. Add one above and it will appear in the home page carousel.</p>
         </div>
       ) : banners.map((banner) => (
         <div key={banner.id} className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)', opacity: banner.is_active ? 1 : 0.55 }}>

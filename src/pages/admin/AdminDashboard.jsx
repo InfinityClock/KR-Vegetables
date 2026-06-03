@@ -341,7 +341,7 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Revenue — Last 7 Days</h2>
+                <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Revenue (Last 7 Days)</h2>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Paid orders only</p>
               </div>
               {stats && (
@@ -439,7 +439,7 @@ export default function AdminDashboard() {
           >
             <div className="mb-4">
               <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Orders by Hour</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days — when customers order most</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days. Peak order hours.</p>
             </div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={hourlyData} margin={{ top: 2, right: 4, bottom: 0, left: -28 }}>
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
           >
             <div className="mb-4">
               <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Orders by Day of Week</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days — busiest days</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 30 days. Busiest days.</p>
             </div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={dowData} margin={{ top: 2, right: 4, bottom: 0, left: -28 }}>

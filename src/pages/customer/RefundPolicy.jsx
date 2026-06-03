@@ -115,7 +115,7 @@ export default function RefundPolicy() {
             All sales are final.
           </p>
           <p className="mt-2" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-            We work hard to ensure every order leaves our store in the best condition — and we stand behind what we deliver.
+            We work hard to ensure every order leaves our store in the best condition. We stand behind what we deliver.
           </p>
         </Card>
 
@@ -138,7 +138,7 @@ export default function RefundPolicy() {
               We'll review it promptly and, if the issue is confirmed, we'll replace the item <strong>free of charge in your next delivery</strong>.
             </Bullet>
             <Bullet>
-              No complicated process — just a quick chat and we'll sort it out together.
+              Simple process. Just a quick chat and we'll sort it out.
             </Bullet>
           </div>
         </Card>
@@ -155,7 +155,7 @@ export default function RefundPolicy() {
               You may request a cancellation <strong>before your order is confirmed</strong> by our team. Message us on WhatsApp as soon as possible.
             </Bullet>
             <Bullet>
-              Once the order is confirmed and packing has started, we are unable to cancel it — fresh produce is prepared specifically for your order.
+              Once the order is confirmed and packing has started, we are unable to cancel it. Fresh produce is prepared specifically for your order.
             </Bullet>
             <Bullet>
               If we are unable to fulfil your order for any reason on our end, you will be notified and no charge will apply.
@@ -176,7 +176,7 @@ export default function RefundPolicy() {
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', color: '#166534', lineHeight: 1.65 }}>
             We're a small, local team and we genuinely care about every order.
-            If something isn't right, reach out — we'll always do our best to help.
+            If something isn't right, reach out. We'll always do our best to help.
           </p>
           <a
             href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent('Hi! I have an issue with my recent order.')}`}

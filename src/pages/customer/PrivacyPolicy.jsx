@@ -43,7 +43,7 @@ function Bullet({ children }) {
 export default function PrivacyPolicy() {
   useSeo({
     title: 'Privacy Policy',
-    description: `${STORE_NAME} privacy policy — how we collect, use, and protect your personal information.`,
+    description: `${STORE_NAME} privacy policy: how we collect, use, and protect your personal information.`,
   })
   const navigate = useNavigate()
 
@@ -105,10 +105,10 @@ export default function PrivacyPolicy() {
 
         <Section title="2. What Information We Collect">
           <p>When you place an order, we collect:</p>
-          <Bullet><strong>Full name</strong> — to address your order and delivery.</Bullet>
-          <Bullet><strong>Phone number</strong> — to send order updates via WhatsApp and contact you about your delivery.</Bullet>
-          <Bullet><strong>Delivery address</strong> — including street, area, city, pincode, and optionally GPS coordinates to aid delivery.</Bullet>
-          <Bullet><strong>Order details</strong> — the items you ordered, quantities, amounts, and timestamps.</Bullet>
+          <Bullet><strong>Full name</strong>: to identify your order and delivery.</Bullet>
+          <Bullet><strong>Phone number</strong>: to send order updates via WhatsApp and contact you about your delivery.</Bullet>
+          <Bullet><strong>Delivery address</strong>: street, area, city, pincode, and optionally GPS coordinates.</Bullet>
+          <Bullet><strong>Order details</strong>: items ordered, quantities, amounts, and timestamps.</Bullet>
           <p style={{ marginTop: 4 }}>We do <strong>not</strong> collect your email address, payment card details (these are handled entirely by Zoho Payments and never touch our servers), or any government ID.</p>
         </Section>
 
@@ -130,7 +130,7 @@ export default function PrivacyPolicy() {
           <p>We do <strong>not sell, rent, or share</strong> your personal information with any third party for marketing purposes.</p>
           <p>Your information may be shared only in these limited circumstances:</p>
           <Bullet>With our delivery team, solely to fulfil your order (name, address, phone).</Bullet>
-          <Bullet>With payment providers (Zoho Payments) to process transactions — they receive only the minimum necessary for payment.</Bullet>
+          <Bullet>With payment providers (Zoho Payments) to process transactions. They receive only the minimum data necessary.</Bullet>
           <Bullet>If required by law or a valid legal order from Indian authorities.</Bullet>
         </Section>
 
@@ -148,7 +148,7 @@ export default function PrivacyPolicy() {
 
         <Section title="7. Cookies & Tracking">
           <p>Our website uses:</p>
-          <Bullet><strong>localStorage / sessionStorage</strong> — to save your cart, checkout state, and app preferences locally in your browser. This data never leaves your device.</Bullet>
+          <Bullet><strong>localStorage / sessionStorage</strong>: stores your cart, checkout state, and preferences locally in your browser. This data never leaves your device.</Bullet>
           <Bullet>We do <strong>not</strong> use advertising cookies, third-party tracking pixels, or analytics tools that track you across other websites.</Bullet>
         </Section>
 

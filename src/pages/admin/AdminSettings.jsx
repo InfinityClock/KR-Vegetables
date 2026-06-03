@@ -190,8 +190,8 @@ export default function AdminSettings() {
             style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-muted)' }}
           >
             {import.meta.env.VITE_ZOHO_CONFIGURED === 'true'
-              ? 'Zoho Payments — configured ✓'
-              : 'Not configured — add ZOHO_ACCOUNT_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET & ZOHO_REFRESH_TOKEN in Vercel'
+              ? 'Zoho Payments: configured ✓'
+              : 'Not configured. Add ZOHO_ACCOUNT_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET & ZOHO_REFRESH_TOKEN in Vercel.'
             }
           </div>
         </div>

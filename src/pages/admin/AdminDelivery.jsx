@@ -118,7 +118,7 @@ export default function AdminDelivery() {
           <div>
             <h2 className="text-sm font-bold" style={{ color: 'var(--text-dark)' }}>Delivery Windows</h2>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Auto-assigned based on order time — no customer selection needed
+              Auto-assigned based on order time. No customer selection needed.
             </p>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function AdminDelivery() {
             <strong>How it works:</strong> Orders before noon → Morning window (8AM–1PM).
             Orders before 7PM → Afternoon window (3PM–8PM).
             Orders after 7PM → next day Morning window.
-            Customers see this automatically at checkout — no selection required.
+            Customers see this automatically at checkout. No selection required.
           </p>
         </div>
       </div>

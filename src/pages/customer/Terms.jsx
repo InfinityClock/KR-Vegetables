@@ -111,7 +111,7 @@ export default function Terms() {
 
         {/* 2 */}
         <Section title="2. Placing an Order">
-          <Bullet>You can place orders through our website without creating an account — no registration needed.</Bullet>
+          <Bullet>You can place orders through our website without creating an account. No registration needed.</Bullet>
           <Bullet>There is no minimum order amount. Order as little or as much as you need.</Bullet>
           <Bullet>Orders are accepted based on product availability. We will notify you via WhatsApp if any item in your order is unavailable and adjust your total accordingly.</Bullet>
           <Bullet>You'll receive your order number on the confirmation screen. Save it to track your delivery at any time.</Bullet>
@@ -122,7 +122,7 @@ export default function Terms() {
           <Bullet>We currently deliver within our serviceable area around Thalambur and nearby localities in Chennai.</Bullet>
           <Bullet>We deliver in two daily windows: <strong>Morning 8:00 AM – 1:00 PM</strong> and <strong>Afternoon 3:00 PM – 8:00 PM</strong>.</Bullet>
           <Bullet>Orders are automatically assigned to the next available window based on order time. No slot selection is required.</Bullet>
-          <Bullet><strong>Delivery is always free</strong> — no minimum order, no delivery fee, on every order.</Bullet>
+          <Bullet><strong>Delivery is always free.</strong> No minimum order, no delivery fee.</Bullet>
           <Bullet>Delivery times are estimates. Occasional delays may occur due to weather, traffic, or high volume. We'll keep you updated via WhatsApp.</Bullet>
           <Bullet>Please ensure someone is available to receive your order during the delivery window.</Bullet>
           <p style={{ marginTop: 4 }}>
@@ -136,7 +136,7 @@ export default function Terms() {
         <Section title="4. Freshness &amp; Quality">
           <Bullet>All our produce is sourced fresh daily. We do our best to ensure quality at every step.</Bullet>
           <Bullet>Weights and sizes of vegetables and fruits are natural and may vary slightly from what is shown.</Bullet>
-          <Bullet>If you receive a damaged or incorrect item, please contact us on WhatsApp within 24 hours of delivery with a photo. We'll make it right — either with a replacement or a refund.</Bullet>
+          <Bullet>If you receive a damaged or incorrect item, contact us on WhatsApp within 24 hours with a photo. We'll replace it or issue a refund.</Bullet>
         </Section>
 
         {/* 5 */}

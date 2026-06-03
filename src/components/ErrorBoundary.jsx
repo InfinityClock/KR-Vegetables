@@ -89,7 +89,7 @@ export default class ErrorBoundary extends Component {
         </h1>
 
         <p style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 320, marginBottom: 32, lineHeight: 1.6 }}>
-          We hit an unexpected error. Your cart is safe — tap below to reload the page.
+          Something went wrong. Your cart is safe. Tap below to reload.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>

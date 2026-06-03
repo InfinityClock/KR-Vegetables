@@ -39,7 +39,7 @@ function Bullet({ children }) {
 export default function ShippingPolicy() {
   useSeo({
     title: 'Shipping & Delivery Policy',
-    description: `${STORE_NAME} delivery policy — windows, areas, free delivery, and what to expect on your delivery day.`,
+    description: `${STORE_NAME} delivery policy: windows, areas, free delivery, and what to expect on delivery day.`,
   })
   const navigate = useNavigate()
 
@@ -89,7 +89,7 @@ export default function ShippingPolicy() {
         <Card icon={CheckCircle} iconBg="#f0fdf4" iconColor="#16a34a" title="Delivery is Always Free">
           <p>
             We charge <strong>₹0 for delivery on every order</strong>, regardless of order size.
-            There is no minimum order amount and no delivery fee — ever.
+            There is no minimum order amount and no delivery fee. Ever.
           </p>
           <p style={{ marginTop: 8, fontSize: 13, color: 'var(--text-muted)' }}>
             A small handling charge (2% of cart subtotal) covers packaging and order processing.
@@ -124,7 +124,7 @@ export default function ShippingPolicy() {
           </div>
           <p style={{ marginTop: 8, fontSize: 13, color: 'var(--text-muted)' }}>
             The checkout screen automatically shows you the next available delivery window based
-            on the current time — no manual selection needed.
+            on the current time. No manual selection needed.
           </p>
         </Card>
 

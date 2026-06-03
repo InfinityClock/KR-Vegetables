@@ -21,7 +21,7 @@ function AddressItem({ address, onDelete, onSetDefault }) {
         </div>
         <p className="text-xs text-gray-500">
           {address.address_line1}{address.address_line2 && `, ${address.address_line2}`}
-          <br />{address.city} — {address.pincode}
+          <br />{address.city}{address.pincode ? `, ${address.pincode}` : ''}
         </p>
       </div>
       <div className="flex gap-2">

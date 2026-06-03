@@ -44,7 +44,7 @@ async function reorderItems(orderItems, addItem, navigate) {
   const productIds = orderItems.map(i => i.product_id).filter(Boolean)
   if (!productIds.length) {
     // No product IDs — just add by name (best effort)
-    toast.error('Could not reorder — product references missing. Please add items manually.')
+    toast.error('Could not reorder. Product details are missing. Please add items manually.')
     return
   }
 
@@ -277,7 +277,7 @@ function PhoneForm({ onSubmit, loading }) {
         style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)', maxWidth: 360 }}
       >
         <p className="text-xs text-center" style={{ color: 'var(--brand-700)', lineHeight: 1.6 }}>
-          🔒 We only use your phone number to look up your orders — no account required.
+          🔒 We use your phone number to find your orders. No account needed.
         </p>
       </div>
     </div>

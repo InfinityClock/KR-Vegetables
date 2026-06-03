@@ -148,7 +148,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                         <p className="text-sm" style={{ color: 'var(--text-mid)' }}>{addr.address_line2}</p>
                       )}
                       <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
-                        {addr.city}{addr.pincode ? ` — ${addr.pincode}` : ''}
+                        {addr.city}{addr.pincode ? `, ${addr.pincode}` : ''}
                       </p>
                     </div>
                   </div>
@@ -411,7 +411,7 @@ export default function AdminOrders() {
       if (!res.ok || result.error) { toast.error('Failed: ' + (result.error || 'Unknown')); return }
       toast.success(`Marked as ${ORDER_STATUS[newStatus]?.label}`)
       refetch()
-    } catch (err) { toast.error('Network error — ' + err.message) }
+    } catch (err) { toast.error('Network error: ' + err.message) }
   }, [refetch])
 
   // ── Bulk status update ────────────────────────────────────────────────────

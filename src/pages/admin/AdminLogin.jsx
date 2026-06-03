@@ -62,7 +62,7 @@ export default function AdminLogin() {
     })
     setResetting(false)
     if (error) toast.error(error.message)
-    else toast.success('Password reset email sent — check your inbox')
+    else toast.success('Password reset email sent. Check your inbox.')
   }
 
   const handleLogin = async (e) => {

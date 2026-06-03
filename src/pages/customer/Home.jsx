@@ -1040,7 +1040,7 @@ function DesktopHero({ navigate }) {
 export default function Home() {
   useSeo({
     title: 'KR Vegetables & Fruits — Fresh Daily from Local Farms',
-    description: 'Order fresh vegetables and fruits online in Chennai. Farm-fresh produce delivered to your door daily. Two delivery windows — 8AM–1PM & 3PM–8PM.',
+    description: 'Order fresh vegetables and fruits online in Chennai. Farm-fresh produce delivered daily. Two delivery windows: 8AM–1PM and 3PM–8PM.',
     noSuffix: true,
   })
   const navigate = useNavigate()
