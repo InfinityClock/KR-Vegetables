@@ -63,13 +63,16 @@ export default function Shop() {
   // 2. Smart search (Tanglish + fuzzy) — client-side
   const searched = search.trim() ? smartSearch(byTab, search) : byTab
 
-  // 3. Sort
+  // 3. Sort — OOS products always go to the bottom (regardless of other sort criteria)
+  const stockOrder = { in_stock: 0, limited: 1, out_of_stock: 2 }
   const sorted = [...searched].sort((a, b) => {
+    // Always push out-of-stock to end
+    const stockDiff = (stockOrder[a.stock_status] ?? 0) - (stockOrder[b.stock_status] ?? 0)
+    if (stockDiff !== 0) return stockDiff
+    // Then apply user's sort within each availability group
     if (sort === 'price_asc')  return (a.offer_price || a.price) - (b.offer_price || b.price)
     if (sort === 'price_desc') return (b.offer_price || b.price) - (a.offer_price || a.price)
-    if (sort === 'offers') {
-      return (b.offer_price ? 1 : 0) - (a.offer_price ? 1 : 0)
-    }
+    if (sort === 'offers')     return (b.offer_price ? 1 : 0) - (a.offer_price ? 1 : 0)
     return 0  // default: preserve relevance order from smartSearch
   })
 
@@ -141,7 +144,7 @@ export default function Shop() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search vegetables, fruits… (vazhai thandu, keerai)"
+              placeholder="Search vegetables, fruits, keerai…"
               className="flex-1 text-sm outline-none bg-transparent"
               style={{ color: 'var(--text-dark)', fontFamily: 'var(--font-body)' }}
             />

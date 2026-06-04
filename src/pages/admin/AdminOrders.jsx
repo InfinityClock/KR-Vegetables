@@ -500,39 +500,29 @@ export default function AdminOrders() {
         )}
       </div>
 
-      {/* ── Filter rows ── */}
+      {/* ── Filter rows — 2 rows max ── */}
       {/* Row 1: Status tabs */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
         {statusTabs.map(t => (
-          <FilterChip key={t} label={t === 'all' ? 'All Orders' : ORDER_STATUS[t]?.label} active={statusFilter === t} onClick={() => setStatusFilter(t)} />
+          <FilterChip key={t} label={t === 'all' ? 'All' : ORDER_STATUS[t]?.label} active={statusFilter === t} onClick={() => setStatusFilter(t)} />
         ))}
       </div>
 
-      {/* Row 2: Payment · Date · Slot filters */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          Payment:
-        </span>
-        {[['all', 'All'], ['cod', 'COD'], ['online', 'Online'], ['failed', 'Failed']].map(([k, l]) => (
-          <FilterChip key={k} label={l} active={paymentFilter === k} onClick={() => setPaymentFilter(k)} />
+      {/* Row 2: All secondary filters on one scrollable row — compact labels */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 items-center">
+        {/* Payment */}
+        {[['all', 'All pay'], ['cod', 'COD'], ['online', 'Online'], ['failed', 'Failed']].map(([k, l]) => (
+          <FilterChip key={`pay-${k}`} label={l} active={paymentFilter === k} onClick={() => setPaymentFilter(k)} />
         ))}
-
-        <div style={{ width: 1, background: 'var(--border-light)', margin: '0 4px', flexShrink: 0 }} />
-
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          Date:
-        </span>
-        {[['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => (
-          <FilterChip key={k} label={l} active={dateFilter === k} onClick={() => setDateFilter(k)} />
+        <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+        {/* Date */}
+        {[['all', 'All dates'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['month', 'This month']].map(([k, l]) => (
+          <FilterChip key={`date-${k}`} label={l} active={dateFilter === k} onClick={() => setDateFilter(k)} />
         ))}
-
-        <div style={{ width: 1, background: 'var(--border-light)', margin: '0 4px', flexShrink: 0 }} />
-
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', flexShrink: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          Slot:
-        </span>
-        {[['all', 'Any'], ['morning', '8AM–1PM'], ['afternoon', '3PM–8PM']].map(([k, l]) => (
-          <FilterChip key={k} label={l} active={slotFilter === k} onClick={() => setSlotFilter(k)} />
+        <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+        {/* Slot */}
+        {[['all', 'Any slot'], ['morning', 'Morning'], ['afternoon', 'Afternoon']].map(([k, l]) => (
+          <FilterChip key={`slot-${k}`} label={l} active={slotFilter === k} onClick={() => setSlotFilter(k)} />
         ))}
       </div>
 

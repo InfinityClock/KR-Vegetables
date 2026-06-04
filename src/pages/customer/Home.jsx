@@ -17,6 +17,7 @@ import {
 import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, ADMIN_EMAIL, PLACEHOLDER_IMAGE } from '../../constants'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { useCartStore } from '../../store/cartStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 // ─── Marquee Ticker Strip ──────────────────────────────────────────────────────
@@ -68,10 +69,9 @@ function MarqueeTicker() {
 // Appears just below the hero on mobile, and below the heading on desktop.
 function DeliveryPromise() {
   const promises = [
-    { icon: '🚚', text: 'Free delivery',  textTa: 'இலவச டெலிவரி' },
-    { icon: '⏰', text: '8AM–1PM & 3PM–8PM', textTa: 'இரண்டு நேர சாளரங்கள்' },
-    { icon: '🌿', text: 'Farm fresh daily', textTa: 'தினமும் புதியவை' },
-    { icon: '✅', text: 'Quality guaranteed', textTa: 'தரம் உறுதி' },
+    { icon: '🚚', text: 'Free delivery',     textTa: 'இலவச டெலிவரி' },
+    { icon: '⏰', text: '8AM–1PM · 3PM–8PM', textTa: 'இரண்டு நேர சாளரங்கள்' },
+    { icon: '🌿', text: 'Farm fresh daily',  textTa: 'தினமும் புதியவை' },
   ]
   return (
     <div
@@ -83,6 +83,7 @@ function DeliveryPromise() {
         borderTop: '1px solid var(--brand-100)',
         borderBottom: '1px solid var(--brand-100)',
         scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       {promises.map((p, i) => (
@@ -134,7 +135,7 @@ function HeroCarousel() {
   }, [])
 
   const activeBanners = dbBanners.length > 0
-    ? dbBanners.map((b) => ({ ...b, gradient: b.bg_color, cta: 'Shop Now →', ctaPath: '/shop', emoji: '🥦🥕🍅' }))
+    ? dbBanners.map((b) => ({ ...b, gradient: b.bg_color, cta: 'Shop Now', ctaPath: '/shop', emoji: '🥦🥕🍅' }))
     : BANNERS
 
   useEffect(() => {
@@ -168,8 +169,8 @@ function HeroCarousel() {
             <span
               style={{
                 display: 'inline-block', alignSelf: 'flex-start',
-                fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
-                letterSpacing: '.1em', textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600,
+                letterSpacing: '.04em',
                 color: 'rgba(255,255,255,.65)',
                 background: 'rgba(255,255,255,.12)',
                 backdropFilter: 'blur(8px)',
@@ -392,7 +393,7 @@ function QuickCategories({ loading }) {
       key:     'all',
       label:   'All Products',
       labelTa: 'அனைத்தும்',
-      emoji:   '🛒',
+      emoji:   '🌾',
       desc:    'Browse the full catalogue',
       descTa:  'முழு தயாரிப்பு பட்டியல்',
       bg:      'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
@@ -461,37 +462,39 @@ function QuickCategories({ loading }) {
 // ─── Section Header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, subtitle, onSeeAll }) {
   return (
-    <div className="flex items-end justify-between px-4 mb-4">
+    <div className="flex items-center justify-between px-4 mb-3" style={{ minHeight: 32 }}>
       <div>
         <h2
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.75rem',
-            fontWeight: 600,
+            fontSize: '1.25rem',   /* 20px — right-sized for mobile, was 1.75rem */
+            fontWeight: 700,
             color: 'var(--text-dark)',
-            letterSpacing: '-.025em',
-            lineHeight: 1.15,
+            letterSpacing: '-.02em',
+            lineHeight: 1.2,
+            margin: 0,
           }}
         >
           {title}
         </h2>
         {subtitle && (
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--text-light)', marginTop: 3 }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-light)', marginTop: 2 }}>
             {subtitle}
           </p>
         )}
       </div>
       {onSeeAll && (
+        /* Touch target min 44px height for accessibility */
         <button
           onClick={onSeeAll}
           className="flex items-center gap-1 shrink-0"
           style={{
-            fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
+            fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 600,
             color: 'var(--brand-600)', background: 'none', border: 'none',
-            cursor: 'pointer', letterSpacing: '.01em',
+            cursor: 'pointer', padding: '8px 4px', minHeight: 44,
           }}
         >
-          See all <ChevronRight size={13} />
+          See all <ChevronRight size={14} />
         </button>
       )}
     </div>
@@ -1045,6 +1048,7 @@ export default function Home() {
   })
   const navigate = useNavigate()
 
+  const { store_open } = useSettingsStore()
   const { categories, loading: catLoading } = useCategories()
   const { products: featuredProducts, loading: featuredLoading } = useProducts({ is_featured: true, limit: 10 })
   const { products: allProducts, loading: allLoading } = useProducts({ limit: 20 })
@@ -1059,6 +1063,17 @@ export default function Home() {
       <div className="lg:hidden">
         <MarqueeTicker />
       </div>
+
+      {/* Store closed banner — shown on both mobile and desktop */}
+      {store_open === false && (
+        <div style={{
+          background: '#FEF3C7', borderBottom: '1px solid #FDE68A',
+          padding: '10px 20px', textAlign: 'center',
+          fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#92400E',
+        }}>
+          🕐 Store is closed right now. We reopen at 8AM. You can browse and your cart is saved.
+        </div>
+      )}
 
       {/* Delivery promise strip — desktop only (mobile gets it after hero) */}
       <div className="hidden lg:block">
@@ -1544,7 +1559,7 @@ export default function Home() {
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.28)', margin: 0 }}>
               © {new Date().getFullYear()} KR Vegetables &amp; Fruits. All rights reserved.
             </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.22)', margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.4)', margin: 0 }}>
               Made with 🌿 in Chennai
             </p>
           </div>

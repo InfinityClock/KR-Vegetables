@@ -54,14 +54,19 @@ const FOOD_IMAGES = {
 }
 const FALLBACK = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80'
 
-function resolveImage(product) {
+// Exported so Cart and other components can resolve the same smart food images
+export function resolveProductImage(product) {
+  if (!product) return FALLBACK
   if (product.image_url) return product.image_url
-  const name = (product.name + ' ' + (product.tamil_name || '')).toLowerCase()
+  const name = ((product.name || '') + ' ' + (product.tamil_name || '')).toLowerCase()
   for (const [key, url] of Object.entries(FOOD_IMAGES)) {
     if (name.includes(key)) return url
   }
   return FALLBACK
 }
+
+// Internal alias kept for backward compat
+function resolveImage(product) { return resolveProductImage(product) }
 
 export default function ProductCard({ product }) {
   const navigate  = useNavigate()
@@ -182,7 +187,7 @@ export default function ProductCard({ product }) {
           </p>
         )}
 
-        <p style={{ fontSize: '10.5px', color: 'var(--text-light)', margin: '0 0 8px' }}>
+        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 8px' }}>
           {product.unit}
         </p>
 

@@ -9,7 +9,9 @@ import {
   useCartTotal,
 } from '../../store/cartStore'
 import { formatPrice } from '../../utils/format'
-import { PLACEHOLDER_IMAGE, getNextDeliveryWindow, HANDLING_CHARGE_RATE } from '../../constants'
+import { getNextDeliveryWindow, HANDLING_CHARGE_RATE } from '../../constants'
+// Re-use the same smart image resolver from ProductCard so cart shows correct food photos
+import { resolveProductImage } from '../../components/ProductCard'
 import { useSettingsStore } from '../../store/settingsStore'
 import { PageTopBar } from '../../components/TopBar'
 import toast from 'react-hot-toast'
@@ -40,7 +42,7 @@ function CartItem({ item }) {
         }}
       >
         <img
-          src={item.image_url || PLACEHOLDER_IMAGE}
+          src={resolveProductImage(item)}
           alt={item.name}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => { e.target.src = PLACEHOLDER_IMAGE }}

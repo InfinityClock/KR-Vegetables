@@ -3,24 +3,24 @@ import { useUiStore } from '../store/uiStore'
 
 const slides = [
   {
-    emoji: '🌱',
-    title: 'Fresh Daily from Local Farms',
-    subtitle: 'Hand-picked every morning, straight from farm to your table. 100% fresh, always.',
-    bg: '#2D6A4F',
+    emoji: '🥬🥕🍅',
+    title: 'Farm Fresh Every Day',
+    subtitle: 'Vegetables and fruits picked fresh each morning. Delivered to Chennai homes daily.',
+    bg: '#1B4332',
     light: '#52B788',
   },
   {
-    emoji: '🛒',
-    title: 'Order in Minutes',
-    subtitle: 'Browse hundreds of fresh veggies and fruits, add to cart, checkout in just a few taps.',
-    bg: '#F4A261',
+    emoji: '⚡',
+    title: 'Order in 60 Seconds',
+    subtitle: 'Tap a category, add what you need, checkout. It really is that fast.',
+    bg: '#0D3B5E',
     light: '#FEFAE0',
   },
   {
     emoji: '🚚',
-    title: 'Delivered to Your Door',
-    subtitle: 'Choose your delivery slot. We bring fresh produce right to your doorstep.',
-    bg: '#52B788',
+    title: 'Two Delivery Windows Daily',
+    subtitle: 'Morning 8AM–1PM or afternoon 3PM–8PM. Free delivery on every order.',
+    bg: '#2D6A4F',
     light: '#FEFAE0',
   },
 ]
