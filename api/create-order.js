@@ -257,10 +257,15 @@ export default async function handler(req) {
 
     // Alert all admin subscribers that a new order was placed (fire-and-forget).
     // Uses subscriber_type='admin' so it ONLY goes to admin devices, not customers.
-    const appUrl = process.env.APP_URL || ''
-    const pushUrl = appUrl ? `${appUrl}/api/push-send` : null
-    if (pushUrl) {
-      fetch(pushUrl, {
+    // Derive the base URL from the request itself — no APP_URL env var needed.
+    const baseUrl = (() => {
+      try {
+        const u = new URL(req.url)
+        return `${u.protocol}//${u.host}`
+      } catch { return process.env.APP_URL || '' }
+    })()
+    if (baseUrl) {
+      fetch(`${baseUrl}/api/push-send`, {
         method:  'POST',
         headers: {
           'Content-Type':     'application/json',

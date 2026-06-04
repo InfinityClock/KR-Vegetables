@@ -136,6 +136,7 @@ export default async function handler(req, res) {
 
   let sent = 0, failed = 0
   const staleIds = []
+  const errors   = []   // collect actual push service error details
 
   await Promise.allSettled(
     subs.map(async (sub) => {
@@ -143,11 +144,22 @@ export default async function handler(req, res) {
         await webPush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload,
-          { TTL: 86400 }   // notification lives up to 24 h if device is offline
+          { TTL: 86400 }
         )
         sent++
       } catch (err) {
         failed++
+        // Collect the actual error so callers can diagnose failures
+        errors.push({
+          status:  err.statusCode,
+          body:    err.body || err.message,
+          // Translate common push service error codes
+          reason:  err.statusCode === 401 ? 'VAPID_KEY_MISMATCH'
+                 : err.statusCode === 410 ? 'SUBSCRIPTION_EXPIRED'
+                 : err.statusCode === 404 ? 'SUBSCRIPTION_NOT_FOUND'
+                 : err.statusCode === 400 ? 'BAD_REQUEST'
+                 : 'UNKNOWN',
+        })
         // 410 Gone / 404 Not Found → subscription is dead, remove it
         if (err.statusCode === 410 || err.statusCode === 404) staleIds.push(sub.id)
       }
@@ -185,5 +197,11 @@ export default async function handler(req, res) {
     }).catch(() => {})
   }
 
-  return res.status(200).json({ sent, failed, total: subs.length })
+  // Return error details so callers (and the diagnostics panel) can see failures
+  return res.status(200).json({
+    sent,
+    failed,
+    total: subs.length,
+    errors: errors.length > 0 ? errors : undefined,
+  })
 }

@@ -92,6 +92,10 @@ export default function AdminNotifications() {
   // ── Subscriber count (for compose button label) ────────────────────────────
   const [subCount, setSubCount] = useState(null)
 
+  // ── Diagnostics state ─────────────────────────────────────────────────────
+  const [diagRunning, setDiagRunning] = useState(false)
+  const [diagResult,  setDiagResult]  = useState(null)
+
   // Load sub count on mount
   useEffect(() => {
     if (!token) return
@@ -100,6 +104,25 @@ export default function AdminNotifications() {
       .then(d => setSubCount(d.total ?? 0))
       .catch(() => setSubCount(0))
   }, [token])
+
+  // ── Run diagnostics + optional test push ──────────────────────────────────
+  const runDiagnostics = async (sendTest = false) => {
+    if (!token) return
+    setDiagRunning(true)
+    setDiagResult(null)
+    try {
+      const res = await fetch('/api/push-test', {
+        method:  sendTest ? 'POST' : 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      setDiagResult(data)
+    } catch (err) {
+      setDiagResult({ error: err.message })
+    } finally {
+      setDiagRunning(false)
+    }
+  }
 
   // Load subscribers when that tab is opened
   const loadSubscribers = useCallback(async () => {
@@ -222,10 +245,11 @@ export default function AdminNotifications() {
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <TabPill label="Compose" active={tab === 'compose'} onClick={() => setTab('compose')} />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <TabPill label="Compose"     active={tab === 'compose'}     onClick={() => setTab('compose')} />
         <TabPill label="Subscribers" active={tab === 'subscribers'} onClick={() => setTab('subscribers')} count={subCount} />
-        <TabPill label="History" active={tab === 'history'} onClick={() => setTab('history')} />
+        <TabPill label="History"     active={tab === 'history'}     onClick={() => setTab('history')} />
+        <TabPill label="🔧 Diagnostics" active={tab === 'diagnostics'} onClick={() => setTab('diagnostics')} />
       </div>
 
       {/* ════════════════════════════════════════════════════════
@@ -469,6 +493,91 @@ export default function AdminNotifications() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════
+          DIAGNOSTICS TAB
+          ════════════════════════════════════════════════════════ */}
+      {tab === 'diagnostics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          <div style={{ ...s, fontSize: 13, color: 'var(--text-muted)' }}>
+            Use these tools to find out exactly why push notifications are or aren't working.
+            The test push sends a real notification to a subscriber and shows the push service's response.
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button onClick={() => runDiagnostics(false)} disabled={diagRunning}
+              style={{ height: 38, padding: '0 16px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg-card)', ...s, fontSize: 13, fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {diagRunning ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={14} />}
+              Check Configuration
+            </button>
+            <button onClick={() => runDiagnostics(true)} disabled={diagRunning}
+              style={{ height: 38, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--brand-700)', ...s, fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {diagRunning ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={14} />}
+              Send Test Push
+            </button>
+          </div>
+
+          {/* Results */}
+          {diagResult && (
+            <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-light)', borderRadius: 14, padding: 16, overflow: 'auto' }}>
+              {/* VAPID status */}
+              {diagResult.diagnostics?.vapid && (
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ ...s, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-muted)', marginBottom: 8 }}>VAPID Configuration</p>
+                  <div style={{ ...s, fontSize: 13, padding: '10px 14px', borderRadius: 10, background: diagResult.diagnostics.vapid.keys_match ? '#f0fdf4' : '#fef2f2', border: `1px solid ${diagResult.diagnostics.vapid.keys_match ? '#bbf7d0' : '#fecaca'}`, marginBottom: 8 }}>
+                    {diagResult.diagnostics.vapid.status}
+                  </div>
+                  <pre style={{ ...s, fontSize: 11, background: 'var(--gray-50)', padding: 12, borderRadius: 8, overflow: 'auto', color: 'var(--text-mid)', margin: 0 }}>
+                    {JSON.stringify(diagResult.diagnostics.vapid, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Subscribers */}
+              {diagResult.diagnostics?.subscribers && (
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ ...s, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-muted)', marginBottom: 8 }}>Subscriptions</p>
+                  <pre style={{ ...s, fontSize: 11, background: 'var(--gray-50)', padding: 12, borderRadius: 8, overflow: 'auto', color: 'var(--text-mid)', margin: 0 }}>
+                    {JSON.stringify(diagResult.diagnostics.subscribers, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Test push result */}
+              {diagResult.test_push && (
+                <div>
+                  <p style={{ ...s, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-muted)', marginBottom: 8 }}>Test Push Result</p>
+                  <div style={{ ...s, fontSize: 13, padding: '10px 14px', borderRadius: 10, background: diagResult.test_push.success ? '#f0fdf4' : '#fef2f2', border: `1px solid ${diagResult.test_push.success ? '#bbf7d0' : '#fecaca'}`, marginBottom: 8 }}>
+                    {diagResult.test_push.success ? diagResult.test_push.message : diagResult.test_push.diagnosis || diagResult.test_push.error_body || 'Unknown error'}
+                  </div>
+                  <pre style={{ ...s, fontSize: 11, background: 'var(--gray-50)', padding: 12, borderRadius: 8, overflow: 'auto', color: 'var(--text-mid)', margin: 0 }}>
+                    {JSON.stringify(diagResult.test_push, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Error */}
+              {diagResult.error && (
+                <p style={{ ...s, fontSize: 13, color: '#dc2626' }}>{diagResult.error}</p>
+              )}
+            </div>
+          )}
+
+          {/* VAPID key fix instructions */}
+          <div style={{ background: '#fefce8', border: '1px solid #fde047', borderRadius: 12, padding: '12px 16px' }}>
+            <p style={{ ...s, fontSize: 12, fontWeight: 700, color: '#713f12', marginBottom: 6 }}>How to generate correct VAPID keys</p>
+            <p style={{ ...s, fontSize: 12, color: '#854d0e', lineHeight: 1.6, margin: 0 }}>
+              Run: <code style={{ background: 'rgba(0,0,0,.06)', padding: '1px 6px', borderRadius: 4 }}>npx web-push generate-vapid-keys</code><br />
+              Set <strong>VAPID_PUBLIC_KEY</strong> and <strong>VITE_VAPID_PUBLIC_KEY</strong> to the same public key.<br />
+              Set <strong>VAPID_PRIVATE_KEY</strong> to the private key.<br />
+              Both must be set in Vercel → Settings → Environment Variables.<br />
+              After updating keys, all users must re-subscribe (clear app data and enable notifications again).
+            </p>
+          </div>
         </div>
       )}
 
