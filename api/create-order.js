@@ -5,6 +5,9 @@
  */
 export const config = { runtime: 'edge' }
 
+// Simple currency formatter for push notification body text
+const formatCurrency = (n) => `₹${Number(n).toLocaleString('en-IN')}`
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.APP_URL || '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -250,6 +253,27 @@ export default async function handler(req) {
         unit_price:   item.unitPrice,
         total_price:  item.lineTotal,
       })),
+    }
+
+    // Alert all admin subscribers that a new order was placed (fire-and-forget).
+    // Uses subscriber_type='admin' so it ONLY goes to admin devices, not customers.
+    const appUrl = process.env.APP_URL || ''
+    const pushUrl = appUrl ? `${appUrl}/api/push-send` : null
+    if (pushUrl) {
+      fetch(pushUrl, {
+        method:  'POST',
+        headers: {
+          'Content-Type':     'application/json',
+          'x-internal-token': serviceKey,
+        },
+        body: JSON.stringify({
+          title:          `🛍️ New Order #${orderNumber}`,
+          body:           `${name} placed an order for ${formatCurrency(serverTotal)}`,
+          url:            `/admin/orders`,
+          subscriberType: 'admin',
+          tag:            `new-order-${order.id}`,
+        }),
+      }).catch(() => {}) // non-critical — never block the order response
     }
 
     return new Response(

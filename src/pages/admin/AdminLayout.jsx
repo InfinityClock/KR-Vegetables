@@ -127,6 +127,28 @@ function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
+        {/* Enable push notifications prompt (shown when permission not yet granted) */}
+        {typeof Notification !== 'undefined' && Notification.permission === 'default' && (
+          <div style={{ padding: '0 12px 10px' }}>
+            <button
+              onClick={async () => {
+                const perm = await Notification.requestPermission()
+                if (perm === 'granted') toast.success('Notifications enabled. You\'ll get new order alerts!')
+              }}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 10,
+                background: 'rgba(45,212,191,.15)', border: '1px solid rgba(45,212,191,.3)',
+                color: 'rgba(255,255,255,.8)', fontFamily: 'var(--font-body)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Bell size={13} style={{ color: '#5eead4' }} />
+              Enable order alerts
+            </button>
+          </div>
+        )}
+
         {/* User + Logout */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', padding: '12px 12px 16px' }}>
           {user?.email && (
@@ -169,8 +191,62 @@ function useAdminManifest() {
   }, [])
 }
 
+/**
+ * Subscribes the current admin device to Web Push notifications so it
+ * receives "New Order" alerts even when the dashboard is closed.
+ * Runs once per browser session. Tagged as subscriber_type='admin' so
+ * push-send can target admin devices separately from customers.
+ */
+function useAdminPushSubscription() {
+  useEffect(() => {
+    const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+    if (!VAPID_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return
+    if (Notification.permission === 'denied') return
+
+    // Only auto-subscribe if permission already granted — don't pester admin on every load.
+    // If permission is 'default', a one-time prompt appears via the bell button in the UI.
+    if (Notification.permission !== 'granted') return
+
+    const subscribeAdmin = async () => {
+      try {
+        const reg = await navigator.serviceWorker.ready
+        let sub = await reg.pushManager.getSubscription()
+        if (!sub) {
+          const padding = '='.repeat((4 - (VAPID_KEY.length % 4)) % 4)
+          const base64  = (VAPID_KEY + padding).replace(/-/g, '+').replace(/_/g, '/')
+          const raw     = atob(base64)
+          const key     = new Uint8Array(raw.length)
+          for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i)
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
+        }
+
+        const ab2b64 = (buf) => {
+          const bytes = new Uint8Array(buf)
+          let bin = ''
+          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i])
+          return btoa(bin)
+        }
+
+        await fetch('/api/push-subscribe', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            endpoint:       sub.endpoint,
+            p256dh:         ab2b64(sub.getKey('p256dh')),
+            auth:           ab2b64(sub.getKey('auth')),
+            subscriberType: 'admin',
+          }),
+        })
+      } catch { /* non-critical — admin can still use the panel without push */ }
+    }
+
+    subscribeAdmin()
+  }, [])
+}
+
 export default function AdminLayout() {
   useAdminManifest()
+  useAdminPushSubscription()   // subscribe this device to receive new-order push alerts
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 

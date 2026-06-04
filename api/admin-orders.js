@@ -156,29 +156,52 @@ export default async function handler(req) {
       }
 
       // 3. Push notification to the customer (fire-and-forget)
+      // We use two strategies in parallel for maximum reach:
+      //   a) by customer_phone — reaches ANY subscription linked to their phone
+      //   b) by order_id — reaches the subscription made on this specific order
+      // This handles customers who subscribed on a previous order (phone match)
+      // and customers who subscribed on this exact order (order_id match).
       const pushMessages = {
-        confirmed:        { title: '✅ Order Confirmed!',       body: 'We\'ve received your order and are preparing it now.' },
-        out_for_delivery: { title: '🚚 Out for Delivery!',      body: 'Your order is on its way. Get ready!' },
-        delivered:        { title: '✅ Order Delivered!',       body: 'Your order has been delivered. Enjoy your fresh produce! 🌿' },
-        cancelled:        { title: '❌ Order Cancelled',        body: 'Your order was cancelled. Contact us if you have questions.' },
+        confirmed:        { title: '✅ Order Confirmed!',       body: `Your order is confirmed. We're getting it ready!` },
+        packing:          { title: '📦 Packing Now',            body: 'Your fresh produce is being carefully packed.' },
+        out_for_delivery: { title: '🚚 Out for Delivery',      body: 'Your order is on the way. Get ready!' },
+        delivered:        { title: '✅ Delivered!',             body: 'Your order has been delivered. Enjoy!' },
+        cancelled:        { title: '❌ Order Cancelled',        body: 'Your order was cancelled. WhatsApp us if you need help.' },
       }
       const push = pushMessages[newStatus]
       if (push) {
         const baseUrl = new URL(req.url).origin
+
+        // Fetch the order to get the customer's phone for broader delivery
+        const orderRes = await fetch(
+          `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}&select=customer_id,customers(phone)`,
+          { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+        ).catch(() => null)
+        const orderData = orderRes?.ok ? await orderRes.json() : []
+        const customerPhone = orderData?.[0]?.customers?.phone || null
+
+        const pushBody = {
+          title:   push.title,
+          body:    push.body,
+          url:     `/track/${orderId}`,
+          tag:     `order-${orderId}-${newStatus}`,
+        }
+
+        // Send by phone (primary — broader match across all customer subscriptions)
+        if (customerPhone) {
+          fetch(`${baseUrl}/api/push-send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
+            body: JSON.stringify({ ...pushBody, customerPhone }),
+          }).catch(() => {})
+        }
+
+        // Send by orderId (secondary fallback — catches subscriptions not yet phone-linked)
         fetch(`${baseUrl}/api/push-send`, {
-          method:  'POST',
-          headers: {
-            'Content-Type':    'application/json',
-            'x-internal-token': serviceKey,
-          },
-          body: JSON.stringify({
-            title:   push.title,
-            body:    push.body,
-            url:     `/track/${orderId}`,
-            orderId,
-            tag:     `order-${orderId}-${newStatus}`,
-          }),
-        }).catch(() => { /* non-critical — don't fail the status update */ })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
+          body: JSON.stringify({ ...pushBody, orderId }),
+        }).catch(() => {})
       }
 
       return new Response(

@@ -30,7 +30,7 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: cors })
   }
 
-  const { endpoint, p256dh, auth, orderId, customerPhone } = body
+  const { endpoint, p256dh, auth, orderId, customerPhone, subscriberType } = body
   if (!endpoint || !p256dh || !auth) {
     return new Response(
       JSON.stringify({ error: 'endpoint, p256dh and auth are required' }),
@@ -54,8 +54,10 @@ export default async function handler(req) {
     platform,
     updated_at: new Date().toISOString(),
   }
-  if (orderId)       payload.order_id       = orderId
-  if (customerPhone) payload.customer_phone = customerPhone.replace(/\D/g, '').slice(-10)
+  if (orderId)       payload.order_id        = orderId
+  if (customerPhone) payload.customer_phone  = customerPhone.replace(/\D/g, '').slice(-10)
+  // subscriber_type distinguishes admin devices (new-order alerts) from customer devices
+  payload.subscriber_type = (subscriberType === 'admin') ? 'admin' : 'customer'
 
   // Upsert: if endpoint already exists, update customer_phone + order_id
   const res = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions`, {
