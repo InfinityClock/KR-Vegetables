@@ -27,8 +27,12 @@ export const useProducts = (filters = {}) => {
         if (search)        q = q.or(`name.ilike.%${search}%,tamil_name.ilike.%${search}%`);
         if (sort === 'offers') q = q.not('offer_price', 'is', null);
 
-        // sort_order ASC (admin-controlled position), then created_at DESC as tiebreaker
-        q = q.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+        // Stock status FIRST: in_stock → limited → out_of_stock (PostgreSQL enum ordering)
+        // Then admin-curated sort_order within each availability group, then created_at.
+        q = q
+          .order('stock_status', { ascending: true })
+          .order('sort_order',   { ascending: true })
+          .order('created_at',   { ascending: false });
         if (limit) q = q.limit(limit);
 
         const { data, error: err } = await q;
@@ -71,8 +75,9 @@ export const useAllProducts = () => {
         .from('products')
         .select(PRODUCT_SELECT)
         .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
+        .order('stock_status', { ascending: true })   // in_stock → limited → out_of_stock
+        .order('sort_order',   { ascending: true })
+        .order('created_at',   { ascending: false })
         .then(({ data }) => { _allProductsCache = data || []; return _allProductsCache; });
     }
 
@@ -168,7 +173,8 @@ export const useOfferProducts = () => {
       .select(PRODUCT_SELECT)
       .eq('is_active', true)
       .not('offer_price', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('stock_status', { ascending: true })
+      .order('created_at',   { ascending: false })
       .then(({ data }) => {
         setProducts((data || []).filter((p) => p.offer_price < p.price));
         setLoading(false);

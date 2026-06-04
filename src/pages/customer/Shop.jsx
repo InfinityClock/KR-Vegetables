@@ -2,8 +2,9 @@ import { useSeo } from '../../hooks/useSeo'
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, X, SlidersHorizontal, Check, ShoppingBag } from 'lucide-react'
-import { useAllProducts, useCategories } from '../../hooks/useProducts'
+import { useAllProducts, useCategories, bustProductCache } from '../../hooks/useProducts'
 import { smartSearch } from '../../utils/search'
+import { compareByStock } from '../../utils/sort'
 import ProductCard from '../../components/ProductCard'
 import WhatsAppButton from '../../components/WhatsAppButton'
 import { PageTopBar } from '../../components/TopBar'
@@ -31,6 +32,11 @@ export default function Shop() {
     title: 'Shop Fresh Vegetables & Fruits',
     description: 'Browse 100+ fresh vegetables, fruits and herbs. Daily stock, farm-fresh quality. Order online for same-day delivery in Chennai.',
   })
+
+  // Bust stale module-level cache so any in-session stock changes are reflected.
+  // useAllProducts caches the first result — bust once on Shop mount.
+  useEffect(() => { bustProductCache() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [searchParams, setSearchParams] = useSearchParams()
   const [search,       setSearch]       = useState('')
   const [activeTab,    setActiveTab]    = useState(() => {
@@ -63,17 +69,16 @@ export default function Shop() {
   // 2. Smart search (Tanglish + fuzzy) — client-side
   const searched = search.trim() ? smartSearch(byTab, search) : byTab
 
-  // 3. Sort — OOS products always go to the bottom (regardless of other sort criteria)
-  const stockOrder = { in_stock: 0, limited: 1, out_of_stock: 2 }
+  // 3. Sort — stock status is the primary dimension (in_stock → limited → out_of_stock).
+  //    compareByStock uses the shared utility from utils/sort.js.
+  //    User's price/offer sort applies within each availability group.
   const sorted = [...searched].sort((a, b) => {
-    // Always push out-of-stock to end
-    const stockDiff = (stockOrder[a.stock_status] ?? 0) - (stockOrder[b.stock_status] ?? 0)
+    const stockDiff = compareByStock(a, b)
     if (stockDiff !== 0) return stockDiff
-    // Then apply user's sort within each availability group
     if (sort === 'price_asc')  return (a.offer_price || a.price) - (b.offer_price || b.price)
     if (sort === 'price_desc') return (b.offer_price || b.price) - (a.offer_price || a.price)
     if (sort === 'offers')     return (b.offer_price ? 1 : 0) - (a.offer_price ? 1 : 0)
-    return 0  // default: preserve relevance order from smartSearch
+    return 0
   })
 
   // Sync tab from URL changes (e.g. navigating from Home category tiles)

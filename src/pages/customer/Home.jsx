@@ -15,6 +15,7 @@ import {
   ShieldCheck, Sprout, ArrowRight, Percent, Clock, MapPin, Phone, RotateCcw, Plus, Check, Bell,
 } from 'lucide-react'
 import { STORE_ADDRESS, STORE_MAPS_URL, WHATSAPP_NUMBER, STORE_PHONE, ADMIN_EMAIL, PLACEHOLDER_IMAGE } from '../../constants'
+import { sortByStock } from '../../utils/sort'
 import { useRecentOrdersStore } from '../../store/recentOrdersStore'
 import { useCartStore } from '../../store/cartStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -1050,9 +1051,14 @@ export default function Home() {
 
   const { store_open } = useSettingsStore()
   const { categories, loading: catLoading } = useCategories()
-  const { products: featuredProducts, loading: featuredLoading } = useProducts({ is_featured: true, limit: 10 })
-  const { products: allProducts, loading: allLoading } = useProducts({ limit: 20 })
-  const dealProducts = allProducts.filter((p) => p.offer_price && p.offer_price < p.price)
+  const { products: featuredRaw, loading: featuredLoading } = useProducts({ is_featured: true, limit: 10 })
+  const { products: allRaw,      loading: allLoading }      = useProducts({ limit: 20 })
+
+  // Client-side safety net: ensure OOS is always last even if the DB query
+  // returns a cached/stale order. sortByStock is O(n) and allocation-cheap.
+  const featuredProducts = sortByStock(featuredRaw)
+  const allProducts      = sortByStock(allRaw)
+  const dealProducts     = allProducts.filter((p) => p.offer_price && p.offer_price < p.price)
 
   return (
     <div className="pb-nav page-enter" style={{ background: 'var(--bg-base)', minHeight: '100dvh' }}>
