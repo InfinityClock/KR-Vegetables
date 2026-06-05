@@ -36,7 +36,7 @@ export const useAuthStore = create(
           .from('customers')
           .select('*')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
         if (data) set({ customer: data })
       },
     }),

@@ -32,7 +32,7 @@ export const useAuthInit = () => {
       .from('customers')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
     if (data) setCustomer(data)
   }
 }
