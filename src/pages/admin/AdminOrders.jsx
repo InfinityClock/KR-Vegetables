@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle, Search, Download, CheckSquare, Square, Filter, ChevronDown, RefreshCw } from 'lucide-react'
+import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle, Search, Download, CheckSquare, Square, Filter, ChevronDown, RefreshCw, Coins } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
 import { formatDateTime, formatPrice } from '../../utils/format'
@@ -26,7 +26,7 @@ function CopyBtn({ text }) {
   )
 }
 
-function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
+function OrderDetailModal({ order, onClose, onStatusChange, onCollectPayment, userRole }) {
   if (!order) return null
 
   const phone   = order.customers?.phone
@@ -86,7 +86,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
                   {isCod ? <Banknote size={10} /> : <CreditCard size={10} />}
                   {isCod ? 'COD' : 'Paid Online'}
                 </span>
-                {userRole !== 'sales' && <PaymentStatusBadge status={order.payment_status} />}
+                {userRole !== 'sales' && <PaymentStatusBadge status={order.payment_status} method={order.payment_method} />}
               </div>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</p>
             </div>
@@ -257,6 +257,50 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
             </div>
           )}
 
+          {/* ── COD Cash Collection — full-width amber CTA if pending ── */}
+          {isCod && order.payment_status === 'pending' && userRole !== 'sales' && (
+            <div
+              className="rounded-2xl p-4 flex items-start gap-3"
+              style={{ background: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)', border: '1.5px solid #FDE68A' }}
+            >
+              <Banknote size={20} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
+              <div className="flex-1">
+                <p className="text-sm font-bold mb-1" style={{ color: '#92400E' }}>Cash Not Yet Collected</p>
+                <p className="text-xs mb-3" style={{ color: '#B45309' }}>
+                  {formatPrice(order.total_amount)} is due on delivery. Tap below once cash is received.
+                </p>
+                <button
+                  onClick={() => { onCollectPayment(order.id); onClose() }}
+                  className="w-full h-11 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: '#D97706', color: '#fff', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#B45309' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#D97706' }}
+                >
+                  💵 Mark Cash Collected
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── COD Collected confirmation ── */}
+          {isCod && order.payment_status === 'paid' && (
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-2.5"
+              style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}
+            >
+              <span style={{ fontSize: 18 }}>✅</span>
+              <div>
+                <p className="text-sm font-bold" style={{ color: '#166534' }}>Cash Collected</p>
+                {order.collected_at && (
+                  <p className="text-xs" style={{ color: '#15803D' }}>
+                    {new Date(order.collected_at).toLocaleString('en-IN')}
+                    {order.collected_by ? ` · by ${order.collected_by}` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Update Status ── */}
           {order.status !== 'cancelled' && order.status !== 'delivered' && (
             <div>
@@ -291,6 +335,28 @@ function OrderDetailModal({ order, onClose, onStatusChange, userRole }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Collect Cash button — only visible on COD orders pending collection ───────
+function CollectCashButton({ order, onCollect, loading }) {
+  if (order.payment_method !== 'cod' || order.payment_status !== 'pending') return null
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onCollect(order.id) }}
+      disabled={loading}
+      className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-semibold transition-all"
+      style={{
+        background: loading ? 'var(--gray-100)' : '#D97706',
+        color: loading ? 'var(--text-muted)' : '#fff',
+        border: 'none',
+        cursor: loading ? 'wait' : 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+      title="Mark cash as collected — updates payment status and revenue"
+    >
+      💵 Cash Collected
+    </button>
   )
 }
 
@@ -385,6 +451,7 @@ export default function AdminOrders() {
   const [selected,       setSelected]       = useState(new Set())  // bulk selection
   const [bulkStatus,     setBulkStatus]     = useState('')
   const [bulkLoading,    setBulkLoading]    = useState(false)
+  const [collectingId,   setCollectingId]   = useState(null)       // orderId being collected
   const searchRef = useRef(null)
 
   const { userRole } = useAuthStore()
@@ -412,6 +479,28 @@ export default function AdminOrders() {
       toast.success(`Marked as ${ORDER_STATUS[newStatus]?.label}`)
       refetch()
     } catch (err) { toast.error('Network error: ' + err.message) }
+  }, [refetch])
+
+  // ── Mark COD cash as collected ───────────────────────────────────────────
+  const collectPayment = useCallback(async (orderId) => {
+    setCollectingId(orderId)
+    try {
+      const res = await adminFetch('/api/admin-orders', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'collect_payment', orderId }),
+      })
+      const result = await res.json()
+      if (!res.ok || result.error) {
+        toast.error('Failed: ' + (result.error || 'Unknown'))
+        return
+      }
+      toast.success('💵 Cash collected! Revenue updated.')
+      refetch()
+    } catch (err) {
+      toast.error('Network error: ' + err.message)
+    } finally {
+      setCollectingId(null)
+    }
   }, [refetch])
 
   // ── Bulk status update ────────────────────────────────────────────────────
@@ -511,7 +600,7 @@ export default function AdminOrders() {
       {/* Row 2: All secondary filters on one scrollable row — compact labels */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 items-center">
         {/* Payment */}
-        {[['all', 'All pay'], ['cod', 'COD'], ['online', 'Online'], ['failed', 'Failed']].map(([k, l]) => (
+        {[['all', 'All pay'], ['cod', 'COD'], ['cod_pending', '💵 COD Pending'], ['online', 'Online'], ['failed', 'Failed']].map(([k, l]) => (
           <FilterChip key={`pay-${k}`} label={l} active={paymentFilter === k} onClick={() => setPaymentFilter(k)} />
         ))}
         <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
@@ -634,7 +723,7 @@ export default function AdminOrders() {
                       <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</td>
                     )}
                     {userRole !== 'sales' && (
-                      <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
+                      <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} method={order.payment_method} /></td>
                     )}
                     <td className="px-4 py-3">
                       <span className="text-xs font-bold uppercase px-2 py-1 rounded-lg" style={{ background: order.payment_method === 'cod' ? 'var(--gray-100)' : 'var(--brand-50)', color: order.payment_method === 'cod' ? 'var(--text-mid)' : 'var(--brand-700)' }}>
@@ -645,6 +734,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{formatDateTime(order.placed_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <CollectCashButton order={order} onCollect={collectPayment} loading={collectingId === order.id} />
                         <NextStatusButton order={order} onUpdate={updateOrderStatus} />
                         <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--gray-100)', border: 'none', cursor: 'pointer' }} title="View Details">
                           <Eye size={13} style={{ color: 'var(--text-mid)' }} />
@@ -668,14 +758,15 @@ export default function AdminOrders() {
                   </div>
                   <OrderStatusBadge status={order.status} />
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-3">
-                    {userRole !== 'sales' && <span className="text-sm font-bold" style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>}
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {(order.order_items?.length ?? 0) > 0 ? `${order.order_items.length} item${order.order_items.length > 1 ? 's' : ''}` : '—'}{' '}· <span className="uppercase">{order.payment_method}</span>
-                    </span>
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {userRole !== 'sales' && <span className="text-sm font-bold shrink-0" style={{ color: 'var(--brand-700)' }}>{formatPrice(order.total_amount)}</span>}
+                    {userRole !== 'sales' && <PaymentStatusBadge status={order.payment_status} method={order.payment_method} />}
                   </div>
-                  <NextStatusButton order={order} onUpdate={updateOrderStatus} />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <CollectCashButton order={order} onCollect={collectPayment} loading={collectingId === order.id} />
+                    <NextStatusButton order={order} onUpdate={updateOrderStatus} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -698,6 +789,7 @@ export default function AdminOrders() {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onStatusChange={updateOrderStatus}
+          onCollectPayment={collectPayment}
           userRole={userRole}
         />
       )}

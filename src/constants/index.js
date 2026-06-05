@@ -46,11 +46,36 @@ export const ORDER_STATUS_ICONS = {
   cancelled: '❌',
 }
 
+// Base payment status definitions (payment_method-agnostic fallbacks)
 export const PAYMENT_STATUS = {
-  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700' },
-  paid: { label: 'Paid', color: 'bg-green-100 text-green-700' },
-  failed: { label: 'Failed', color: 'bg-red-100 text-red-700' },
-  refunded: { label: 'Refunded', color: 'bg-blue-100 text-blue-700' },
+  pending:  { label: 'Pending',  color: 'bg-yellow-100 text-yellow-700' },
+  paid:     { label: 'Paid',     color: 'bg-green-100 text-green-700'  },
+  failed:   { label: 'Failed',   color: 'bg-red-100 text-red-700'      },
+  refunded: { label: 'Refunded', color: 'bg-blue-100 text-blue-700'    },
+}
+
+/**
+ * Returns context-aware payment label + colour for a badge.
+ * COD pending ≠ online pending — they mean very different things operationally.
+ *
+ * @param {string} status  - payment_status value from DB
+ * @param {string} method  - payment_method ('cod' | 'zoho' | 'razorpay')
+ */
+export function getPaymentBadge(status, method) {
+  const isCod = method === 'cod'
+  if (status === 'pending') {
+    return isCod
+      ? { label: '💵 Awaiting Cash', color: 'bg-amber-100 text-amber-800'   }
+      : { label: '⏳ Pending',        color: 'bg-yellow-100 text-yellow-700' }
+  }
+  if (status === 'paid') {
+    return isCod
+      ? { label: '✅ Cash Collected', color: 'bg-green-100 text-green-700' }
+      : { label: '✅ Paid Online',    color: 'bg-green-100 text-green-700' }
+  }
+  if (status === 'failed')   return { label: '❌ Failed',   color: 'bg-red-100 text-red-700'   }
+  if (status === 'refunded') return { label: '↩ Refunded', color: 'bg-blue-100 text-blue-700' }
+  return { label: status ?? '—', color: 'bg-gray-100 text-gray-600' }
 }
 
 export const STOCK_STATUS = {

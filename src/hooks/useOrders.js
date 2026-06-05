@@ -197,9 +197,10 @@ export const useAdminOrders = ({
       if (statusFilter !== 'all') ordersQuery = ordersQuery.eq('status', statusFilter)
 
       // Payment filter
-      if (paymentFilter === 'cod')    ordersQuery = ordersQuery.eq('payment_method', 'cod')
-      if (paymentFilter === 'online') ordersQuery = ordersQuery.in('payment_method', ['zoho', 'razorpay'])
-      if (paymentFilter === 'failed') ordersQuery = ordersQuery.eq('payment_status', 'failed')
+      if (paymentFilter === 'cod')         ordersQuery = ordersQuery.eq('payment_method', 'cod')
+      if (paymentFilter === 'cod_pending') ordersQuery = ordersQuery.eq('payment_method', 'cod').eq('payment_status', 'pending')
+      if (paymentFilter === 'online')      ordersQuery = ordersQuery.in('payment_method', ['zoho', 'razorpay'])
+      if (paymentFilter === 'failed')      ordersQuery = ordersQuery.eq('payment_status', 'failed')
 
       // Date filter
       const { from: dateFrom, to: dateTo } = getDateRange(dateFilter)

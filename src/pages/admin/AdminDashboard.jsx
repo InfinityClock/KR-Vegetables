@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import {
   Package, TrendingUp, Clock, AlertTriangle, ChevronRight,
-  ShoppingBag, RefreshCw, ArrowUpRight, Zap,
+  ShoppingBag, RefreshCw, ArrowUpRight, Zap, Banknote,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatPrice, formatDateTime } from '../../utils/format'
@@ -117,14 +117,20 @@ export default function AdminDashboard() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      const [todayOrdersRes, pendingOrdersRes, lowStockRes, recentRes] = await Promise.all([
-        supabase.from('orders').select('total_amount').gte('placed_at', today.toISOString()),
+      const [todayOrdersRes, pendingOrdersRes, lowStockRes, recentRes, codPendingRes] = await Promise.all([
+        // Fetch today's orders with payment status so we can compute accurate revenue
+        supabase.from('orders').select('total_amount, payment_status').gte('placed_at', today.toISOString()),
         supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['placed', 'confirmed']),
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('stock_status', 'limited'),
         supabase.from('orders')
           .select('*, customers(full_name, phone), order_items(id)')
           .order('placed_at', { ascending: false })
           .limit(8),
+        // COD orders that haven't been collected yet — key operational metric
+        supabase.from('orders')
+          .select('total_amount')
+          .eq('payment_method', 'cod')
+          .eq('payment_status', 'pending'),
       ])
 
       const firstError = todayOrdersRes.error || pendingOrdersRes.error || lowStockRes.error || recentRes.error
@@ -137,13 +143,21 @@ export default function AdminDashboard() {
 
       setError(null)
       const todayOrders = todayOrdersRes.data || []
-      const todayRevenue = todayOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
+      // Only count PAID orders in revenue — unpaid COD must not inflate the number
+      const todayRevenue = todayOrders
+        .filter(o => o.payment_status === 'paid')
+        .reduce((sum, o) => sum + Number(o.total_amount), 0)
+
+      const codPendingOrders = codPendingRes.data || []
+      const codPendingTotal  = codPendingOrders.reduce((sum, o) => sum + Number(o.total_amount), 0)
 
       setStats({
-        todayOrders: todayOrders.length,
+        todayOrders:    todayOrders.length,
         todayRevenue,
-        pendingOrders: pendingOrdersRes.count || 0,
-        lowStock: lowStockRes.count || 0,
+        pendingOrders:  pendingOrdersRes.count || 0,
+        lowStock:       lowStockRes.count       || 0,
+        codPendingCount: codPendingOrders.length,
+        codPendingTotal,
       })
       setRecentOrders(recentRes.data || [])
 
@@ -306,6 +320,7 @@ export default function AdminDashboard() {
             icon={TrendingUp}
             label="Today's Revenue"
             value={stats ? formatPrice(stats.todayRevenue) : '—'}
+            sub="Paid orders only"
             accent="#7C3AED"
             loading={loading}
             onClick={() => navigate('/admin/orders')}
@@ -331,6 +346,32 @@ export default function AdminDashboard() {
         />
       </div>
 
+      {/* COD Pending Collection Alert — only shown when there are uncollected COD orders */}
+      {userRole !== 'sales' && stats?.codPendingCount > 0 && (
+        <button
+          onClick={() => navigate('/admin/orders')}
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-left transition-all"
+          style={{
+            background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+            border: '1.5px solid #FDE68A',
+            boxShadow: '0 2px 8px rgba(217,119,6,.1)',
+          }}
+        >
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF3C7' }}>
+            <Banknote size={22} style={{ color: '#D97706' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold" style={{ color: '#92400E' }}>
+              {stats.codPendingCount} COD order{stats.codPendingCount > 1 ? 's' : ''} awaiting cash collection
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
+              {formatPrice(stats.codPendingTotal)} outstanding · Tap to view and mark as collected
+            </p>
+          </div>
+          <ChevronRight size={16} style={{ color: '#D97706', flexShrink: 0 }} />
+        </button>
+      )}
+
       {/* Chart + Quick Actions */}
       <div className={`grid ${userRole === 'sales' ? '' : 'lg:grid-cols-3'} gap-4`}>
         {/* Revenue Chart */}
@@ -346,7 +387,7 @@ export default function AdminDashboard() {
               </div>
               {stats && (
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--brand-50)', color: 'var(--brand-700)' }}>
-                  {formatPrice(stats.todayRevenue)} today
+                  {formatPrice(stats.todayRevenue)} collected today
                 </span>
               )}
             </div>

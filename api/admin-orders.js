@@ -26,22 +26,24 @@ function corsHeaders(req) {
   }
 }
 
+/**
+ * Verifies the request is from an admin/sales user.
+ * Returns { email, role } on success, or null on failure.
+ * Only app_metadata is checked — it is server-only and cannot be written by the user.
+ */
 async function verifyAdmin(req, supabaseUrl, serviceKey) {
   const auth = req.headers.get('Authorization') || ''
-  if (!auth.startsWith('Bearer ')) return false
+  if (!auth.startsWith('Bearer ')) return null
   const token = auth.slice(7)
   const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
   })
-  if (!res.ok) return false
+  if (!res.ok) return null
   const { app_metadata, email } = await res.json()
-  // Only check app_metadata — it is server-only and cannot be written by the user.
   // user_metadata is user-writable and must not be used for authorization.
-  return (
-    app_metadata?.role === 'admin' ||
-    app_metadata?.role === 'sales' ||
-    email === process.env.ADMIN_EMAIL
-  )
+  const role = app_metadata?.role || null
+  const isAdmin = role === 'admin' || role === 'sales' || email === process.env.ADMIN_EMAIL
+  return isAdmin ? { email, role } : null
 }
 
 export default async function handler(req) {
@@ -79,6 +81,7 @@ export default async function handler(req) {
       if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors })
       }
+      // (verifyAdmin returns {email,role} truthy object — cast to bool is fine here)
       const orderNumber = url.searchParams.get('orderNumber')
       const filter = orderId ? `id=eq.${orderId}` : `order_number=eq.${orderNumber}`
       const res = await fetch(
@@ -107,7 +110,8 @@ export default async function handler(req) {
 
   // ── POST: actions (admin only) ───────────────────────────────────────────
   if (req.method === 'POST') {
-    if (!await verifyAdmin(req, supabaseUrl, serviceKey)) {
+    const adminUser = await verifyAdmin(req, supabaseUrl, serviceKey)
+    if (!adminUser) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors })
     }
 
@@ -206,6 +210,94 @@ export default async function handler(req) {
 
       return new Response(
         JSON.stringify({ success: true, order: updated[0] ?? null }),
+        { status: 200, headers: cors }
+      )
+    }
+
+    // ── collect_payment ────────────────────────────────────────────────────
+    // Marks a COD order as paid, records who collected and when.
+    // Only works on COD orders with payment_status = 'pending'.
+    if (action === 'collect_payment') {
+      if (!orderId) {
+        return new Response(JSON.stringify({ error: 'orderId is required' }), { status: 400, headers: cors })
+      }
+
+      // 1. Fetch the order to validate it's a COD + pending order
+      const orderRes = await fetch(
+        `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}&select=id,order_number,payment_method,payment_status,total_amount,customers(phone)`,
+        { headers: sbHeaders }
+      )
+      const orderData = await orderRes.json()
+      const order = Array.isArray(orderData) ? orderData[0] : null
+
+      if (!order) {
+        return new Response(JSON.stringify({ error: 'Order not found' }), { status: 404, headers: cors })
+      }
+      if (order.payment_method !== 'cod') {
+        return new Response(JSON.stringify({ error: 'This order is not a COD order' }), { status: 400, headers: cors })
+      }
+      if (order.payment_status === 'paid') {
+        return new Response(JSON.stringify({ error: 'Cash has already been marked as collected for this order' }), { status: 409, headers: cors })
+      }
+
+      const collectedAt = new Date().toISOString()
+      const collectedBy = adminUser.email || 'admin'
+
+      // 2. Update payment_status + audit columns atomically
+      const updateRes = await fetch(
+        `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`,
+        {
+          method: 'PATCH',
+          headers: sbHeaders,
+          body: JSON.stringify({
+            payment_status: 'paid',
+            collected_at:   collectedAt,
+            collected_by:   collectedBy,
+          }),
+        }
+      )
+      const updated = await updateRes.json()
+      if (!updateRes.ok) {
+        return new Response(JSON.stringify({ error: 'Failed to update order', details: updated }), { status: 400, headers: cors })
+      }
+
+      // 3. Add order_tracking audit entry
+      await fetch(`${supabaseUrl}/rest/v1/order_tracking`, {
+        method: 'POST',
+        headers: sbHeaders,
+        body: JSON.stringify({
+          order_id:   orderId,
+          status:     'payment_collected',
+          message:    `Cash collected by ${collectedBy}`,
+          updated_by: collectedBy,
+        }),
+      })
+
+      // 4. Push notification to customer (fire-and-forget)
+      const customerPhone = order.customers?.phone || null
+      if (customerPhone) {
+        const baseUrl = new URL(req.url).origin
+        fetch(`${baseUrl}/api/push-send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
+          body: JSON.stringify({
+            title:         '💵 Payment Received',
+            body:          `Your cash payment of ₹${Number(order.total_amount).toFixed(2)} has been collected. Thank you!`,
+            url:           `/track/${orderId}`,
+            tag:           `order-${orderId}-paid`,
+            customerPhone,
+          }),
+        }).catch(() => {})
+      }
+
+      return new Response(
+        JSON.stringify({
+          success:      true,
+          orderId,
+          collectedAt,
+          collectedBy,
+          totalAmount:  order.total_amount,
+        }),
         { status: 200, headers: cors }
       )
     }
