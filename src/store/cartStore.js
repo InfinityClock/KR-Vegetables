@@ -100,7 +100,7 @@ export const useCartStore = create(
 // Selector hooks for performance
 export const useCartItems = () => useCartStore((s) => s.items)
 // Cart badge shows unique product count (matches "My Cart (N)" title in Cart page)
-export const useCartCount = () => useCartStore((s) => s.items.length)
+export const useCartCount = () => useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0))
 export const useCartSubtotal = () => useCartStore((s) => s.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
 
 export const useCartHandlingFee = () => {

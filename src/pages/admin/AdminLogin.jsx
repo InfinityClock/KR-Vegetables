@@ -234,7 +234,7 @@ export default function AdminLogin() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@krvegetables.com"
+                placeholder="admin@krvegetables.in"
                 required
                 className="w-full h-12 px-4 rounded-xl text-sm outline-none transition-all"
                 style={{
