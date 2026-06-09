@@ -254,7 +254,7 @@ export const PRODUCTS = [
     id: 'p-405', category_id: 'cat-4',
     name: 'Capsicum Red',
     tamil_name: 'சிவப்பு குடைமிளகாய்',
-    description: 'Sweet red bell pepper, vibrant and rich in vitamin C. Elevates any dish.',
+    description: 'Sweet red bell pepper, vibrant and rich in vitamin C. Great for any dish.',
     unit: 'piece', price: 40, offer_price: 34, offer_label: '15% OFF',
     stock_status: 'in_stock', is_featured: false, sort_order: 5,
     image_url: 'https://images.pexels.com/photos/5038395/pexels-photo-5038395.jpeg?auto=compress&cs=tinysrgb&w=400',
