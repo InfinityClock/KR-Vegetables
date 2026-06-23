@@ -7,8 +7,14 @@
     <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <link rel="shortcut icon" href="/favicon.jpg" />
 
-    <!-- ── Apple touch icon (iOS home screen) ────────────────────────── -->
-    <link rel="apple-touch-icon" href="/favicon.jpg" />
+    <!-- ── Apple touch icon (iOS home screen) ───────────────────────────
+         iOS Safari/Chrome ignore manifest.json icons for "Add to Home Screen"
+         and read these link tags directly. Multiple sizes cover iPhone
+         (180x180), iPad (167x167), and older iPad (152x152). -->
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="KR Veggies" />
@@ -22,7 +28,7 @@
     <meta name="theme-color" content="#2D6A4F" />
 
     <!-- ── SEO ───────────────────────────────────────────────────────── -->
-    <meta name="description" content="KR Vegetables & Fruits — Fresh daily from local farms. Order fresh vegetables and fruits online." />
+    <meta name="description" content="KR Vegetables & Fruits: Fresh daily from local farms. Order fresh vegetables and fruits online." />
 
     <title>KR Vegetables &amp; Fruits</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

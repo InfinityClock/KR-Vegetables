@@ -2,11 +2,42 @@ import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingBag, Tags, Tag,
-  Truck, Settings, Menu, X, LogOut, ChevronRight, Bell,
+  Truck, Settings, Menu, X, LogOut, ChevronRight, Bell, Download,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import logoImg from '../../assets/Logo.jpg'
+import AdminInstallBanner from '../../components/AdminInstallBanner'
 import toast from 'react-hot-toast'
+
+/**
+ * Android Chrome fires `beforeinstallprompt` when install criteria are met
+ * (manifest + service worker + HTTPS). Capturing it lets us show our own
+ * "Install App" button instead of relying solely on the browser's native
+ * mini-infobar, which many users dismiss without noticing. iOS never fires
+ * this event — the button simply does not render there, which is why
+ * AdminInstallBanner exists as the iOS-specific path.
+ */
+function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const promptInstall = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    await deferredPrompt.userChoice
+    setDeferredPrompt(null)
+  }
+
+  return { canInstall: !!deferredPrompt, promptInstall }
+}
 
 const navItems = [
   { to: '/admin',                   icon: LayoutDashboard, label: 'Dashboard',     exact: true },
@@ -22,6 +53,7 @@ const navItems = [
 function Sidebar({ open, onClose }) {
   const navigate = useNavigate()
   const { logout, user, userRole } = useAuthStore()
+  const { canInstall, promptInstall } = useInstallPrompt()
 
   const handleLogout = async () => {
     await logout()
@@ -149,6 +181,26 @@ function Sidebar({ open, onClose }) {
           </div>
         )}
 
+        {/* Install App — Android Chrome only; iOS has no equivalent browser event,
+            it gets AdminInstallBanner with manual Share -> Add to Home Screen steps */}
+        {canInstall && (
+          <div style={{ padding: '0 12px 10px' }}>
+            <button
+              onClick={promptInstall}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 10,
+                background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)',
+                color: 'rgba(255,255,255,.8)', fontFamily: 'var(--font-body)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Download size={13} style={{ color: '#fff' }} />
+              Install App
+            </button>
+          </div>
+        )}
+
         {/* User + Logout */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', padding: '12px 12px 16px' }}>
           {user?.email && (
@@ -177,17 +229,47 @@ function Sidebar({ open, onClose }) {
   )
 }
 
-// ─── PWA manifest swap ────────────────────────────────────────────────────────
-// When an admin opens /admin, swap the manifest to admin-manifest.json so the
-// browser offers to install "KR Admin" (starting at /admin) as a separate PWA.
-// Restores the customer manifest on unmount.
+// ─── PWA manifest + iOS meta tag swap ────────────────────────────────────────
+// When an admin opens /admin, swap the manifest to admin-manifest.json so
+// Android offers to install "KR Vegetables Admin" (starting at /admin) as a
+// separate PWA.
+//
+// iOS Safari and Chrome-on-iOS do NOT read manifest.json name/icon fields for
+// "Add to Home Screen" — both are WebKit under the hood and only look at the
+// apple-mobile-web-app-title meta tag and apple-touch-icon link tag in the
+// current document. Without swapping those too, an admin installing from
+// /admin on an iPhone would still get "KR Veggies" (the customer app name)
+// on their home screen instead of "KR Vegetables Admin". This hook swaps all
+// four signals together and restores the customer versions on unmount.
 function useAdminManifest() {
   useEffect(() => {
-    const link = document.querySelector('link[rel="manifest"]')
-    if (!link) return
-    const original = link.getAttribute('href')
-    link.setAttribute('href', '/admin-manifest.json')
-    return () => link.setAttribute('href', original || '/manifest.json')
+    const manifestLink = document.querySelector('link[rel="manifest"]')
+    const titleMeta     = document.querySelector('meta[name="apple-mobile-web-app-title"]')
+    const themeMeta      = document.querySelector('meta[name="theme-color"]')
+    const touchIcons     = document.querySelectorAll('link[rel="apple-touch-icon"]')
+
+    const prevManifest = manifestLink?.getAttribute('href')
+    const prevTitle     = titleMeta?.getAttribute('content')
+    const prevTheme      = themeMeta?.getAttribute('content')
+    const prevIconHrefs  = Array.from(touchIcons).map((el) => el.getAttribute('href'))
+
+    manifestLink?.setAttribute('href', '/admin-manifest.json')
+    titleMeta?.setAttribute('content', 'KR Vegetables Admin')
+    themeMeta?.setAttribute('content', '#052e16')
+    // All apple-touch-icon variants currently point at the same source image —
+    // swapping is a no-op today but keeps this correct if admin gets a
+    // distinct icon in future.
+    touchIcons.forEach((el) => el.setAttribute('href', el.getAttribute('href')))
+
+    document.title = 'KR Vegetables Admin'
+
+    return () => {
+      manifestLink?.setAttribute('href', prevManifest || '/manifest.json')
+      titleMeta?.setAttribute('content', prevTitle || 'KR Veggies')
+      themeMeta?.setAttribute('content', prevTheme || '#2D6A4F')
+      touchIcons.forEach((el, i) => el.setAttribute('href', prevIconHrefs[i]))
+      document.title = 'KR Vegetables & Fruits'
+    }
   }, [])
 }
 
@@ -286,6 +368,8 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AdminInstallBanner />
     </div>
   )
 }
