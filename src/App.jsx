@@ -12,6 +12,14 @@ import { useCartCount } from './store/cartStore'
 
 // Error boundary — catches render-time errors and shows a recovery UI
 import ErrorBoundary from './components/ErrorBoundary'
+import InstallPrompt from './components/InstallPrompt'
+
+const CUSTOMER_INSTALL_BENEFITS = [
+  'Faster ordering',
+  'Order tracking',
+  'App-like experience',
+  'Quick checkout',
+]
 
 // Customer pages — statically imported (must be fast on first visit)
 import HomeP from './pages/customer/Home'
@@ -276,7 +284,10 @@ function AppRoutes() {
   const bypassOnboarding = ['/admin', '/order-success', '/track', '/contact', '/terms', '/refund-policy']
   if (!onboardingDone && !bypassOnboarding.some(p => location.pathname.startsWith(p))) return <Onboarding />
 
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
   return (
+    <>
     <Routes>
       {/* Customer routes */}
       <Route path="/"            element={<CustomerLayout><HomeP /></CustomerLayout>} />
@@ -324,6 +335,20 @@ function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+
+    {!isAdminRoute && (
+      <InstallPrompt
+        appName="KR Vegetables"
+        benefits={CUSTOMER_INSTALL_BENEFITS}
+        iconSrc="/icon-192.png"
+        accent="#2D6A4F"
+        bg="#fff"
+        textColor="#1c1a17"
+        mutedColor="#6b7280"
+        storageKey="kr-install-dismissed-customer"
+      />
+    )}
+    </>
   )
 }
 

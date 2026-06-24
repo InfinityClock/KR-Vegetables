@@ -6,16 +6,23 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import logoImg from '../../assets/Logo.jpg'
-import AdminInstallBanner from '../../components/AdminInstallBanner'
+import InstallPrompt from '../../components/InstallPrompt'
 import toast from 'react-hot-toast'
+
+const ADMIN_INSTALL_BENEFITS = [
+  'New order alerts',
+  'Order management',
+  'Inventory management',
+  'Admin dashboard access',
+]
 
 /**
  * Android Chrome fires `beforeinstallprompt` when install criteria are met
  * (manifest + service worker + HTTPS). Capturing it lets us show our own
- * "Install App" button instead of relying solely on the browser's native
- * mini-infobar, which many users dismiss without noticing. iOS never fires
- * this event — the button simply does not render there, which is why
- * AdminInstallBanner exists as the iOS-specific path.
+ * "Install App" button in the sidebar — a persistent manual fallback in
+ * addition to the auto-popup (InstallPrompt) below, for admins who dismissed
+ * the popup but want to install before the 7-day re-prompt window passes.
+ * iOS never fires this event — the button simply does not render there.
  */
 function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -181,8 +188,9 @@ function Sidebar({ open, onClose }) {
           </div>
         )}
 
-        {/* Install App — Android Chrome only; iOS has no equivalent browser event,
-            it gets AdminInstallBanner with manual Share -> Add to Home Screen steps */}
+        {/* Install App — manual fallback, Android Chrome only; iOS has no
+            equivalent browser event so this never renders there, but iOS
+            admins get the auto InstallPrompt popup with manual guidance */}
         {canInstall && (
           <div style={{ padding: '0 12px 10px' }}>
             <button
@@ -238,9 +246,10 @@ function Sidebar({ open, onClose }) {
 // "Add to Home Screen" — both are WebKit under the hood and only look at the
 // apple-mobile-web-app-title meta tag and apple-touch-icon link tag in the
 // current document. Without swapping those too, an admin installing from
-// /admin on an iPhone would still get "KR Veggies" (the customer app name)
-// on their home screen instead of "KR Vegetables Admin". This hook swaps all
-// four signals together and restores the customer versions on unmount.
+// /admin on an iPhone would still get "KR Vegetables" (the customer app name
+// and icon) on their home screen instead of "KR Vegetables Admin" with its
+// own dark, badged icon. This hook swaps all signals together and restores
+// the customer versions on unmount.
 function useAdminManifest() {
   useEffect(() => {
     const manifestLink = document.querySelector('link[rel="manifest"]')
@@ -256,16 +265,19 @@ function useAdminManifest() {
     manifestLink?.setAttribute('href', '/admin-manifest.json')
     titleMeta?.setAttribute('content', 'KR Vegetables Admin')
     themeMeta?.setAttribute('content', '#052e16')
-    // All apple-touch-icon variants currently point at the same source image —
-    // swapping is a no-op today but keeps this correct if admin gets a
-    // distinct icon in future.
-    touchIcons.forEach((el) => el.setAttribute('href', el.getAttribute('href')))
+    // Swap each apple-touch-icon to its admin-branded equivalent
+    // (/icon-180.png -> /admin-icon-180.png, etc.) so the home screen icon
+    // is visually distinct from the customer app, not just differently named.
+    touchIcons.forEach((el) => {
+      const href = el.getAttribute('href')
+      if (href) el.setAttribute('href', href.replace('/icon-', '/admin-icon-'))
+    })
 
     document.title = 'KR Vegetables Admin'
 
     return () => {
       manifestLink?.setAttribute('href', prevManifest || '/manifest.json')
-      titleMeta?.setAttribute('content', prevTitle || 'KR Veggies')
+      titleMeta?.setAttribute('content', prevTitle || 'KR Vegetables')
       themeMeta?.setAttribute('content', prevTheme || '#2D6A4F')
       touchIcons.forEach((el, i) => el.setAttribute('href', prevIconHrefs[i]))
       document.title = 'KR Vegetables & Fruits'
@@ -369,7 +381,16 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      <AdminInstallBanner />
+      <InstallPrompt
+        appName="KR Vegetables Admin"
+        benefits={ADMIN_INSTALL_BENEFITS}
+        iconSrc="/admin-icon-192.png"
+        accent="#5eead4"
+        bg="#0a2818"
+        textColor="#fff"
+        mutedColor="rgba(255,255,255,.65)"
+        storageKey="kr-install-dismissed-admin"
+      />
     </div>
   )
 }

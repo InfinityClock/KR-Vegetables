@@ -1,6 +1,6 @@
 {
   "name": "KR Vegetables & Fruits",
-  "short_name": "KR Veggies",
+  "short_name": "KR Vegetables",
   "description": "Fresh vegetables and fruits delivered daily from local farms",
   "start_url": "/",
   "scope": "/",
