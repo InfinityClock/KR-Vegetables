@@ -278,6 +278,12 @@ export default async function handler(req) {
           // opens its detail modal automatically, instead of just the list.
           url:            `/admin/orders?order=${orderNumber}`,
           subscriberType: 'admin',
+          // orderId here does NOT change which devices get the push (that's
+          // still controlled entirely by subscriberType:'admin' in
+          // push-send.js's query branch order) — it's passed purely so
+          // notification_logs records target='new_order_admin' and the real
+          // order_id instead of falling through to the generic 'all' bucket.
+          orderId:        order.id,
           tag:            `new-order-${order.id}`,
         }),
       }).catch(() => {}) // non-critical — never block the order response
