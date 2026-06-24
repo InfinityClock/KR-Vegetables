@@ -37,39 +37,48 @@ function NotificationPrompt({ orderId }) {
     <div style={{
       width: '100%', maxWidth: 380,
       background: 'var(--bg-card)', border: '1.5px solid var(--brand-100)',
-      borderRadius: 14, padding: '16px', marginBottom: 12, position: 'relative',
+      borderRadius: 14, padding: '16px', marginBottom: 12,
     }}>
-      <button
-        onClick={() => setDismissed(true)}
-        style={{ position: 'absolute', top: 10, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: 18, lineHeight: 1 }}
-      >×</button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Bell size={16} style={{ color: 'var(--brand-600)' }} />
         </div>
         <div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>Get delivery updates</p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Know when your order is out for delivery</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>Stay updated on your order?</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Allow notifications to know when it's out for delivery</p>
         </div>
       </div>
-      <button
-        disabled={loading}
-        onClick={async () => {
-          const result = await subscribe(orderId)
-          if (result.ok) setDone(true)
-          else if (result.reason === 'denied') setDismissed(true)
-        }}
-        style={{
-          width: '100%', height: 40,
-          background: loading ? 'var(--border)' : 'var(--brand-800)',
-          color: loading ? 'var(--text-muted)' : '#fff',
-          border: 'none', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
-          fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}
-      >
-        <Bell size={14} /> {loading ? 'Enabling…' : 'Enable Notifications'}
-      </button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          disabled={loading}
+          onClick={async () => {
+            const result = await subscribe(orderId)
+            if (result.ok) setDone(true)
+            else if (result.reason === 'denied') setDismissed(true)
+          }}
+          style={{
+            flex: 1, height: 40,
+            background: loading ? 'var(--border)' : 'var(--brand-800)',
+            color: loading ? 'var(--text-muted)' : '#fff',
+            border: 'none', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700,
+          }}
+        >
+          {loading ? 'Allowing…' : 'Allow'}
+        </button>
+        <button
+          onClick={() => setDismissed(true)}
+          style={{
+            flex: 1, height: 40,
+            background: 'transparent',
+            color: 'var(--text-muted)',
+            border: '1.5px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+          }}
+        >
+          Maybe Later
+        </button>
+      </div>
     </div>
   )
 }

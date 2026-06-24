@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Eye, X, Package, Phone, MapPin, Copy, Navigation, MessageCircle, Clock, Banknote, CreditCard, AlertTriangle, Search, Download, CheckSquare, Square, Filter, ChevronDown, RefreshCw, Coins } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAdminOrders } from '../../hooks/useOrders'
@@ -458,6 +459,26 @@ export default function AdminOrders() {
   const {
     orders, loading, loadingMore, hasMore, totalCount, error, refetch, loadMore,
   } = useAdminOrders({ statusFilter, search, paymentFilter, dateFilter, slotFilter })
+
+  // ── Deep link from push notification ──────────────────────────────────────
+  // "New Order" pushes link to /admin/orders?order=<order_number> so tapping
+  // the notification opens that exact order's detail modal, not just the
+  // general list. Falls back to a direct API lookup if the order isn't on
+  // the currently loaded page (e.g. filters hide it).
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    const orderNumberParam = searchParams.get('order')
+    if (!orderNumberParam || loading) return
+
+    const found = orders.find((o) => o.order_number === orderNumberParam)
+    if (found) { setSelectedOrder(found); return }
+
+    adminFetch(`/api/admin-orders?orderNumber=${encodeURIComponent(orderNumberParam)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((order) => { if (order) setSelectedOrder(order) })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading])
 
   const hasActiveFilters = search || statusFilter !== 'all' || paymentFilter !== 'all' ||
     dateFilter !== 'all' || slotFilter !== 'all'

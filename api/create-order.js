@@ -274,7 +274,9 @@ export default async function handler(req) {
         body: JSON.stringify({
           title:          `🛍️ New Order #${orderNumber}`,
           body:           `${name} placed an order for ${formatCurrency(serverTotal)}`,
-          url:            `/admin/orders`,
+          // Deep link to this exact order — AdminOrders.jsx reads ?order= and
+          // opens its detail modal automatically, instead of just the list.
+          url:            `/admin/orders?order=${orderNumber}`,
           subscriberType: 'admin',
           tag:            `new-order-${order.id}`,
         }),

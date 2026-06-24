@@ -102,10 +102,18 @@ export default async function handler(req, res) {
   if (subscriberType === 'admin') {
     // New-order alert: send ONLY to admin-subscribed devices
     subUrl += `&subscriber_type=eq.admin`
+  } else if (orderId && customerPhone) {
+    // Order status update: match EITHER the customer's phone (reaches any of
+    // their subscriptions, even from a previous order) OR this specific
+    // order_id (catches subscriptions not yet phone-linked). Using a single
+    // OR query — not two separate calls — guarantees each physical
+    // subscription row is sent to at most once, even if it matches both
+    // conditions. Two separate calls previously could double-send to the
+    // same device when a row had both fields set, relying on notification
+    // tag collapsing client-side to hide it rather than not sending twice.
+    subUrl += `&or=(customer_phone.eq.${encodeURIComponent(customerPhone)},order_id.eq.${orderId})&subscriber_type=eq.customer`
   } else if (orderId) {
-    // Order status update: try customer_phone first (broader match), fall back to order_id.
-    // This is handled by two separate queries merged below.
-    subUrl += `&order_id=eq.${orderId}`
+    subUrl += `&order_id=eq.${orderId}&subscriber_type=eq.customer`
   } else if (customerPhone) {
     // Targeted to a specific customer by phone (any of their subscriptions)
     subUrl += `&customer_phone=eq.${encodeURIComponent(customerPhone)}&subscriber_type=eq.customer`
@@ -174,9 +182,14 @@ export default async function handler(req, res) {
     ).catch(() => {})
   }
 
-  // Phase B: Log to notification_logs (fire-and-forget, non-critical)
-  // Only log broadcast notifications (not per-order status pings)
-  if (!orderId && title && body) {
+  // Log every send attempt — broadcasts AND per-order pushes (new-order alerts
+  // to admin, status-change alerts to customers). Previously only broadcasts
+  // were logged, which made the most business-critical paths unverifiable
+  // after the fact. fire-and-forget, non-critical.
+  if (title && body) {
+    const targetDesc = orderId
+      ? (subscriberType === 'admin' ? 'new_order_admin' : 'order_status_customer')
+      : (target || 'all')
     fetch(`${SUPABASE_URL}/rest/v1/notification_logs`, {
       method: 'POST',
       headers: {
@@ -189,7 +202,8 @@ export default async function handler(req, res) {
         title,
         body,
         url,
-        target: target || 'all',
+        target: targetDesc,
+        order_id: orderId || null,
         recipient_count: subs.length,
         sent_count:      sent,
         failed_count:    failed,

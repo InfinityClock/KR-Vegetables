@@ -189,22 +189,17 @@ export default async function handler(req) {
           body:    push.body,
           url:     `/track/${orderId}`,
           tag:     `order-${orderId}-${newStatus}`,
+          orderId,
         }
+        if (customerPhone) pushBody.customerPhone = customerPhone
 
-        // Send by phone (primary — broader match across all customer subscriptions)
-        if (customerPhone) {
-          fetch(`${baseUrl}/api/push-send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
-            body: JSON.stringify({ ...pushBody, customerPhone }),
-          }).catch(() => {})
-        }
-
-        // Send by orderId (secondary fallback — catches subscriptions not yet phone-linked)
+        // Single call — push-send.js matches phone OR order_id in one
+        // deduplicated query, so each device gets exactly one notification
+        // regardless of which field(s) its subscription row has set.
         fetch(`${baseUrl}/api/push-send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
-          body: JSON.stringify({ ...pushBody, orderId }),
+          body: JSON.stringify(pushBody),
         }).catch(() => {})
       }
 
@@ -274,21 +269,22 @@ export default async function handler(req) {
       })
 
       // 4. Push notification to customer (fire-and-forget)
+      // Include both customerPhone and orderId for maximum reach — push-send.js
+      // matches either in one deduplicated query (see update_status above).
       const customerPhone = order.customers?.phone || null
-      if (customerPhone) {
-        const baseUrl = new URL(req.url).origin
-        fetch(`${baseUrl}/api/push-send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
-          body: JSON.stringify({
-            title:         '💵 Payment Received',
-            body:          `Your cash payment of ₹${Number(order.total_amount).toFixed(2)} has been collected. Thank you!`,
-            url:           `/track/${orderId}`,
-            tag:           `order-${orderId}-paid`,
-            customerPhone,
-          }),
-        }).catch(() => {})
-      }
+      const baseUrl = new URL(req.url).origin
+      fetch(`${baseUrl}/api/push-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-token': serviceKey },
+        body: JSON.stringify({
+          title:         '💵 Payment Received',
+          body:          `Your cash payment of ₹${Number(order.total_amount).toFixed(2)} has been collected. Thank you!`,
+          url:           `/track/${orderId}`,
+          tag:           `order-${orderId}-paid`,
+          orderId,
+          ...(customerPhone ? { customerPhone } : {}),
+        }),
+      }).catch(() => {})
 
       return new Response(
         JSON.stringify({

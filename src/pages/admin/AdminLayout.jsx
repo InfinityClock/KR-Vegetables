@@ -286,6 +286,31 @@ function useAdminManifest() {
 }
 
 /**
+ * Clears the app icon badge (set by sw.js on new-order push) whenever the
+ * admin actually opens/focuses the dashboard — viewing the orders list is
+ * the natural "I've seen this" signal. Not supported on iOS (Apple has not
+ * implemented the Badging API) — calls silently no-op there. Also tells the
+ * service worker to reset its persisted counter so a later push increments
+ * from zero, not from a stale count.
+ */
+function useClearBadgeOnFocus() {
+  useEffect(() => {
+    const clear = () => {
+      navigator.clearAppBadge?.().catch(() => {})
+      navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_BADGE' })
+    }
+    clear() // on mount
+    const onVisible = () => { if (document.visibilityState === 'visible') clear() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', clear)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', clear)
+    }
+  }, [])
+}
+
+/**
  * Subscribes the current admin device to Web Push notifications so it
  * receives "New Order" alerts even when the dashboard is closed.
  * Runs once per browser session. Tagged as subscriber_type='admin' so
@@ -341,6 +366,7 @@ function useAdminPushSubscription() {
 export default function AdminLayout() {
   useAdminManifest()
   useAdminPushSubscription()   // subscribe this device to receive new-order push alerts
+  useClearBadgeOnFocus()       // clear the app icon badge once the admin actually looks
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 

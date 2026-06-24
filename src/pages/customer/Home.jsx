@@ -678,6 +678,9 @@ function OrderAgainItem({ item }) {
 
 // ─── Soft push-notification banner ───────────────────────────────────────────
 // Shows once per session to customers who haven't enabled notifications yet.
+// Triggered by the user's FIRST real interaction (click/scroll/touch), never
+// on page load — requesting permission before someone has even engaged with
+// the site reads as spammy and depresses opt-in rates industry-wide.
 // Dismissing it sets sessionStorage so it doesn't reappear this visit.
 function NotificationBanner() {
   const { isSupported, permission, isSubscribed, loading, subscribe } = usePushNotifications()
@@ -689,9 +692,24 @@ function NotificationBanner() {
     if (isSubscribed) return
     if (permission === 'denied') return
     if (sessionStorage.getItem('push-banner-dismissed')) return
-    // Show after a short delay so it doesn't flash immediately on load
-    const t = setTimeout(() => setVisible(true), 3000)
-    return () => clearTimeout(t)
+
+    let shown = false
+    let timer = null
+    const triggerSoon = () => {
+      if (shown) return
+      shown = true
+      // Small delay after the interaction so it doesn't interrupt whatever
+      // the customer was just doing (scrolling, tapping a product, etc.)
+      timer = setTimeout(() => setVisible(true), 1200)
+      cleanup()
+    }
+    const events = ['click', 'scroll', 'touchstart']
+    events.forEach((e) => window.addEventListener(e, triggerSoon, { passive: true, once: true }))
+    function cleanup() {
+      events.forEach((e) => window.removeEventListener(e, triggerSoon))
+    }
+
+    return () => { cleanup(); if (timer) clearTimeout(timer) }
   }, [isSupported, isSubscribed, permission])
 
   if (!visible || done) return null
@@ -707,52 +725,54 @@ function NotificationBanner() {
         margin: '0 16px 12px',
         background: 'linear-gradient(135deg, var(--brand-800) 0%, var(--teal-800, #115e59) 100%)',
         borderRadius: 14,
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
+        padding: '16px',
         boxShadow: 'var(--shadow-md)',
       }}
     >
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Bell size={17} style={{ color: '#fff' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Bell size={17} style={{ color: '#fff' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13.5px', fontWeight: 700, color: '#fff', margin: '0 0 1px' }}>
+            Stay updated on your orders?
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.7)', margin: 0 }}>
+            Allow notifications for order tracking and delivery alerts.
+          </p>
+        </div>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#fff', margin: '0 0 1px' }}>
-          Get delivery alerts
-        </p>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,.7)', margin: 0 }}>
-          Know when your order ships
-        </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          disabled={loading}
+          onClick={async () => {
+            const result = await subscribe(null)
+            if (result.ok || result.reason === 'denied') {
+              setDone(true)
+              dismiss()
+            }
+          }}
+          style={{
+            flex: 1, padding: '9px 14px',
+            background: '#fff', border: 'none', borderRadius: 8,
+            fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 700,
+            color: 'var(--brand-800)', cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {loading ? 'Allowing…' : 'Allow'}
+        </button>
+        <button
+          onClick={dismiss}
+          style={{
+            flex: 1, padding: '9px 14px',
+            background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.25)', borderRadius: 8,
+            fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 600,
+            color: 'rgba(255,255,255,.85)', cursor: 'pointer',
+          }}
+        >
+          Maybe Later
+        </button>
       </div>
-      <button
-        disabled={loading}
-        onClick={async () => {
-          const result = await subscribe(null)
-          if (result.ok || result.reason === 'denied') {
-            setDone(true)
-            dismiss()
-          }
-        }}
-        style={{
-          padding: '7px 14px',
-          background: 'rgba(255,255,255,.18)',
-          border: '1px solid rgba(255,255,255,.3)',
-          borderRadius: 8,
-          fontFamily: 'var(--font-body)', fontSize: '12.5px', fontWeight: 700,
-          color: '#fff', cursor: loading ? 'not-allowed' : 'pointer',
-          whiteSpace: 'nowrap', flexShrink: 0,
-        }}
-      >
-        {loading ? '…' : 'Enable'}
-      </button>
-      <button
-        onClick={dismiss}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.5)', fontSize: 18, lineHeight: 1, padding: '0 0 0 4px', flexShrink: 0 }}
-        aria-label="Dismiss"
-      >
-        ×
-      </button>
     </div>
   )
 }
