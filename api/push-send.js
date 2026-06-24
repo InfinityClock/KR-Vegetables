@@ -127,11 +127,16 @@ export default async function handler(req, res) {
   const sbRes  = await fetch(subUrl, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
   })
-  const subs = await sbRes.json()
+  const subsRaw = await sbRes.json()
+  const subs = Array.isArray(subsRaw) ? subsRaw : []
 
-  if (!Array.isArray(subs) || subs.length === 0) {
-    return res.status(200).json({ sent: 0, failed: 0, total: 0, message: 'No subscribers found' })
-  }
+  // No early return here even when subs.length === 0 — a zero-recipient
+  // attempt is still logged below. Silently returning early on this path
+  // was the single biggest blind spot in the whole notification system:
+  // a customer-status push that found no matching subscription left
+  // absolutely no trace it was ever attempted, indistinguishable from the
+  // push code never having run at all. Now the log itself answers
+  // "did we try, and was anyone listening" instead of requiring a guess.
 
   const payload = JSON.stringify({
     title,
@@ -216,6 +221,7 @@ export default async function handler(req, res) {
     sent,
     failed,
     total: subs.length,
+    message: subs.length === 0 ? 'No subscribers found' : undefined,
     errors: errors.length > 0 ? errors : undefined,
   })
 }
