@@ -304,6 +304,7 @@ export default function Orders() {
   const [tab,        setTab]        = useState('all')
   const [reordering, setReordering] = useState(null)  // orderId being reordered
   const [trackInput, setTrackInput] = useState('')
+  const [trackPhone, setTrackPhone] = useState('')
   const [tracking,   setTracking]   = useState(false)
 
   // Filter orders by tab
@@ -329,13 +330,15 @@ export default function Orders() {
 
   const handleTrackSubmit = async (e) => {
     e.preventDefault()
-    const num = trackInput.trim().toUpperCase()
+    const num   = trackInput.trim().toUpperCase()
+    const phone = trackPhone.replace(/\D/g, '')
     if (!num) { toast.error('Please enter your order number'); return }
+    if (phone.length !== 10) { toast.error('Please enter the 10-digit phone number used for this order'); return }
     setTracking(true)
     try {
-      const res  = await fetch(`/api/track-order?orderNumber=${encodeURIComponent(num)}`)
+      const res  = await fetch(`/api/track-order?orderNumber=${encodeURIComponent(num)}&phone=${encodeURIComponent(phone)}`)
       const data = await res.json()
-      if (!res.ok || !data?.id) { toast.error('Order not found. Check the number and try again.'); return }
+      if (!res.ok || !data?.id) { toast.error('Order not found. Check the number and phone, then try again.'); return }
       navigate(`/track/${data.id}`)
     } catch { toast.error('Could not look up order. Please try again.') }
     finally  { setTracking(false) }
@@ -384,34 +387,53 @@ export default function Orders() {
             </div>
           </div>
 
-          {/* Track by order number */}
+          {/* Track by order number — requires the order's phone number too,
+              since order numbers are sequential and guessable; this prevents
+              a stranger from viewing someone else's order by just counting. */}
           <form onSubmit={handleTrackSubmit} style={{ maxWidth: 360, margin: '16px auto 32px', padding: '0 24px' }}>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="text"
                 value={trackInput}
                 onChange={(e) => setTrackInput(e.target.value)}
                 placeholder="Order number e.g. 1042"
                 style={{
-                  flex: 1, height: 44, padding: '0 14px', borderRadius: 12,
+                  height: 44, padding: '0 14px', borderRadius: 12,
                   border: '1.5px solid var(--border)', background: 'var(--bg-card)',
                   color: 'var(--text-dark)', fontFamily: 'var(--font-body)', fontSize: 13, outline: 'none',
                 }}
                 onFocus={(e) => { e.target.style.borderColor = 'var(--brand-600)' }}
                 onBlur={(e)  => { e.target.style.borderColor = 'var(--border)' }}
               />
-              <button
-                type="submit"
-                disabled={tracking}
-                style={{
-                  height: 44, padding: '0 16px', borderRadius: 12, border: 'none',
-                  background: 'var(--brand-800)', color: '#fff',
-                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
-                  cursor: tracking ? 'wait' : 'pointer',
-                }}
-              >
-                {tracking ? '…' : 'Track'}
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={trackPhone}
+                  onChange={(e) => setTrackPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="Phone used for this order"
+                  style={{
+                    flex: 1, height: 44, padding: '0 14px', borderRadius: 12,
+                    border: '1.5px solid var(--border)', background: 'var(--bg-card)',
+                    color: 'var(--text-dark)', fontFamily: 'var(--font-body)', fontSize: 13, outline: 'none',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--brand-600)' }}
+                  onBlur={(e)  => { e.target.style.borderColor = 'var(--border)' }}
+                />
+                <button
+                  type="submit"
+                  disabled={tracking}
+                  style={{
+                    height: 44, padding: '0 16px', borderRadius: 12, border: 'none',
+                    background: 'var(--brand-800)', color: '#fff',
+                    fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
+                    cursor: tracking ? 'wait' : 'pointer', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {tracking ? '…' : 'Track'}
+                </button>
+              </div>
             </div>
           </form>
         </>
