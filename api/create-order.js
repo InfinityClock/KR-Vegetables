@@ -68,6 +68,22 @@ export default async function handler(req) {
   if ((address.line1 || '').length > 200) return new Response(JSON.stringify({ error: 'Address line 1 is too long (max 200 characters)' }), { status: 400, headers: corsHeaders })
   if ((address.city || '').length > 100)  return new Response(JSON.stringify({ error: 'City name is too long (max 100 characters)' }),       { status: 400, headers: corsHeaders })
 
+  // Validate every item's quantity BEFORE any pricing math runs. Found live
+  // during a security audit: a negative quantity (e.g. -5) passed straight
+  // through into `unitPrice * item.quantity`, producing a real order with a
+  // negative subtotal/total_amount (confirmed: order created with
+  // total_amount: -51). Caps at 100 per line as a sanity bound — no genuine
+  // grocery order needs more than that of a single product.
+  for (const item of items) {
+    const qty = Number(item?.quantity)
+    if (!Number.isFinite(qty) || qty <= 0 || qty > 100) {
+      return new Response(
+        JSON.stringify({ error: `Invalid quantity for item ${item?.id || '(unknown)'}: must be a number between 1 and 100` }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+  }
+
   const sb = (path, opts = {}) =>
     fetch(`${supabaseUrl}/rest/v1/${path}`, {
       ...opts,
