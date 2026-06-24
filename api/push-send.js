@@ -190,12 +190,21 @@ export default async function handler(req, res) {
   // Log every send attempt — broadcasts AND per-order pushes (new-order alerts
   // to admin, status-change alerts to customers). Previously only broadcasts
   // were logged, which made the most business-critical paths unverifiable
-  // after the fact. fire-and-forget, non-critical.
+  // after the fact.
+  //
+  // AWAITED, not fire-and-forget: this was tested live and found to matter.
+  // On the zero-subscriber path there's no other pending async work (no
+  // webPush.sendNotification calls happened), so an unawaited fetch here had
+  // no time to complete its DNS/TLS/request round-trip before Vercel's Node
+  // runtime froze the function right after `return res.json(...)` — the
+  // exact same bug this logging was added to eliminate, just one layer
+  // deeper. A few extra milliseconds of response latency is the right
+  // trade-off for a guarantee that every attempt is actually recorded.
   if (title && body) {
     const targetDesc = orderId
       ? (subscriberType === 'admin' ? 'new_order_admin' : 'order_status_customer')
       : (target || 'all')
-    fetch(`${SUPABASE_URL}/rest/v1/notification_logs`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/notification_logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
