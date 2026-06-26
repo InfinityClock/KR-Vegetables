@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { WHATSAPP_NUMBER } from '../constants'
+import { supabase } from '../lib/supabase'
 
 /**
  * React Error Boundary — catches any render-time errors in its subtree
@@ -20,8 +21,21 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // In production, send to an error tracking service (Sentry etc.)
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack)
+    // Send to client_errors so a crash on a device we don't have physical
+    // access to is still diagnosable — previously this only reached
+    // console.error, which is invisible once the user closes the tab.
+    // Fire-and-forget; logging a crash must never itself be able to crash.
+    try {
+      supabase.from('client_errors').insert({
+        message:         error?.message || String(error),
+        stack:            error?.stack || null,
+        component_stack:  info?.componentStack || null,
+        boundary:         this.props.admin ? 'admin' : 'customer',
+        url:              typeof window !== 'undefined' ? window.location.href : null,
+        user_agent:       typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      }).then(() => {}, () => {})
+    } catch { /* logging must never throw */ }
   }
 
   render() {

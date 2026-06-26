@@ -97,16 +97,27 @@ export default function AdminDashboard() {
       .channel('admin-dashboard')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
         loadDashboard()
-        if (Notification.permission === 'granted') {
-          new Notification('🛍️ New Order!', {
-            body: 'A new order has been placed on KR Vegetables & Fruits',
-            icon: '/logo.png',
-          })
+        // Real production crash, confirmed: constrained in-app browsers
+        // (e.g. links opened inside WhatsApp/Instagram on iOS use a
+        // stripped-down WKWebView) don't implement the Notification API at
+        // all — `Notification` is undefined there, not merely unpermitted.
+        // This ran unconditionally on the very first route shown after
+        // login, so it crashed the dashboard before anything else could
+        // render, caught by the admin ErrorBoundary as a generic error.
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            new Notification('🛍️ New Order!', {
+              body: 'A new order has been placed on KR Vegetables & Fruits',
+              icon: '/logo.png',
+            })
+          } catch { /* non-critical — dashboard already refreshed via loadDashboard() above */ }
         }
       })
       .subscribe()
 
-    if (Notification.permission === 'default') Notification.requestPermission()
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
 
     return () => supabase.removeChannel(channel)
   }, [])

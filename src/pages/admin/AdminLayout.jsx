@@ -318,13 +318,33 @@ function useClearBadgeOnFocus() {
  */
 function useAdminPushSubscription() {
   useEffect(() => {
+    // ROOT CAUSE of a real production crash: this effect runs unconditionally
+    // on every AdminLayout mount, immediately after login. It used to read
+    // `Notification.permission` directly. Many constrained in-app browsers
+    // (WhatsApp/Instagram/etc. open links in a stripped-down WKWebView on
+    // iOS) do not implement the Notification API at all — `Notification` is
+    // `undefined` there, not just denied-by-default — so the bare property
+    // access threw a TypeError, uncaught, inside a useEffect, which the
+    // nearest ErrorBoundary (the admin-scoped one) caught and rendered as
+    // the generic "Admin panel error" screen. Worked in a normal browser
+    // (where `Notification` exists) and reliably failed in any environment
+    // where it doesn't — exactly the "works for me, fails for the client"
+    // pattern reported. typeof-guard first, then wrap the rest defensively
+    // since this whole feature is a non-critical enhancement that must
+    // never be able to block the dashboard from rendering.
+    if (typeof Notification === 'undefined') return
     const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
-    if (!VAPID_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return
-    if (Notification.permission === 'denied') return
+    try {
+      if (!VAPID_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return
+      if (Notification.permission === 'denied') return
 
-    // Only auto-subscribe if permission already granted — don't pester admin on every load.
-    // If permission is 'default', a one-time prompt appears via the bell button in the UI.
-    if (Notification.permission !== 'granted') return
+      // Only auto-subscribe if permission already granted — don't pester admin on every load.
+      // If permission is 'default', a one-time prompt appears via the bell button in the UI.
+      if (Notification.permission !== 'granted') return
+    } catch (err) {
+      console.error('[AdminLayout] push-subscription precheck failed (non-critical):', err)
+      return
+    }
 
     const subscribeAdmin = async () => {
       try {
