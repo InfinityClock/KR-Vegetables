@@ -507,7 +507,12 @@ export default function OrderSuccess() {
       {order && !loading && (
         <>
           <button
-            onClick={() => navigator.clipboard.writeText(order.order_number).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })}
+            onClick={() => {
+              // navigator.clipboard can be undefined in constrained in-app
+              // browsers (e.g. opened from a WhatsApp share) even over HTTPS.
+              if (!navigator.clipboard?.writeText) return
+              navigator.clipboard.writeText(order.order_number).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
+            }}
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
           >
             <div style={{ background: 'var(--brand-50)', border: '1px solid var(--brand-100)', borderRadius: 'var(--radius-full)', padding: '6px 20px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -102,11 +102,18 @@ export default function OrderTracking() {
 
   function handleCopyOrderNumber() {
     if (!order?.order_number) return
+    // navigator.clipboard can be undefined in constrained in-app browsers
+    // (e.g. opened from a WhatsApp share) even over HTTPS — same risk class
+    // as the Notification API crash found elsewhere in this audit.
+    if (!navigator.clipboard?.writeText) {
+      toast.error(`Order number: ${order.order_number}`)
+      return
+    }
     navigator.clipboard.writeText(order.order_number).then(() => {
       setCopied(true)
       toast.success('Order number copied!')
       setTimeout(() => setCopied(false), 2000)
-    })
+    }).catch(() => {})
   }
 
   function handleReorder() {

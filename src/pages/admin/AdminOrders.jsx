@@ -18,7 +18,15 @@ function CopyBtn({ text }) {
   const [done, setDone] = useState(false)
   return (
     <button
-      onClick={() => { navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1500) }) }}
+      onClick={() => {
+        // navigator.clipboard can be undefined in constrained in-app browsers
+        // (e.g. links opened from WhatsApp/Instagram on iOS) even over HTTPS —
+        // same risk class as the Notification API crash found elsewhere in
+        // this audit. Guard so an unsupported environment just silently does
+        // nothing instead of throwing in the click handler.
+        if (!navigator.clipboard?.writeText) return
+        navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1500) }).catch(() => {})
+      }}
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 4, color: done ? 'var(--brand-600)' : 'var(--text-light)', fontSize: 11 }}
       title="Copy"
     >
