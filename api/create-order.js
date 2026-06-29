@@ -8,6 +8,23 @@ export const config = { runtime: 'edge' }
 // Simple currency formatter for push notification body text
 const formatCurrency = (n) => `₹${Number(n).toLocaleString('en-IN')}`
 
+// Store location + delivery radius — kept in sync with src/constants/index.js
+// (api/ functions can't import from src/, which is a separate Vite bundle).
+const STORE_LAT          = 12.84844769999999
+const STORE_LNG          = 80.20940669999997
+const DELIVERY_RADIUS_KM = 7
+
+// Haversine distance in km — same formula as src/utils/distance.js
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R    = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.APP_URL || '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -67,6 +84,22 @@ export default async function handler(req) {
   if ((notes || '').length > 500)    return new Response(JSON.stringify({ error: 'Notes are too long (max 500 characters)' }),         { status: 400, headers: corsHeaders })
   if ((address.line1 || '').length > 200) return new Response(JSON.stringify({ error: 'Address line 1 is too long (max 200 characters)' }), { status: 400, headers: corsHeaders })
   if ((address.city || '').length > 100)  return new Response(JSON.stringify({ error: 'City name is too long (max 100 characters)' }),       { status: 400, headers: corsHeaders })
+
+  // Delivery radius — was previously enforced ONLY client-side in
+  // Checkout.jsx. Found while changing the radius value that this endpoint
+  // never re-checked it, meaning anyone calling the API directly (bypassing
+  // the UI) could place an order from anywhere with no distance limit at
+  // all. Mirrors the client check; only blocks when coordinates are present
+  // — same "unknown, don't block" behaviour as isWithinDeliveryRadius().
+  if (address.lat && address.lng) {
+    const distKm = haversineKm(address.lat, address.lng, STORE_LAT, STORE_LNG)
+    if (distKm > DELIVERY_RADIUS_KM) {
+      return new Response(
+        JSON.stringify({ error: `Sorry, we only deliver within ${DELIVERY_RADIUS_KM} km of our store. Your location is outside our delivery area.` }),
+        { status: 403, headers: corsHeaders }
+      )
+    }
+  }
 
   // Validate every item's quantity BEFORE any pricing math runs. Found live
   // during a security audit: a negative quantity (e.g. -5) passed straight

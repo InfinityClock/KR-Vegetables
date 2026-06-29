@@ -103,7 +103,7 @@ export const HANDLING_CHARGE_RATE = 0.02   // 2% of cart subtotal
 // Coordinates confirmed from the Maps embed URL (Thalambur, Chennai)
 export const STORE_LAT          = 12.84844769999999
 export const STORE_LNG          = 80.20940669999997
-export const DELIVERY_RADIUS_KM = 10   // maximum delivery radius in kilometres
+export const DELIVERY_RADIUS_KM = 7    // maximum delivery radius in kilometres
 
 export const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '+919176260992'
 export const STORE_PHONE     = import.meta.env.VITE_STORE_PHONE    || '+91 91762 60992'
