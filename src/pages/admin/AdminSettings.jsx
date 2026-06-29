@@ -40,6 +40,7 @@ export default function AdminSettings() {
   const [savedSettings, setSavedSettings] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [zohoStatus, setZohoStatus] = useState(null) // null = checking
 
   useEffect(() => {
     supabase
@@ -52,6 +53,15 @@ export default function AdminSettings() {
         setSavedSettings(map)
         setLoading(false)
       })
+
+    // Real server-side check — the old `VITE_ZOHO_CONFIGURED` client-bundle
+    // flag could never reflect the actual ZOHO_* secrets, which are
+    // correctly server-only. This calls an admin-authenticated endpoint
+    // that reports the true state without exposing any secret value.
+    adminFetch('/api/zoho-status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setZohoStatus(data))
+      .catch(() => setZohoStatus(null))
   }, [])
 
   const updateSetting = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }))
@@ -187,11 +197,17 @@ export default function AdminSettings() {
           </label>
           <div
             className="h-11 px-4 rounded-xl flex items-center text-sm"
-            style={{ border: '1.5px solid var(--border)', background: 'var(--gray-50)', color: 'var(--text-muted)' }}
+            style={{
+              border: '1.5px solid var(--border)',
+              background: zohoStatus?.configured ? '#F0FDF4' : 'var(--gray-50)',
+              color: zohoStatus?.configured ? '#166534' : 'var(--text-muted)',
+            }}
           >
-            {import.meta.env.VITE_ZOHO_CONFIGURED === 'true'
-              ? 'Zoho Payments: configured ✓'
-              : 'Not configured. Add ZOHO_ACCOUNT_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET & ZOHO_REFRESH_TOKEN in Vercel.'
+            {zohoStatus === null
+              ? 'Checking…'
+              : zohoStatus.configured
+                ? 'Zoho Payments: configured ✓'
+                : `Not configured. Missing: ${Object.entries(zohoStatus.vars || {}).filter(([, set]) => !set).map(([key]) => key).join(', ') || 'unknown'}`
             }
           </div>
         </div>
