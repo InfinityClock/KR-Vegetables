@@ -8,6 +8,14 @@ export const config = { runtime: 'edge' }
 // Simple currency formatter for push notification body text
 const formatCurrency = (n) => `₹${Number(n).toLocaleString('en-IN')}`
 
+// Marks an error as caused by bad client input (bad product ID, OOS item,
+// etc.) rather than a server/database fault, so the catch-all below can
+// return the correct 400 instead of always returning 500. Found live: a
+// nonexistent product ID returned 500 even though it's a pure client
+// mistake — wrong status code pollutes server-error monitoring with false
+// alarms for things that aren't actually our fault.
+class ClientError extends Error {}
+
 // Store location + delivery radius — kept in sync with src/constants/index.js
 // (api/ functions can't import from src/, which is a separate Vite bundle).
 const STORE_LAT          = 12.84844769999999
@@ -145,7 +153,7 @@ export default async function handler(req) {
     }
 
     const productIds = items.map((i) => i.id).filter(Boolean)
-    if (!productIds.length) throw new Error('No valid product IDs in order')
+    if (!productIds.length) throw new ClientError('No valid product IDs in order')
 
     // ── Phase 1: Parallel pre-checks ────────────────────────────────────────
     // These four calls are entirely independent and run simultaneously:
@@ -187,8 +195,8 @@ export default async function handler(req) {
 
     const productMap = {}
     for (const p of priceData) {
-      if (!p.is_active)                   throw new Error(`"${p.name}" is no longer available`)
-      if (p.stock_status === 'out_of_stock') throw new Error(`"${p.name}" is out of stock`)
+      if (!p.is_active)                   throw new ClientError(`"${p.name}" is no longer available`)
+      if (p.stock_status === 'out_of_stock') throw new ClientError(`"${p.name}" is out of stock`)
       productMap[p.id] = p.offer_price !== null ? p.offer_price : p.price
     }
 
@@ -196,7 +204,7 @@ export default async function handler(req) {
     let serverSubtotal = 0
     const validatedItems = items.map((item) => {
       const unitPrice = productMap[item.id]
-      if (unitPrice === undefined) throw new Error(`Product ${item.id} not found in catalogue`)
+      if (unitPrice === undefined) throw new ClientError(`Product ${item.id} not found in catalogue`)
       const lineTotal = unitPrice * item.quantity
       serverSubtotal += lineTotal
       return { ...item, unitPrice, lineTotal }
@@ -345,7 +353,7 @@ export default async function handler(req) {
   } catch (err) {
     return new Response(
       JSON.stringify({ error: err.message || 'Order creation failed' }),
-      { status: 500, headers: corsHeaders }
+      { status: err instanceof ClientError ? 400 : 500, headers: corsHeaders }
     )
   }
 }
